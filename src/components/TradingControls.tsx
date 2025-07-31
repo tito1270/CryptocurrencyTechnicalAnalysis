@@ -4,7 +4,7 @@ import { brokers } from '../data/brokers';
 import { technicalIndicators } from '../data/indicators';
 import { tradingStrategies } from '../data/strategies';
 import { searchPairs } from '../utils/priceSimulator';
-import { Search, X } from 'lucide-react';
+import { Search, X, Link, Copy, Check } from 'lucide-react';
 import CryptoPairSearch from './CryptoPairSearch';
 
 interface TradingControlsProps {
@@ -42,12 +42,29 @@ const TradingControls: React.FC<TradingControlsProps> = ({
 }) => {
   const currentBroker = brokers.find(b => b.id === selectedBroker);
   const [showAdvancedPairSearch, setShowAdvancedPairSearch] = useState(false);
+  const [copied, setCopied] = useState(false);
   
   // Show limited pairs for the dropdown
   const limitedPairs = useMemo(() => {
     if (!currentBroker) return [];
     return currentBroker.pairs.slice(0, 20); // Show first 20 pairs in dropdown
   }, [currentBroker]);
+
+  const handleCopyLink = async () => {
+    const currentUrl = new URL(window.location.href);
+    currentUrl.searchParams.set('pair', selectedPair);
+    currentUrl.searchParams.set('broker', selectedBroker);
+    currentUrl.searchParams.set('timeframe', selectedTimeframe);
+    currentUrl.searchParams.set('type', tradeType);
+    
+    try {
+      await navigator.clipboard.writeText(currentUrl.toString());
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    } catch (err) {
+      console.error('Failed to copy link:', err);
+    }
+  };
 
   return (
     <div className="bg-gray-800 border border-gray-700 rounded-lg p-6 space-y-6">
@@ -84,14 +101,23 @@ const TradingControls: React.FC<TradingControlsProps> = ({
             </select>
             <button
               onClick={() => setShowAdvancedPairSearch(true)}
-              className="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg transition-colors font-medium"
-              title="Advanced Pair Search with Categories & Pagination"
+              className="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg transition-colors font-medium flex items-center space-x-2"
+              title="Advanced Pair Search with 300 pairs per batch, filtering, and URL updates"
             >
               <Search className="w-4 h-4" />
+              <span className="hidden sm:inline">Search</span>
+            </button>
+            <button
+              onClick={handleCopyLink}
+              className="px-3 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors font-medium"
+              title="Copy analysis link with current settings"
+            >
+              {copied ? <Check className="w-4 h-4" /> : <Copy className="w-4 h-4" />}
             </button>
           </div>
-          <div className="text-xs text-gray-400 mt-1">
-            Quick select or click search for all {currentBroker?.pairs.length || 0} pairs with filtering
+          <div className="flex items-center space-x-2 text-xs text-gray-400 mt-1">
+            <Link className="w-3 h-3" />
+            <span>Quick select or search {currentBroker?.pairs.length || 0} pairs • URL updates automatically</span>
           </div>
         </div>
       </div>
