@@ -39,9 +39,6 @@ const ContactUs: React.FC = () => {
       <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
         {/* Header */}
         <div className="text-center mb-12">
-          <div className="flex items-center justify-center w-16 h-16 bg-gradient-to-r from-emerald-500 to-blue-600 rounded-lg mx-auto mb-6">
-            <MessageSquare className="w-8 h-8 text-white" />
-          </div>
           <h1 className="text-4xl font-bold text-white mb-4">Contact Us</h1>
           <p className="text-xl text-gray-300 max-w-2xl mx-auto">
             Get in touch with our team. We're here to help you with any questions about CryptoAnalyzer Pro.
@@ -73,46 +70,20 @@ const ContactUs: React.FC = () => {
                 </div>
 
                 <div className="flex items-start space-x-4">
-                  <div className="flex items-center justify-center w-12 h-12 bg-blue-600 rounded-lg flex-shrink-0">
-                    <Phone className="w-6 h-6 text-white" />
-                  </div>
-                  <div>
-                    <h3 className="text-lg font-semibold text-white mb-1">Call Us</h3>
-                    <p className="text-gray-300 mb-2">Speak directly with our support team.</p>
-                    <a href="tel:+15551234567" className="text-blue-400 hover:text-blue-300 transition-colors">
-                      +1 (555) 123-4567
-                    </a>
+                  <div className="ml-4">
                   </div>
                 </div>
 
                 <div className="flex items-start space-x-4">
-                  <div className="flex items-center justify-center w-12 h-12 bg-purple-600 rounded-lg flex-shrink-0">
-                    <MapPin className="w-6 h-6 text-white" />
-                  </div>
-                  <div>
-                    <h3 className="text-lg font-semibold text-white mb-1">Visit Us</h3>
-                    <p className="text-gray-300 mb-2">Our headquarters location.</p>
+                  <div className="ml-4">
                     <p className="text-purple-400">
-                      123 Crypto Street<br />
-                      San Francisco, CA 94105<br />
-                      United States
+                      <br />
+                      <br />
                     </p>
                   </div>
                 </div>
 
                 <div className="flex items-start space-x-4">
-                  <div className="flex items-center justify-center w-12 h-12 bg-yellow-600 rounded-lg flex-shrink-0">
-                    <Clock className="w-6 h-6 text-white" />
-                  </div>
-                  <div>
-                    <h3 className="text-lg font-semibold text-white mb-1">Business Hours</h3>
-                    <p className="text-gray-300 mb-2">When you can reach us.</p>
-                    <div className="text-yellow-400 space-y-1">
-                      <p>Monday - Friday: 9:00 AM - 6:00 PM PST</p>
-                      <p>Saturday: 10:00 AM - 4:00 PM PST</p>
-                      <p>Sunday: Closed</p>
-                    </div>
-                  </div>
                 </div>
               </div>
             </div>
