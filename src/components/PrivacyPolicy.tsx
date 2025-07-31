@@ -24,10 +24,19 @@ const PrivacyPolicy: React.FC = () => {
               Introduction
             </h2>
             <p className="text-gray-300 leading-relaxed">
-              CryptoAnalyzer Pro ("we," "our," or "us") is committed to protecting your privacy. This Privacy Policy 
-              explains how we collect, use, disclose, and safeguard your information when you visit our website 
-              <strong className="text-white"> https://singular-chimera-3bb75d.netlify.app</strong> and use our services. 
-              Please read this privacy policy carefully. If you do not agree with the terms of this privacy policy, 
+              CryptoAnalyzer Pro ("we," "our," or "us") is committed to protecting your privacy. This Privacy Policy
+              explains how we collect, use, disclose, and safeguard your information when you visit our website
+              <strong className="text-white"><p>https://cryptoanalyzer.pro/</p></strong>
+              <div className="ml-4">
+                <h3 className="text-lg font-semibold text-white mb-1">Business Hours</h3>
+                <p className="text-gray-300 mb-2">When you can reach us.</p>
+                <div className="text-yellow-400 space-y-1">
+                  <p>Monday - Friday: 9:00 AM - 6:00 PM PST</p>
+                  <p className="mt-1">Saturday: 10:00 AM - 4:00 PM PST</p>
+                  <p className="mt-1">Sunday: Closed</p>
+                </div>
+              </div> and use our services.
+              Please read this privacy policy carefully. If you do not agree with the terms of this privacy policy,
               please do not access the site.
             </p>
           </section>
@@ -280,8 +289,10 @@ const PrivacyPolicy: React.FC = () => {
               </p>
               <div className="space-y-2 text-gray-300">
                 <p><strong className="text-white">Email:</strong> <span className="text-emerald-400">privacy@cryptoanalyzer.pro</span></p>
-                <p><strong className="text-white">Phone:</strong> <span className="text-blue-400">+1 (555) 123-4567</span></p>
-                <p><strong className="text-white">Address:</strong> 123 Crypto Street, San Francisco, CA 94105, United States</p>
+                <p></p>
+                <p>
+                  <br />
+                </p>
               </div>
             </div>
           </section>
