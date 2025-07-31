@@ -127,7 +127,6 @@ function App() {
                   </div>
                 )}
                 
-                <LivePrices />
                 <LivePrices selectedPair={selectedPair} selectedBroker={selectedBroker} />
               </div>
             </div>

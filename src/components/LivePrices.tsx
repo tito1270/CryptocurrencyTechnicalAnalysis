@@ -46,13 +46,13 @@ const LivePrices: React.FC<LivePricesProps> = ({ selectedPair, selectedBroker })
     if (selectedPair && selectedPair !== filterPair) {
       setFilterPair(selectedPair);
     }
-  }, [selectedPair]);
+  }, [selectedPair, filterPair]);
 
   useEffect(() => {
     if (selectedBroker && selectedBroker !== filterBroker) {
       setFilterBroker(selectedBroker);
     }
-  }, [selectedBroker]);
+  }, [selectedBroker, filterBroker]);
   return (
     <div className="bg-gray-800 border border-gray-700 rounded-lg p-6">
       <div className="flex items-center justify-between mb-4">
