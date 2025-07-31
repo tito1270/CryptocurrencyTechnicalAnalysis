@@ -5,6 +5,7 @@ import { technicalIndicators } from '../data/indicators';
 import { tradingStrategies } from '../data/strategies';
 import { searchPairs } from '../utils/priceSimulator';
 import { Search, X } from 'lucide-react';
+import CryptoPairSearch from './CryptoPairSearch';
 
 interface TradingControlsProps {
   selectedBroker: string;
@@ -40,23 +41,13 @@ const TradingControls: React.FC<TradingControlsProps> = ({
   onAnalyze
 }) => {
   const currentBroker = brokers.find(b => b.id === selectedBroker);
-  const [pairSearchQuery, setPairSearchQuery] = useState('');
-  const [showPairSearch, setShowPairSearch] = useState(false);
+  const [showAdvancedPairSearch, setShowAdvancedPairSearch] = useState(false);
   
-  // Filter pairs based on search query
-  const filteredPairs = useMemo(() => {
+  // Show limited pairs for the dropdown
+  const limitedPairs = useMemo(() => {
     if (!currentBroker) return [];
-    
-    if (pairSearchQuery.trim() === '') {
-      return currentBroker.pairs.slice(0, 50); // Show first 50 pairs by default
-    }
-    
-    return currentBroker.pairs
-      .filter(pair => 
-        pair.toLowerCase().includes(pairSearchQuery.toLowerCase())
-      )
-      .slice(0, 50);
-  }, [currentBroker, pairSearchQuery]);
+    return currentBroker.pairs.slice(0, 20); // Show first 20 pairs in dropdown
+  }, [currentBroker]);
 
   return (
     <div className="bg-gray-800 border border-gray-700 rounded-lg p-6 space-y-6">
@@ -81,74 +72,26 @@ const TradingControls: React.FC<TradingControlsProps> = ({
         
         <div>
           <label className="block text-sm font-medium text-gray-300 mb-2">Trading Pair</label>
-          <div className="relative">
-            <div className="flex space-x-2">
-              <select
-                value={selectedPair}
-                onChange={(e) => onPairChange(e.target.value)}
-                className="flex-1 bg-gray-700 border border-gray-600 rounded-lg px-3 py-2 text-white focus:ring-2 focus:ring-emerald-500 focus:border-transparent"
-              >
-                {filteredPairs.map(pair => (
-                  <option key={pair} value={pair}>{pair}</option>
-                ))}
-              </select>
-              <button
-                onClick={() => setShowPairSearch(!showPairSearch)}
-                className="px-3 py-2 bg-gray-600 hover:bg-gray-500 rounded-lg transition-colors"
-                title="Search pairs"
-              >
-                <Search className="w-4 h-4 text-gray-300" />
-              </button>
-            </div>
-            
-            {showPairSearch && (
-              <div className="absolute top-full left-0 right-0 mt-2 bg-gray-700 border border-gray-600 rounded-lg p-3 z-10">
-                <div className="flex items-center space-x-2 mb-3">
-                  <Search className="w-4 h-4 text-gray-400" />
-                  <input
-                    type="text"
-                    placeholder="Type to search pairs (e.g., BTC, ETH, DOGE)..."
-                    value={pairSearchQuery}
-                    onChange={(e) => setPairSearchQuery(e.target.value)}
-                    className="flex-1 bg-gray-800 border border-gray-600 rounded px-3 py-2 text-white text-sm focus:ring-2 focus:ring-emerald-500 focus:border-transparent"
-                    autoFocus
-                  />
-                  <button
-                    onClick={() => {
-                      setShowPairSearch(false);
-                      setPairSearchQuery('');
-                    }}
-                    className="p-1 hover:bg-gray-600 rounded"
-                  >
-                    <X className="w-4 h-4 text-gray-400" />
-                  </button>
-                </div>
-                
-                <div className="text-xs text-gray-400 mb-2">
-                  Showing {filteredPairs.length} of {currentBroker?.pairs.length || 0} pairs
-                </div>
-                
-                <div className="max-h-48 overflow-y-auto space-y-1">
-                  {filteredPairs.map(pair => (
-                    <button
-                      key={pair}
-                      onClick={() => {
-                        onPairChange(pair);
-                        setShowPairSearch(false);
-                        setPairSearchQuery('');
-                      }}
-                      className={`w-full text-left px-3 py-2 rounded text-sm transition-colors ${
-                        selectedPair === pair
-                          ? 'bg-emerald-600 text-white'
-                          : 'hover:bg-gray-600 text-gray-300'
-                      }`}
-                    >
-                      {pair}
-                    </button>
-                  ))}
-                </div>
-              </div>
-            )}
+          <div className="flex space-x-2">
+            <select
+              value={selectedPair}
+              onChange={(e) => onPairChange(e.target.value)}
+              className="flex-1 bg-gray-700 border border-gray-600 rounded-lg px-3 py-2 text-white focus:ring-2 focus:ring-emerald-500 focus:border-transparent"
+            >
+              {limitedPairs.map(pair => (
+                <option key={pair} value={pair}>{pair}</option>
+              ))}
+            </select>
+            <button
+              onClick={() => setShowAdvancedPairSearch(true)}
+              className="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg transition-colors font-medium"
+              title="Advanced Pair Search with Categories & Pagination"
+            >
+              <Search className="w-4 h-4" />
+            </button>
+          </div>
+          <div className="text-xs text-gray-400 mt-1">
+            Quick select or click search for all {currentBroker?.pairs.length || 0} pairs with filtering
           </div>
         </div>
       </div>
@@ -241,6 +184,15 @@ const TradingControls: React.FC<TradingControlsProps> = ({
       <div className="text-xs text-gray-400 text-center mt-2">
         Analysis includes technical indicators, trading strategies, news sentiment, and personalized buy/sell/hold recommendations with entry/exit points.
       </div>
+
+      {/* Advanced Crypto Pair Search Modal */}
+      <CryptoPairSearch
+        pairs={currentBroker?.pairs || []}
+        selectedPair={selectedPair}
+        onPairSelect={onPairChange}
+        isOpen={showAdvancedPairSearch}
+        onClose={() => setShowAdvancedPairSearch(false)}
+      />
     </div>
   );
 };
