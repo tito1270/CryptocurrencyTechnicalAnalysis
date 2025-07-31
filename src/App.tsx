@@ -1,4 +1,5 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import { BrowserRouter as Router, Routes, Route, useNavigate, useLocation } from 'react-router-dom';
 import Navigation from './components/Navigation';
 import Footer from './components/Footer';
 import AboutUs from './components/AboutUs';
@@ -14,10 +15,28 @@ import { AnalysisResult } from './types';
 import { performAnalysis } from './utils/analysisEngine';
 import { brokers } from './data/brokers';
 
-function App() {
+// URL parameter hook for trading pair
+const useTradingPairFromURL = () => {
+  const location = useLocation();
+  const navigate = useNavigate();
+  
+  const getPairFromURL = () => {
+    const params = new URLSearchParams(location.search);
+    return params.get('pair') || 'BTC/USDT';
+  };
+  
+  const updatePairInURL = (pair: string) => {
+    const params = new URLSearchParams(location.search);
+    params.set('pair', pair);
+    navigate(`${location.pathname}?${params.toString()}`, { replace: true });
+  };
+  
+  return { getPairFromURL, updatePairInURL };
+};
+
+function AppContent() {
   const [currentPage, setCurrentPage] = useState('home');
   const [selectedBroker, setSelectedBroker] = useState(brokers[0].id);
-  const [selectedPair, setSelectedPair] = useState('BTC/USDT');
   const [selectedTimeframe, setSelectedTimeframe] = useState('1h');
   const [tradeType, setTradeType] = useState<'SPOT' | 'FUTURES'>('SPOT');
   const [selectedIndicators, setSelectedIndicators] = useState<string[]>([
@@ -28,6 +47,17 @@ function App() {
   ]);
   const [analysisResult, setAnalysisResult] = useState<AnalysisResult | null>(null);
   const [isAnalyzing, setIsAnalyzing] = useState(false);
+  
+  const { getPairFromURL, updatePairInURL } = useTradingPairFromURL();
+  const [selectedPair, setSelectedPair] = useState(getPairFromURL());
+
+  // Update selected pair when URL changes
+  useEffect(() => {
+    const pairFromURL = getPairFromURL();
+    if (pairFromURL !== selectedPair) {
+      setSelectedPair(pairFromURL);
+    }
+  }, [getPairFromURL]);
 
   const handleIndicatorToggle = (indicatorId: string) => {
     setSelectedIndicators(prev => 
@@ -43,6 +73,11 @@ function App() {
         ? prev.filter(id => id !== strategyId)
         : [...prev, strategyId]
     );
+  };
+
+  const handlePairChange = (pair: string) => {
+    setSelectedPair(pair);
+    updatePairInURL(pair);
   };
 
   const handleAnalyze = async () => {
@@ -91,7 +126,7 @@ function App() {
                   selectedIndicators={selectedIndicators}
                   selectedStrategies={selectedStrategies}
                   onBrokerChange={setSelectedBroker}
-                  onPairChange={setSelectedPair}
+                  onPairChange={handlePairChange}
                   onTimeframeChange={setSelectedTimeframe}
                   onTradeTypeChange={setTradeType}
                   onIndicatorToggle={handleIndicatorToggle}
@@ -142,6 +177,14 @@ function App() {
       {renderCurrentPage()}
       <Footer onPageChange={setCurrentPage} />
     </div>
+  );
+}
+
+function App() {
+  return (
+    <Router>
+      <AppContent />
+    </Router>
   );
 }
 

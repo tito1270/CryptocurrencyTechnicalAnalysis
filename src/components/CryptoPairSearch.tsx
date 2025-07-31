@@ -1,5 +1,5 @@
 import React, { useState, useMemo, useEffect } from 'react';
-import { Search, X, ChevronLeft, ChevronRight, Filter } from 'lucide-react';
+import { Search, X, ChevronLeft, ChevronRight, Filter, ArrowRight } from 'lucide-react';
 import { cryptoPairTypes, categorizeToken } from '../data/cryptoPairTypes';
 
 interface CryptoPairSearchProps {
@@ -10,7 +10,7 @@ interface CryptoPairSearchProps {
   onClose: () => void;
 }
 
-const ITEMS_PER_PAGE = 300;
+const ITEMS_PER_PAGE = 300; // Show 300 pairs per batch as requested
 
 const CryptoPairSearch: React.FC<CryptoPairSearchProps> = ({
   pairs,
@@ -122,7 +122,7 @@ const CryptoPairSearch: React.FC<CryptoPairSearchProps> = ({
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
-      <div className="bg-gray-800 border border-gray-700 rounded-lg w-full max-w-4xl max-h-[90vh] flex flex-col">
+      <div className="bg-gray-800 border border-gray-700 rounded-lg w-full max-w-6xl max-h-[90vh] flex flex-col">
         {/* Header */}
         <div className="p-6 border-b border-gray-700">
           <div className="flex items-center justify-between mb-4">
@@ -159,7 +159,7 @@ const CryptoPairSearch: React.FC<CryptoPairSearchProps> = ({
             </button>
             
             <div className="text-sm text-gray-400">
-              Showing {currentPairs.length} of {filteredPairs.length} pairs
+              Showing {currentPairs.length} of {filteredPairs.length} pairs • Page {currentPage} of {totalPages}
             </div>
           </div>
 
@@ -194,7 +194,7 @@ const CryptoPairSearch: React.FC<CryptoPairSearchProps> = ({
 
         {/* Pairs List */}
         <div className="flex-1 overflow-auto p-6">
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-2">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-2">
             {currentPairs.map(pair => (
               <button
                 key={pair}
@@ -225,19 +225,20 @@ const CryptoPairSearch: React.FC<CryptoPairSearchProps> = ({
           )}
         </div>
 
-        {/* Pagination Footer */}
+        {/* Enhanced Pagination Footer */}
         {totalPages > 1 && (
           <div className="p-6 border-t border-gray-700">
             <div className="flex items-center justify-between">
               <div className="text-sm text-gray-400">
-                Page {currentPage} of {totalPages} • {filteredPairs.length} total pairs
+                <span className="font-medium">Batch {currentPage} of {totalPages}</span> • 
+                Showing pairs {startIndex + 1}-{Math.min(endIndex, filteredPairs.length)} of {filteredPairs.length} total
               </div>
               
-              <div className="flex items-center space-x-2">
+              <div className="flex items-center space-x-3">
                 <button
                   onClick={handlePrevPage}
                   disabled={currentPage === 1}
-                  className={`flex items-center space-x-1 px-3 py-2 rounded-lg transition-colors ${
+                  className={`flex items-center space-x-2 px-4 py-2 rounded-lg transition-colors ${
                     currentPage === 1
                       ? 'bg-gray-700 text-gray-500 cursor-not-allowed'
                       : 'bg-gray-700 hover:bg-gray-600 text-gray-300'
@@ -247,22 +248,41 @@ const CryptoPairSearch: React.FC<CryptoPairSearchProps> = ({
                   <span>Previous</span>
                 </button>
                 
-                <span className="px-4 py-2 bg-emerald-600 text-white rounded-lg font-medium">
-                  {currentPage}
-                </span>
+                <div className="flex items-center space-x-2">
+                  <span className="px-3 py-2 bg-emerald-600 text-white rounded-lg font-medium">
+                    {currentPage}
+                  </span>
+                  <span className="text-gray-400">/</span>
+                  <span className="px-3 py-2 bg-gray-700 text-gray-300 rounded-lg">
+                    {totalPages}
+                  </span>
+                </div>
                 
                 <button
                   onClick={handleNextPage}
                   disabled={currentPage === totalPages}
-                  className={`flex items-center space-x-1 px-3 py-2 rounded-lg transition-colors ${
+                  className={`flex items-center space-x-2 px-4 py-2 rounded-lg transition-colors ${
                     currentPage === totalPages
                       ? 'bg-gray-700 text-gray-500 cursor-not-allowed'
-                      : 'bg-gray-700 hover:bg-gray-600 text-gray-300'
+                      : 'bg-emerald-600 hover:bg-emerald-700 text-white'
                   }`}
                 >
                   <span>Next</span>
-                  <ChevronRight className="w-4 h-4" />
+                  <ArrowRight className="w-4 h-4" />
                 </button>
+              </div>
+            </div>
+            
+            {/* Progress bar */}
+            <div className="mt-4">
+              <div className="w-full bg-gray-700 rounded-full h-2">
+                <div 
+                  className="bg-emerald-500 h-2 rounded-full transition-all duration-300"
+                  style={{ width: `${(currentPage / totalPages) * 100}%` }}
+                ></div>
+              </div>
+              <div className="text-xs text-gray-400 mt-1 text-center">
+                {Math.round((currentPage / totalPages) * 100)}% complete
               </div>
             </div>
           </div>
