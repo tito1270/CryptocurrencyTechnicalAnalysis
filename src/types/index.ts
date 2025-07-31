@@ -5,6 +5,21 @@ export interface Broker {
   pairs: string[];
 }
 
+export interface CryptoPairType {
+  id: string;
+  name: string;
+  description: string;
+  keywords: string[];
+}
+
+export interface CryptoPair {
+  symbol: string;
+  baseAsset: string;
+  quoteAsset: string;
+  category: string;
+  type: string[];
+}
+
 export interface TechnicalIndicator {
   id: string;
   name: string;
