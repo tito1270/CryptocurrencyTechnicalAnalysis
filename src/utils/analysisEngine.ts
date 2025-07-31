@@ -125,7 +125,8 @@ const calculateOverallSentiment = (
     }
   });
   
-  const netScore = (bullishScore - bearishScore) / totalWeight;
+  // Prevent division by zero when no indicators or strategies are selected
+  const netScore = totalWeight > 0 ? (bullishScore - bearishScore) / totalWeight : 0;
   const confidence = Math.min(95, Math.max(50, Math.abs(netScore) * 100));
   
   let sentiment: AnalysisResult['overallSentiment'];

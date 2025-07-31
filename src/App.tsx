@@ -162,7 +162,6 @@ function AppContent() {
                   </div>
                 )}
                 
-                <LivePrices />
                 <LivePrices selectedPair={selectedPair} selectedBroker={selectedBroker} />
               </div>
             </div>
