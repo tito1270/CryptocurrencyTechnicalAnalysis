@@ -39,9 +39,11 @@ const ContactUs: React.FC = () => {
       <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
         {/* Header */}
         <div className="text-center mb-12">
-          <h1 className="text-4xl font-bold text-white mb-4">Contact Us</h1>
+          <h1 className="text-4xl font-bold text-white mb-4">Contact CryptoAnalyzer Pro Support</h1>
           <p className="text-xl text-gray-300 max-w-2xl mx-auto mb-6">
-            Get in touch with our team. We're here to help you with any questions about CryptoAnalyzer Pro.
+            Get professional support for <strong>cryptocurrency trading</strong> and <strong>technical analysis</strong>.
+            Our expert team provides assistance with <strong>Bitcoin analysis</strong>, <strong>crypto scanning tools</strong>,
+            and platform features. Fast response guaranteed.
           </p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
             <button
