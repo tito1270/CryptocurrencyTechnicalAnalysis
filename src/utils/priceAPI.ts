@@ -284,12 +284,12 @@ export const fetchRealTimePrices = async (selectedBrokers?: string[]): Promise<P
       return allPrices;
     } else {
       console.warn('⚠️ Insufficient API data, using enhanced real-time simulation');
-      return generateEnhancedFallbackData();
+      return await generateEnhancedFallbackData();
     }
   } catch (error) {
     console.error('❌ Error in main price fetching:', error);
     console.log('🔄 Using enhanced real-time simulation with current market prices');
-    return generateEnhancedFallbackData();
+    return await generateEnhancedFallbackData();
   }
 };
 
