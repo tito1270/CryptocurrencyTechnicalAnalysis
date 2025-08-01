@@ -40,9 +40,24 @@ const ContactUs: React.FC = () => {
         {/* Header */}
         <div className="text-center mb-12">
           <h1 className="text-4xl font-bold text-white mb-4">Contact Us</h1>
-          <p className="text-xl text-gray-300 max-w-2xl mx-auto">
+          <p className="text-xl text-gray-300 max-w-2xl mx-auto mb-6">
             Get in touch with our team. We're here to help you with any questions about CryptoAnalyzer Pro.
           </p>
+          <div className="flex flex-col sm:flex-row gap-4 justify-center">
+            <button
+              onClick={() => {
+                window.location.href = '/#scan-section';
+                setTimeout(() => {
+                  document.getElementById('scan-section')?.scrollIntoView({ behavior: 'smooth' });
+                }, 100);
+              }}
+              className="inline-flex items-center space-x-2 px-6 py-3 bg-emerald-600 hover:bg-emerald-700 text-white font-semibold rounded-lg transition-all"
+            >
+              <TrendingUp className="w-5 h-5" />
+              <span>Try Free Analysis First</span>
+            </button>
+            <p className="text-sm text-gray-400 self-center">or contact us below</p>
+          </div>
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-12">
