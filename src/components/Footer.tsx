@@ -210,6 +210,59 @@ const Footer: React.FC<FooterProps> = ({ onPageChange }) => {
           </div>
         </div>
 
+        {/* Exchanges Sitemap */}
+        <div className="border-t border-gray-800 mt-8 pt-8">
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
+            <div>
+              <h4 className="text-lg font-semibold text-white mb-4">Major Exchanges</h4>
+              <ul className="space-y-2 text-sm text-gray-300">
+                <li>• Binance Analysis</li>
+                <li>• Coinbase Pro Trading</li>
+                <li>• Kraken Technical Analysis</li>
+                <li>• KuCoin Scanner</li>
+                <li>• Huobi Trading Signals</li>
+              </ul>
+            </div>
+            <div>
+              <h4 className="text-lg font-semibold text-white mb-4">Trading Pairs</h4>
+              <ul className="space-y-2 text-sm text-gray-300">
+                <li>• BTC/USDT Analysis</li>
+                <li>• ETH/USDT Trading</li>
+                <li>• BNB/USDT Signals</li>
+                <li>• SOL/USDT Scanner</li>
+                <li>• ADA/USDT Analysis</li>
+              </ul>
+            </div>
+            <div>
+              <h4 className="text-lg font-semibold text-white mb-4">Market Data</h4>
+              <ul className="space-y-2 text-sm text-gray-300">
+                <li>• Real-Time Crypto Prices</li>
+                <li>• Market Cap Rankings</li>
+                <li>• Volume Analysis</li>
+                <li>• Price Alerts</li>
+                <li>• Market Sentiment</li>
+              </ul>
+            </div>
+            <div>
+              <h4 className="text-lg font-semibold text-white mb-4">Resources</h4>
+              <ul className="space-y-2">
+                <li>
+                  <button
+                    onClick={() => onPageChange('sitemap')}
+                    className="text-gray-300 hover:text-emerald-400 transition-colors text-sm"
+                  >
+                    • Complete Sitemap
+                  </button>
+                </li>
+                <li className="text-gray-300 text-sm">• Trading Education</li>
+                <li className="text-gray-300 text-sm">• API Documentation</li>
+                <li className="text-gray-300 text-sm">• Platform Updates</li>
+                <li className="text-gray-300 text-sm">• Security Features</li>
+              </ul>
+            </div>
+          </div>
+        </div>
+
         {/* Scan CTA */}
         <div className="border-t border-gray-800 mt-8 pt-8">
           <div className="text-center mb-6">
