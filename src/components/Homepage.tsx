@@ -283,10 +283,17 @@ const Homepage: React.FC = () => {
           <h2 className="text-3xl font-bold text-white mb-4">
             Professional Trading Features, Completely Free
           </h2>
-          <p className="text-lg text-gray-300 max-w-3xl mx-auto">
-            Access institutional-quality cryptocurrency analysis tools without paying premium prices. 
+          <p className="text-lg text-gray-300 max-w-3xl mx-auto mb-6">
+            Access institutional-quality cryptocurrency analysis tools without paying premium prices.
             Our platform provides everything professional traders use, available free forever.
           </p>
+          <button
+            onClick={() => document.getElementById('scan-section')?.scrollIntoView({ behavior: 'smooth' })}
+            className="inline-flex items-center space-x-2 px-6 py-3 bg-purple-600 hover:bg-purple-700 text-white font-semibold rounded-lg transition-all"
+          >
+            <BarChart3 className="w-5 h-5" />
+            <span>Access Pro Features</span>
+          </button>
         </div>
         
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
