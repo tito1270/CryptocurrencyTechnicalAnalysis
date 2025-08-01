@@ -191,12 +191,12 @@ const LivePrices: React.FC<LivePricesProps> = ({ selectedPair, selectedBroker })
         )}
       </div>
       
-      {/* Live Data Indicator */}
+      {/* Data Source Indicator */}
       <div className="text-center">
         <div className="inline-flex items-center space-x-2 px-4 py-2 bg-gray-800 border border-gray-700 rounded-lg">
-          <div className="w-2 h-2 bg-emerald-500 rounded-full animate-pulse"></div>
-          <span className="text-sm text-emerald-400 font-medium">LIVE DATA</span>
-          <span className="text-xs text-gray-400">• Auto-refresh every 60 seconds</span>
+          <div className="w-2 h-2 bg-blue-500 rounded-full animate-pulse"></div>
+          <span className="text-sm text-blue-400 font-medium">DEMO DATA</span>
+          <span className="text-xs text-gray-400">• Simulated market conditions • Real-time updates</span>
         </div>
       </div>
     </div>
