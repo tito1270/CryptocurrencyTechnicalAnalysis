@@ -223,47 +223,60 @@ export const fetchBinanceDirectPrices = async (): Promise<PriceData[]> => {
 // Main function to fetch real-time prices from multiple sources
 export const fetchRealTimePrices = async (selectedBrokers?: string[]): Promise<PriceData[]> => {
   console.log('🔄 Fetching REAL LIVE cryptocurrency prices...');
-  
+
   const allPrices: PriceData[] = [];
-  
+  let successfulSources = 0;
+
   try {
-    // Fetch from multiple real APIs in parallel
-    const promises: Promise<PriceData[]>[] = [
-      fetchCoinGeckoPrices(),
-      fetchCoinCapPrices(),
-      fetchBinanceDirectPrices()
-    ];
-
-    const results = await Promise.allSettled(promises);
-    
-    results.forEach((result, index) => {
-      if (result.status === 'fulfilled') {
-        allPrices.push(...result.value);
-        const sourceNames = ['CoinGecko', 'CoinCap', 'Binance'][index];
-        console.log(`✅ ${sourceNames}: ${result.value.length} prices fetched`);
-      } else {
-        const sourceNames = ['CoinGecko', 'CoinCap', 'Binance'][index];
-        console.warn(`❌ ${sourceNames} failed:`, result.reason?.message);
+    // Try CoinGecko first (most reliable for CORS)
+    try {
+      console.log('🦎 Attempting CoinGecko API...');
+      const coinGeckoData = await fetchCoinGeckoPrices();
+      if (coinGeckoData.length > 0) {
+        allPrices.push(...coinGeckoData);
+        successfulSources++;
+        console.log(`✅ CoinGecko: ${coinGeckoData.length} prices fetched successfully`);
       }
-    });
+    } catch (error) {
+      console.warn('⚠️ CoinGecko API failed:', error);
+    }
 
-    // If we have real data, use it
-    if (allPrices.length > 50) {
-      console.log(`🎉 SUCCESS: Fetched ${allPrices.length} REAL LIVE prices from ${[...new Set(allPrices.map(p => p.broker))].length} exchanges`);
-      
+    // Try Binance direct API if needed
+    if (allPrices.length < 100) {
+      try {
+        console.log('🟡 Attempting Binance direct API...');
+        const binanceData = await fetchBinanceDirectPrices();
+        if (binanceData.length > 0) {
+          allPrices.push(...binanceData);
+          successfulSources++;
+          console.log(`✅ Binance: ${binanceData.length} prices fetched successfully`);
+        }
+      } catch (error) {
+        console.warn('⚠️ Binance direct API failed:', error);
+      }
+    }
+
+    // Skip CoinCap API as it's having CORS issues
+    console.log('⚠️ Skipping CoinCap API due to CORS restrictions');
+
+    // If we have sufficient real data, use it
+    if (allPrices.length > 20) {
+      console.log(`🎉 SUCCESS: Fetched ${allPrices.length} REAL LIVE prices from ${successfulSources} API sources`);
+
       // Log BTC price for verification
-      const btcPrice = allPrices.find(p => p.pair === 'BTC/USDT' && p.broker === 'binance');
+      const btcPrice = allPrices.find(p => p.pair === 'BTC/USDT');
       if (btcPrice) {
         console.log(`💰 Current BTC/USDT price: $${btcPrice.price.toFixed(2)}`);
       }
-      
+
       return allPrices;
     } else {
-      console.warn('⚠️ Insufficient real data, falling back to enhanced simulation');
+      console.warn('⚠️ Insufficient API data, using enhanced real-time simulation');
       return generateEnhancedFallbackData();
     }
   } catch (error) {
-    console.error('❌ Error fetching real-time prices:', error);
+    console.error('❌ Error in main price fetching:', error);
+    console.log('🔄 Using enhanced real-time simulation with current market prices');
     return generateEnhancedFallbackData();
   }
 };
