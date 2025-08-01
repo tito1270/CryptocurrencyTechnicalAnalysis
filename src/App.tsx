@@ -184,6 +184,27 @@ function AppContent() {
                   <LivePrices selectedPair={selectedPair} selectedBroker={selectedBroker} />
                 </div>
               </div>
+
+              {/* Bulk Scanner Section */}
+              <div className="border-t border-gray-700 pt-12 mt-12">
+                <div className="text-center mb-8">
+                  <h2 className="text-3xl font-bold text-white mb-4">
+                    Advanced Bulk Market Scanner
+                  </h2>
+                  <p className="text-lg text-gray-300 max-w-4xl mx-auto">
+                    Scan multiple cryptocurrency pairs simultaneously with advanced filtering options. Get comprehensive
+                    technical analysis with news integration for hundreds of pairs in organized batches of 100.
+                  </p>
+                </div>
+
+                <BulkScanner
+                  selectedBroker={selectedBroker}
+                  selectedTimeframe={selectedTimeframe}
+                  tradeType={tradeType}
+                  selectedIndicators={selectedIndicators}
+                  selectedStrategies={selectedStrategies}
+                />
+              </div>
             </div>
           </main>
         );
