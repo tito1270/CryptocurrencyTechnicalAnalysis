@@ -111,11 +111,11 @@ export const fetchCoinGeckoRealPrices = async (): Promise<PriceData[]> => {
 
     console.log('🦎 Fetching optimized data from CoinGecko...');
     
-    // Use smaller batch of most important cryptocurrencies to avoid timeout
-    const essentialIds = Object.values(CORE_CRYPTO_MAPPING).slice(0, 20); // Only top 20 to ensure speed
+    // Use even smaller batch of most important cryptocurrencies to avoid timeout
+    const essentialIds = Object.values(CORE_CRYPTO_MAPPING).slice(0, 15); // Only top 15 for reliability
     const idsString = essentialIds.join(',');
-    
-    const url = `${PRICE_SOURCES.coingecko}/simple/price?ids=${idsString}&vs_currencies=usd&include_24hr_change=true&include_24hr_vol=true&precision=full`;
+
+    const url = `${PRICE_SOURCES.coingecko}/simple/price?ids=${idsString}&vs_currencies=usd&include_24hr_change=true&include_24hr_vol=true&precision=2`;
     
     const response = await makeReliableRequest(url);
     
