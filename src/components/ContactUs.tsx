@@ -1,15 +1,23 @@
-import React, { useState } from 'react';
-import { Mail, Phone, MapPin, Send, MessageSquare, Clock, Globe, TrendingUp } from 'lucide-react';
+import React, { useState, useRef } from 'react';
+import { Mail, Phone, MapPin, Send, MessageSquare, Clock, Globe, TrendingUp, Shield, AlertTriangle } from 'lucide-react';
+import { useReCaptcha } from '../utils/recaptcha';
+import { formSubmissionLimiter, getClientIdentifier } from '../utils/rateLimiter';
+import { AntiSpamValidator } from '../utils/antiSpam';
 
 const ContactUs: React.FC = () => {
   const [formData, setFormData] = useState({
     name: '',
     email: '',
     subject: '',
-    message: ''
+    message: '',
+    website_url: '' // Honeypot field
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [submitStatus, setSubmitStatus] = useState<'idle' | 'success' | 'error'>('idle');
+  const [submitStatus, setSubmitStatus] = useState<'idle' | 'success' | 'error' | 'blocked'>('idle');
+  const [errorMessage, setErrorMessage] = useState('');
+  const [rateLimitInfo, setRateLimitInfo] = useState<{remaining: number; resetTime: number} | null>(null);
+  const formStartTime = useRef<number>(Date.now());
+  const { executeRecaptcha } = useReCaptcha();
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
@@ -22,16 +30,96 @@ const ContactUs: React.FC = () => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsSubmitting(true);
-    
-    // Simulate form submission
-    setTimeout(() => {
-      setSubmitStatus('success');
+    setErrorMessage('');
+
+    try {
+      // Get client identifier for rate limiting
+      const clientId = getClientIdentifier();
+
+      // Check rate limiting
+      const rateLimitCheck = formSubmissionLimiter.checkLimit(clientId, 'contact-form');
+      if (!rateLimitCheck.allowed) {
+        setSubmitStatus('blocked');
+        setErrorMessage(rateLimitCheck.reason || 'Too many requests');
+        setIsSubmitting(false);
+        return;
+      }
+
+      setRateLimitInfo({
+        remaining: rateLimitCheck.remaining,
+        resetTime: rateLimitCheck.resetTime
+      });
+
+      // Execute reCAPTCHA
+      const recaptchaToken = await executeRecaptcha('contact_form');
+      if (!recaptchaToken) {
+        throw new Error('reCAPTCHA verification failed');
+      }
+
+      // Anti-spam validation
+      const timeToFill = Date.now() - formStartTime.current;
+      const spamCheck = AntiSpamValidator.checkSpam(formData, timeToFill);
+
+      if (spamCheck.isSpam) {
+        setSubmitStatus('error');
+        setErrorMessage(`Submission blocked: ${spamCheck.reasons.join(', ')}`);
+        setIsSubmitting(false);
+        return;
+      }
+
+      // Validate email
+      const emailValidation = AntiSpamValidator.validateEmail(formData.email);
+      if (!emailValidation.isValid) {
+        setSubmitStatus('error');
+        setErrorMessage(emailValidation.reason || 'Invalid email');
+        setIsSubmitting(false);
+        return;
+      }
+
+      if (emailValidation.isSuspicious) {
+        setSubmitStatus('error');
+        setErrorMessage('Please use a permanent email address');
+        setIsSubmitting(false);
+        return;
+      }
+
+      // Check submission frequency
+      if (AntiSpamValidator.checkSubmissionFrequency(clientId)) {
+        setSubmitStatus('blocked');
+        setErrorMessage('Too many submissions. Please wait before submitting again.');
+        setIsSubmitting(false);
+        return;
+      }
+
+      // Sanitize form data
+      const sanitizedData = {
+        name: AntiSpamValidator.sanitizeInput(formData.name),
+        email: AntiSpamValidator.sanitizeInput(formData.email),
+        subject: AntiSpamValidator.sanitizeInput(formData.subject),
+        message: AntiSpamValidator.sanitizeInput(formData.message),
+        recaptchaToken,
+        spamScore: spamCheck.confidence
+      };
+
+      // Simulate form submission with security data
+      console.log('Secure form submission:', sanitizedData);
+
+      setTimeout(() => {
+        setSubmitStatus('success');
+        setIsSubmitting(false);
+        setFormData({ name: '', email: '', subject: '', message: '', website_url: '' });
+        formStartTime.current = Date.now(); // Reset timer
+
+        // Reset success message after 5 seconds
+        setTimeout(() => setSubmitStatus('idle'), 5000);
+      }, 1000);
+
+    } catch (error) {
+      console.error('Form submission error:', error);
+      setSubmitStatus('error');
+      setErrorMessage('Submission failed. Please try again.');
       setIsSubmitting(false);
-      setFormData({ name: '', email: '', subject: '', message: '' });
-      
-      // Reset success message after 5 seconds
-      setTimeout(() => setSubmitStatus('idle'), 5000);
-    }, 1000);
+    }
   };
 
   return (
@@ -135,7 +223,30 @@ const ContactUs: React.FC = () => {
             
             {submitStatus === 'success' && (
               <div className="bg-emerald-600/20 border border-emerald-500 rounded-lg p-4 mb-6">
-                <p className="text-emerald-300 font-medium">✅ Message sent successfully! We'll get back to you soon.</p>
+                <div className="flex items-center space-x-2">
+                  <Shield className="w-5 h-5 text-emerald-400" />
+                  <p className="text-emerald-300 font-medium">✅ Message sent successfully! We'll get back to you soon.</p>
+                </div>
+              </div>
+            )}
+
+            {(submitStatus === 'error' || submitStatus === 'blocked') && (
+              <div className="bg-red-600/20 border border-red-500 rounded-lg p-4 mb-6">
+                <div className="flex items-center space-x-2">
+                  <AlertTriangle className="w-5 h-5 text-red-400" />
+                  <p className="text-red-300 font-medium">⚠️ {errorMessage}</p>
+                </div>
+              </div>
+            )}
+
+            {rateLimitInfo && rateLimitInfo.remaining <= 2 && (
+              <div className="bg-yellow-600/20 border border-yellow-500 rounded-lg p-4 mb-6">
+                <div className="flex items-center space-x-2">
+                  <Clock className="w-5 h-5 text-yellow-400" />
+                  <p className="text-yellow-300 text-sm">
+                    ℹ️ {rateLimitInfo.remaining} submission{rateLimitInfo.remaining !== 1 ? 's' : ''} remaining before rate limit
+                  </p>
+                </div>
               </div>
             )}
 
@@ -211,6 +322,23 @@ const ContactUs: React.FC = () => {
                 />
               </div>
 
+              {/* Honeypot field - hidden from users */}
+              <input
+                type="text"
+                name="website_url"
+                value={formData.website_url}
+                onChange={handleInputChange}
+                style={{
+                  position: 'absolute',
+                  left: '-9999px',
+                  top: '-9999px',
+                  opacity: 0,
+                  pointerEvents: 'none',
+                  tabIndex: -1
+                }}
+                autoComplete="off"
+              />
+
               <button
                 type="submit"
                 disabled={isSubmitting}
@@ -231,6 +359,10 @@ const ContactUs: React.FC = () => {
             </form>
 
             <div className="mt-6 pt-6 border-t border-gray-700">
+              <div className="flex items-center justify-center space-x-2 mb-3">
+                <Shield className="w-4 h-4 text-emerald-400" />
+                <p className="text-sm text-emerald-400 font-medium">Protected by reCAPTCHA & anti-spam filters</p>
+              </div>
               <p className="text-sm text-gray-400 text-center">
                 By submitting this form, you agree to our Privacy Policy and Terms of Service.
               </p>
