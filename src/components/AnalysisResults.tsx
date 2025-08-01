@@ -69,14 +69,26 @@ const AnalysisResults: React.FC<AnalysisResultsProps> = ({ result }) => {
   return (
     <div className="bg-gray-800 border border-gray-700 rounded-lg p-6 space-y-6">
       <div className="flex items-center justify-between">
-        <h2 className="text-xl font-semibold text-white">Analysis Results</h2>
+        <div>
+          <h2 className="text-xl font-semibold text-white">Analysis Results</h2>
+          <div className="flex items-center space-x-3 mt-1">
+            <div className="flex items-center space-x-2">
+              <span className="text-sm text-gray-400">{result.pair}</span>
+              <div className="w-1 h-1 bg-gray-500 rounded-full"></div>
+              <span className="text-sm text-gray-400">{result.broker.toUpperCase()}</span>
+            </div>
+            <div className="flex items-center space-x-2">
+              <span className="text-lg font-bold text-emerald-400">${result.entryPrice.toFixed(6)}</span>
+              <div className="w-2 h-2 bg-emerald-500 rounded-full animate-pulse"></div>
+              <span className="text-xs text-emerald-400">LIVE PRICE</span>
+            </div>
+          </div>
+        </div>
         <div className="flex items-center space-x-2">
           <div className={`px-3 py-1 rounded-full text-sm font-medium flex items-center space-x-2 ${getRecommendationColor(result.recommendation).split(' ')[1]} text-white`}>
             {getRecommendationIcon(result.recommendation)}
             <span>{result.recommendation.replace('_', ' ')}</span>
           </div>
-          <div className="w-2 h-2 bg-emerald-500 rounded-full animate-pulse"></div>
-          <span className="text-xs text-emerald-400">LIVE ANALYSIS</span>
         </div>
       </div>
       
