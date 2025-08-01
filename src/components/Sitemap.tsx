@@ -294,6 +294,11 @@ const Sitemap: React.FC<SitemapProps> = ({ onPageChange }) => {
           </div>
         </div>
 
+        {/* SEO Automation Manager */}
+        <div className="mt-12">
+          <SEOManager autoSubmit={false} />
+        </div>
+
         {/* XML Sitemap Info */}
         <div className="mt-12 bg-gray-800 rounded-lg p-6 border border-gray-700">
           <h3 className="text-lg font-semibold text-white mb-4">SEO & XML Sitemap Information</h3>
