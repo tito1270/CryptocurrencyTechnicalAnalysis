@@ -45,24 +45,36 @@ export const fetchCoinGeckoPrices = async (): Promise<PriceData[]> => {
   try {
     const cacheKey = 'coingecko_prices';
     const cached = priceCache.get(cacheKey);
-    
+
     if (cached && Date.now() - cached.timestamp < CACHE_DURATION) {
+      console.log('📦 Using cached CoinGecko data');
       return parseCoinGeckoData(cached.data);
     }
 
     console.log('🦎 Fetching real prices from CoinGecko API...');
-    
-    // Get top 250 cryptocurrencies with market data
-    const response = await makeApiRequest(
-      `${API_ENDPOINTS.coingecko}/coins/markets?vs_currency=usd&order=market_cap_desc&per_page=250&page=1&sparkline=false&price_change_percentage=24h`
+
+    // Try smaller batch first (top 100) for better reliability
+    const response = await axios.get(
+      `${API_ENDPOINTS.coingecko}/coins/markets?vs_currency=usd&order=market_cap_desc&per_page=100&page=1&sparkline=false&price_change_percentage=24h`,
+      {
+        timeout: 8000,
+        headers: {
+          'Accept': 'application/json'
+        }
+      }
     );
 
-    priceCache.set(cacheKey, { data: response.data, timestamp: Date.now() });
-    const parsed = parseCoinGeckoData(response.data);
-    console.log(`✅ CoinGecko: Fetched ${parsed.length} real cryptocurrency prices`);
-    return parsed;
-  } catch (error) {
-    console.error('Error fetching CoinGecko prices:', error);
+    if (response.data && Array.isArray(response.data) && response.data.length > 0) {
+      priceCache.set(cacheKey, { data: response.data, timestamp: Date.now() });
+      const parsed = parseCoinGeckoData(response.data);
+      console.log(`✅ CoinGecko: Successfully fetched ${parsed.length} real cryptocurrency prices`);
+      return parsed;
+    } else {
+      console.warn('⚠️ CoinGecko returned empty or invalid data');
+      return [];
+    }
+  } catch (error: any) {
+    console.warn('⚠️ CoinGecko API failed:', error?.message || error);
     return [];
   }
 };
