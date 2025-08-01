@@ -123,9 +123,11 @@ function AppContent() {
     ]);
 
     // Clear URL parameters
-    const params = new URLSearchParams(location.search);
-    params.delete('pair');
-    navigate(`${location.pathname}`, { replace: true });
+    if (navigate && location) {
+      const params = new URLSearchParams(location.search);
+      params.delete('pair');
+      navigate(`${location.pathname}`, { replace: true });
+    }
   };
 
   // SEO data for each page - Google compliant with proper length limits
