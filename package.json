@@ -7,7 +7,12 @@
     "dev": "vite",
     "build": "vite build",
     "lint": "eslint .",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "seo:generate": "node scripts/deploy-hooks.js pre-deploy",
+    "seo:submit": "node scripts/deploy-hooks.js post-deploy",
+    "seo:full": "node scripts/deploy-hooks.js full-deploy",
+    "deploy:prod": "npm run build && npm run seo:full",
+    "deploy:staging": "NODE_ENV=staging npm run build && npm run seo:generate"
   },
   "dependencies": {
     "@types/react-router-dom": "^5.3.3",
