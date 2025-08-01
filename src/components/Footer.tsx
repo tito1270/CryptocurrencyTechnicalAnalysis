@@ -22,8 +22,9 @@ const Footer: React.FC<FooterProps> = ({ onPageChange }) => {
               </div>
             </div>
             <p className="text-gray-300 mb-4 max-w-md">
-              Advanced cryptocurrency technical analysis platform providing real-time market data, 
-              trading signals, and comprehensive analysis tools for professional traders and investors.
+              <strong>Free cryptocurrency technical analysis platform</strong> providing real-time Bitcoin, Ethereum, and altcoin market data
+              across 12+ exchanges. Professional trading signals, advanced technical indicators, and comprehensive crypto analysis tools
+              for both new and experienced cryptocurrency traders. Always free, no subscriptions required.
             </p>
             <div className="flex items-center space-x-4 text-sm text-gray-400">
               <span>© 2024 CryptoAnalyzer Pro</span>
