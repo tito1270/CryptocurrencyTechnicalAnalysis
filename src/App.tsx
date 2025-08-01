@@ -7,6 +7,7 @@ import ContactUs from './components/ContactUs';
 import PrivacyPolicy from './components/PrivacyPolicy';
 import TermsOfService from './components/TermsOfService';
 import Disclaimer from './components/Disclaimer';
+import Homepage from './components/Homepage';
 import TradingControls from './components/TradingControls';
 import AnalysisResults from './components/AnalysisResults';
 import LivePrices from './components/LivePrices';
