@@ -49,6 +49,18 @@ const Homepage: React.FC = () => {
               <span className="text-purple-300 font-medium">25+ Indicators</span>
             </div>
           </div>
+
+          <div className="text-center">
+            <button
+              onClick={() => document.getElementById('scan-section')?.scrollIntoView({ behavior: 'smooth' })}
+              className="inline-flex items-center space-x-3 px-8 py-4 bg-gradient-to-r from-emerald-500 to-blue-600 hover:from-emerald-600 hover:to-blue-700 text-white font-bold text-lg rounded-xl transition-all transform hover:scale-105 shadow-xl hover:shadow-emerald-500/25"
+            >
+              <TrendingUp className="w-6 h-6" />
+              <span>START FREE ANALYSIS NOW</span>
+              <ArrowRight className="w-5 h-5" />
+            </button>
+            <p className="text-sm text-gray-400 mt-2">No registration • Instant results • Always free</p>
+          </div>
         </div>
       </section>
 
