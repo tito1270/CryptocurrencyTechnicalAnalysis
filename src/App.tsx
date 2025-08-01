@@ -298,7 +298,8 @@ function AppContent() {
         title={seoData.title}
         description={seoData.description}
         keywords={seoData.keywords}
-        structuredData={seoData.structuredData}
+        page={currentPage}
+        enableOptimization={true}
       />
       <Navigation currentPage={currentPage} onPageChange={setCurrentPage} onRefresh={handleRefresh} />
       {renderCurrentPage()}
