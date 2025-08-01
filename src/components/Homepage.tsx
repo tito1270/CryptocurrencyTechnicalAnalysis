@@ -147,10 +147,17 @@ const Homepage: React.FC = () => {
             <h2 className="text-3xl font-bold text-white mb-4">
               How Our Cryptocurrency Analysis Scanning Works
             </h2>
-            <p className="text-lg text-gray-300 max-w-3xl mx-auto">
-              Our advanced scanning system analyzes cryptocurrency markets using sophisticated algorithms and proven trading methodologies. 
+            <p className="text-lg text-gray-300 max-w-3xl mx-auto mb-6">
+              Our advanced scanning system analyzes cryptocurrency markets using sophisticated algorithms and proven trading methodologies.
               Here's the complete step-by-step process of how our free analysis tool delivers professional-grade market insights.
             </p>
+            <button
+              onClick={() => document.getElementById('scan-section')?.scrollIntoView({ behavior: 'smooth' })}
+              className="inline-flex items-center space-x-2 px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded-lg transition-all"
+            >
+              <Activity className="w-5 h-5" />
+              <span>Experience the Process</span>
+            </button>
           </div>
           
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-12">
