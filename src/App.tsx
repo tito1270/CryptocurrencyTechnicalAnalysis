@@ -298,7 +298,7 @@ function AppContent() {
               </div>
 
               {/* Bulk Scanner Section */}
-              <div className="border-t border-gray-700 pt-12 mt-12">
+              <div id="bulk-scanner" className="border-t border-gray-700 pt-12 mt-12 scroll-mt-20">
                 <div className="text-center mb-8">
                   <h2 className="text-3xl font-bold text-white mb-4">
                     Advanced Bulk Market Scanner
