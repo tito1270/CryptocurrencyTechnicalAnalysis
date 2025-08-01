@@ -265,7 +265,9 @@ function AppContent() {
                     onAnalyze={handleAnalyze}
                   />
 
-                  <CryptoNews />
+                  <div id="crypto-news">
+                    <CryptoNews />
+                  </div>
                 </div>
 
                 {/* Right Column - Results and Data */}
