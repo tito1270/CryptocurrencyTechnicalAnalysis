@@ -57,6 +57,24 @@ const Navigation: React.FC<NavigationProps> = ({ currentPage, onPageChange }) =>
                 </button>
               );
             })}
+
+            {/* Scan Now Button */}
+            <button
+              onClick={() => {
+                if (currentPage !== 'home') {
+                  handlePageChange('home');
+                  setTimeout(() => {
+                    document.getElementById('scan-section')?.scrollIntoView({ behavior: 'smooth' });
+                  }, 100);
+                } else {
+                  document.getElementById('scan-section')?.scrollIntoView({ behavior: 'smooth' });
+                }
+              }}
+              className="flex items-center space-x-2 px-4 py-2 rounded-lg text-sm font-bold transition-all bg-gradient-to-r from-emerald-500 to-blue-600 text-white hover:from-emerald-600 hover:to-blue-700 ml-4 shadow-lg hover:shadow-emerald-500/25"
+            >
+              <TrendingUp className="w-4 h-4" />
+              <span>SCAN NOW</span>
+            </button>
           </div>
 
           {/* Mobile menu button */}
