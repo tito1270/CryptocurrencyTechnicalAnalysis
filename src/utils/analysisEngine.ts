@@ -139,7 +139,7 @@ const calculateOverallSentiment = (
   return { sentiment, confidence };
 };
 
-const getCurrentPrice = async (pair: string, broker: string): Promise<number> => {
+const getCurrentPrice = async (pair: string, broker: string): Promise<{price: number, source: 'LIVE_API' | 'FALLBACK', timestamp: number}> => {
   try {
     console.log(`Fetching live price for ${pair} from ${broker.toUpperCase()} exchange...`);
 
@@ -147,7 +147,11 @@ const getCurrentPrice = async (pair: string, broker: string): Promise<number> =>
     const realPrice = await getPairPrice(broker, pair);
     if (realPrice && realPrice > 0) {
       console.log(`✅ Live price from ${broker.toUpperCase()}: $${realPrice.toFixed(6)} for ${pair}`);
-      return realPrice;
+      return {
+        price: realPrice,
+        source: 'LIVE_API',
+        timestamp: Date.now()
+      };
     } else {
       console.warn(`⚠️ No price data available for ${pair} on ${broker.toUpperCase()}`);
     }
@@ -157,7 +161,11 @@ const getCurrentPrice = async (pair: string, broker: string): Promise<number> =>
 
   // Fallback to simulated price only if broker-specific price fails
   console.log(`🔄 Using fallback price for ${pair} (${broker.toUpperCase()} unavailable)`);
-  return getFallbackPrice(pair);
+  return {
+    price: getFallbackPrice(pair),
+    source: 'FALLBACK',
+    timestamp: Date.now()
+  };
 };
 
 const calculatePriceLevels = (currentPrice: number, sentiment: string, newsImpact: string) => {
@@ -366,7 +374,7 @@ const generateRecommendation = (
     explanation += `• 📉 Multiple bearish signals detected across technical indicators\n`;
     explanation += `• ⚠️ Negative momentum and trend reversal signs\n`;
     if (newsAnalysis.impact === 'HIGH' && newsAnalysis.analysis.includes('BEARISH')) {
-      explanation += `��� 📰 Negative news sentiment creating downward pressure\n`;
+      explanation += `• 📰 Negative news sentiment creating downward pressure\n`;
     }
     explanation += `• 🛡️ Risk-reward ratio of ${riskRewardRatio}:1 favors short position\n`;
   } else {
