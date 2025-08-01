@@ -87,16 +87,91 @@ const Footer: React.FC<FooterProps> = ({ onPageChange }) => {
             </ul>
           </div>
 
-          {/* Features */}
+          {/* Trading Tools */}
           <div>
-            <h4 className="text-lg font-semibold text-white mb-4">Platform Features</h4>
+            <h4 className="text-lg font-semibold text-white mb-4">Crypto Trading Tools</h4>
+            <ul className="space-y-2">
+              <li>
+                <button
+                  onClick={() => {
+                    onPageChange('home');
+                    setTimeout(() => {
+                      document.getElementById('scan-section')?.scrollIntoView({ behavior: 'smooth' });
+                    }, 100);
+                  }}
+                  className="text-gray-300 hover:text-emerald-400 transition-colors text-sm"
+                >
+                  • Bitcoin Technical Analysis
+                </button>
+              </li>
+              <li>
+                <button
+                  onClick={() => {
+                    onPageChange('home');
+                    setTimeout(() => {
+                      document.getElementById('scan-section')?.scrollIntoView({ behavior: 'smooth' });
+                    }, 100);
+                  }}
+                  className="text-gray-300 hover:text-emerald-400 transition-colors text-sm"
+                >
+                  • Ethereum Trading Signals
+                </button>
+              </li>
+              <li>
+                <button
+                  onClick={() => {
+                    onPageChange('home');
+                    setTimeout(() => {
+                      document.getElementById('bulk-scanner')?.scrollIntoView({ behavior: 'smooth' });
+                    }, 100);
+                  }}
+                  className="text-gray-300 hover:text-emerald-400 transition-colors text-sm"
+                >
+                  • Bulk Crypto Scanner
+                </button>
+              </li>
+              <li>
+                <button
+                  onClick={() => {
+                    onPageChange('home');
+                    setTimeout(() => {
+                      document.getElementById('crypto-news')?.scrollIntoView({ behavior: 'smooth' });
+                    }, 100);
+                  }}
+                  className="text-gray-300 hover:text-emerald-400 transition-colors text-sm"
+                >
+                  • Crypto News Analysis
+                </button>
+              </li>
+              <li>
+                <button
+                  onClick={() => {
+                    onPageChange('home');
+                    setTimeout(() => {
+                      document.getElementById('live-prices')?.scrollIntoView({ behavior: 'smooth' });
+                    }, 100);
+                  }}
+                  className="text-gray-300 hover:text-emerald-400 transition-colors text-sm"
+                >
+                  • Live Crypto Prices
+                </button>
+              </li>
+              <li className="text-gray-300 text-sm">• 25+ Technical Indicators</li>
+            </ul>
+          </div>
+
+          {/* Crypto Categories */}
+          <div>
+            <h4 className="text-lg font-semibold text-white mb-4">Cryptocurrency Analysis</h4>
             <ul className="space-y-2 text-sm text-gray-300">
-              <li>• Bitcoin & Ethereum Analysis</li>
-              <li>• 25+ Technical Indicators</li>
-              <li>• Multi-Exchange Support</li>
-              <li>• Real-Time Price Data</li>
-              <li>• Free Trading Signals</li>
-              <li>• Cryptocurrency Scanner</li>
+              <li>• Bitcoin (BTC) Analysis</li>
+              <li>• Ethereum (ETH) Trading</li>
+              <li>• DeFi Token Scanner</li>
+              <li>• Meme Coin Analysis</li>
+              <li>• Layer 2 Tokens</li>
+              <li>• AI Cryptocurrency</li>
+              <li>• Gaming Token Analysis</li>
+              <li>• Stablecoin Monitoring</li>
             </ul>
           </div>
 
