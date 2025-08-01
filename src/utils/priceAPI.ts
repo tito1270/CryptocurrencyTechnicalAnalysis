@@ -315,9 +315,9 @@ export const fetchRealTimePrices = async (selectedBrokers?: string[]): Promise<P
   let allPrices: PriceData[] = [];
   
   try {
-    // Set overall timeout for the entire operation
-    const operationTimeout = new Promise<PriceData[]>((_, reject) => 
-      setTimeout(() => reject(new Error('Operation timeout')), 20000)
+    // Set overall timeout for the entire operation - reduced for better UX
+    const operationTimeout = new Promise<PriceData[]>((_, reject) =>
+      setTimeout(() => reject(new Error('Operation timeout after 12 seconds')), 12000)
     );
     
     const fetchOperation = async (): Promise<PriceData[]> => {
