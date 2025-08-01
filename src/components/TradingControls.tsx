@@ -43,6 +43,7 @@ const TradingControls: React.FC<TradingControlsProps> = ({
   const currentBroker = brokers.find(b => b.id === selectedBroker);
   const [showAdvancedPairSearch, setShowAdvancedPairSearch] = useState(false);
   const [copied, setCopied] = useState(false);
+  const [currentDropdownPage, setCurrentDropdownPage] = useState(0);
   
   // Show limited pairs for the dropdown, ensuring selected pair is always first
   const limitedPairs = useMemo(() => {
