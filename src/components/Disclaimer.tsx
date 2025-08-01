@@ -1,5 +1,5 @@
 import React from 'react';
-import { AlertTriangle, TrendingDown, Shield, Info, DollarSign, BookOpen } from 'lucide-react';
+import { AlertTriangle, TrendingDown, Shield, Info, DollarSign, BookOpen, TrendingUp } from 'lucide-react';
 
 const Disclaimer: React.FC = () => {
   return (
