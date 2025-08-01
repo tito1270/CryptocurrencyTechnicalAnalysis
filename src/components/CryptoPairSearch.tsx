@@ -62,6 +62,29 @@ const CryptoPairSearch: React.FC<CryptoPairSearchProps> = ({
     return filtered.sort();
   }, [pairs, searchQuery, selectedTypes, selectedQuoteCurrencies]);
 
+  // Get available quote currencies from all pairs
+  const availableQuoteCurrencies = useMemo(() => {
+    const quoteCurrencies = new Set<string>();
+    pairs.forEach(pair => {
+      const quoteCurrency = pair.split('/')[1];
+      if (quoteCurrency) {
+        quoteCurrencies.add(quoteCurrency.toUpperCase());
+      }
+    });
+    // Sort by common currencies first, then alphabetically
+    const commonCurrencies = ['USDT', 'BTC', 'ETH', 'BUSD', 'USDC', 'BNB', 'FDUSD'];
+    const sortedCurrencies = Array.from(quoteCurrencies).sort((a, b) => {
+      const aIndex = commonCurrencies.indexOf(a);
+      const bIndex = commonCurrencies.indexOf(b);
+
+      if (aIndex !== -1 && bIndex !== -1) return aIndex - bIndex;
+      if (aIndex !== -1) return -1;
+      if (bIndex !== -1) return 1;
+      return a.localeCompare(b);
+    });
+    return sortedCurrencies;
+  }, [pairs]);
+
   // Pagination
   const totalPages = Math.ceil(filteredPairs.length / ITEMS_PER_PAGE);
   const startIndex = (currentPage - 1) * ITEMS_PER_PAGE;
