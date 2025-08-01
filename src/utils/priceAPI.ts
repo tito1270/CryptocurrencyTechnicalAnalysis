@@ -324,11 +324,11 @@ export const fetchRealTimePrices = async (selectedBrokers?: string[]): Promise<P
       // Try CoinGecko with improved error handling
       const coinGeckoData = await fetchCoinGeckoRealPrices();
       
-      if (coinGeckoData.length > 30) {
+      if (coinGeckoData.length > 20) {
         console.log(`✅ CoinGecko SUCCESS: ${coinGeckoData.length} prices fetched`);
         return coinGeckoData;
       } else {
-        console.log('🔄 CoinGecko insufficient, using enhanced fallback');
+        console.log(`⚠️ CoinGecko returned only ${coinGeckoData.length} prices, using enhanced fallback`);
         return await generateEnhancedFallback();
       }
     };
