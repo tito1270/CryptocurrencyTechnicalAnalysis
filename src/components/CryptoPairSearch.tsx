@@ -24,6 +24,7 @@ const CryptoPairSearch: React.FC<CryptoPairSearchProps> = ({
   const [selectedQuoteCurrencies, setSelectedQuoteCurrencies] = useState<string[]>(['all']);
   const [currentPage, setCurrentPage] = useState(1);
   const [showTypeFilter, setShowTypeFilter] = useState(false);
+  const [selectingPair, setSelectingPair] = useState<string | null>(null);
 
   // Reset to first page when search query or filters change
   useEffect(() => {
