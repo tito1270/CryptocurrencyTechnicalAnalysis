@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { TrendingUp, Menu, X, Home, Info, Mail, Shield, FileText, AlertTriangle } from 'lucide-react';
+import { TrendingUp, Menu, X, Home, Info, Mail, Shield, FileText, AlertTriangle, Map } from 'lucide-react';
 
 interface NavigationProps {
   currentPage: string;
