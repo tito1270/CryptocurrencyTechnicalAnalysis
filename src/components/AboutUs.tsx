@@ -36,10 +36,11 @@ const AboutUs: React.FC = () => {
             Our Mission
           </h2>
           <p className="text-gray-300 text-lg leading-relaxed">
-            CryptoAnalyzer Pro is a comprehensive digital platform designed to empower cryptocurrency traders 
-            and investors with professional-grade market analysis tools. We provide real-time trading signals, 
-            technical analysis, and market insights across 15+ major cryptocurrency exchanges, helping both 
-            novice and experienced traders make informed decisions in the volatile crypto market.
+            <strong>CryptoAnalyzer Pro</strong> is a comprehensive digital platform designed to empower <strong>cryptocurrency traders</strong>
+            and investors with professional-grade <strong>market analysis tools</strong>. We provide real-time <strong>trading signals</strong>,
+            <strong>technical analysis</strong>, and market insights across 15+ major <strong>cryptocurrency exchanges</strong>, helping both
+            novice and experienced traders make informed decisions in the volatile <strong>crypto market</strong>. Our platform specializes in
+            <strong>Bitcoin analysis</strong>, <strong>Ethereum trading</strong>, and comprehensive <strong>altcoin scanning</strong> tools.
           </p>
         </div>
 
