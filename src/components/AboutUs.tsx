@@ -11,9 +11,21 @@ const AboutUs: React.FC = () => {
             <TrendingUp className="w-8 h-8 text-white" />
           </div>
           <h1 className="text-4xl font-bold text-white mb-4">About CryptoAnalyzer Pro</h1>
-          <p className="text-xl text-gray-300 max-w-2xl mx-auto">
+          <p className="text-xl text-gray-300 max-w-2xl mx-auto mb-6">
             Your trusted partner in cryptocurrency trading and market analysis since 2024
           </p>
+          <button
+            onClick={() => {
+              window.location.href = '/#scan-section';
+              setTimeout(() => {
+                document.getElementById('scan-section')?.scrollIntoView({ behavior: 'smooth' });
+              }, 100);
+            }}
+            className="inline-flex items-center space-x-2 px-6 py-3 bg-emerald-600 hover:bg-emerald-700 text-white font-semibold rounded-lg transition-all"
+          >
+            <TrendingUp className="w-5 h-5" />
+            <span>Try Our Platform</span>
+          </button>
         </div>
 
         {/* Mission Statement */}
@@ -179,12 +191,26 @@ const AboutUs: React.FC = () => {
           <p className="text-gray-300 mb-6">
             Join thousands of traders who trust CryptoAnalyzer Pro for their market analysis needs.
           </p>
-          <a
-            href="#contact"
-            className="inline-flex items-center px-6 py-3 bg-gradient-to-r from-emerald-600 to-blue-600 text-white font-semibold rounded-lg hover:from-emerald-700 hover:to-blue-700 transition-all duration-200"
-          >
-            Get Started Today
-          </a>
+          <div className="flex flex-col sm:flex-row gap-4 justify-center">
+            <button
+              onClick={() => {
+                window.location.href = '/#scan-section';
+                setTimeout(() => {
+                  document.getElementById('scan-section')?.scrollIntoView({ behavior: 'smooth' });
+                }, 100);
+              }}
+              className="inline-flex items-center space-x-2 px-8 py-3 bg-gradient-to-r from-emerald-600 to-blue-600 text-white font-bold rounded-lg hover:from-emerald-700 hover:to-blue-700 transition-all duration-200 transform hover:scale-105"
+            >
+              <TrendingUp className="w-5 h-5" />
+              <span>START FREE ANALYSIS</span>
+            </button>
+            <button
+              onClick={() => window.location.href = '/#contact'}
+              className="inline-flex items-center px-6 py-3 bg-gray-700 text-white font-semibold rounded-lg hover:bg-gray-600 transition-all duration-200"
+            >
+              Learn More
+            </button>
+          </div>
         </div>
       </div>
     </div>

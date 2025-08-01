@@ -7,6 +7,7 @@ import ContactUs from './components/ContactUs';
 import PrivacyPolicy from './components/PrivacyPolicy';
 import TermsOfService from './components/TermsOfService';
 import Disclaimer from './components/Disclaimer';
+import Homepage from './components/Homepage';
 import TradingControls from './components/TradingControls';
 import AnalysisResults from './components/AnalysisResults';
 import LivePrices from './components/LivePrices';
@@ -115,54 +116,72 @@ function AppContent() {
       default:
         return (
           <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-              {/* Left Column - Controls */}
-              <div className="lg:col-span-1 space-y-6">
-                <TradingControls
-                  selectedBroker={selectedBroker}
-                  selectedPair={selectedPair}
-                  selectedTimeframe={selectedTimeframe}
-                  tradeType={tradeType}
-                  selectedIndicators={selectedIndicators}
-                  selectedStrategies={selectedStrategies}
-                  onBrokerChange={setSelectedBroker}
-                  onPairChange={handlePairChange}
-                  onTimeframeChange={setSelectedTimeframe}
-                  onTradeTypeChange={setTradeType}
-                  onIndicatorToggle={handleIndicatorToggle}
-                  onStrategyToggle={handleStrategyToggle}
-                  onAnalyze={handleAnalyze}
-                />
-                
-                <CryptoNews />
+            {/* SEO Homepage Content */}
+            <div className="mb-12">
+              <Homepage />
+            </div>
+
+            {/* Trading Analysis Section */}
+            <div id="scan-section" className="border-t border-gray-700 pt-12 scroll-mt-20">
+              <div className="text-center mb-8">
+                <h2 className="text-3xl font-bold text-white mb-4">
+                  Start Your Free Cryptocurrency Analysis
+                </h2>
+                <p className="text-lg text-gray-300 max-w-3xl mx-auto">
+                  Select your cryptocurrency pair, choose your preferred exchange, and configure technical indicators
+                  to receive professional-grade market analysis instantly. No registration required.
+                </p>
               </div>
-              
-              {/* Right Column - Results and Data */}
-              <div className="lg:col-span-2 space-y-6">
-                {isAnalyzing && (
-                  <div className="bg-gray-800 border border-gray-700 rounded-lg p-8 text-center">
-                    <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-emerald-500 mb-4"></div>
-                    <div className="text-white font-medium">Analyzing Market Data...</div>
-                    <div className="text-sm text-gray-400 mt-2">
-                      Processing {selectedIndicators.length} indicators and {selectedStrategies.length} strategies
+
+              <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+                {/* Left Column - Controls */}
+                <div className="lg:col-span-1 space-y-6">
+                  <TradingControls
+                    selectedBroker={selectedBroker}
+                    selectedPair={selectedPair}
+                    selectedTimeframe={selectedTimeframe}
+                    tradeType={tradeType}
+                    selectedIndicators={selectedIndicators}
+                    selectedStrategies={selectedStrategies}
+                    onBrokerChange={setSelectedBroker}
+                    onPairChange={handlePairChange}
+                    onTimeframeChange={setSelectedTimeframe}
+                    onTradeTypeChange={setTradeType}
+                    onIndicatorToggle={handleIndicatorToggle}
+                    onStrategyToggle={handleStrategyToggle}
+                    onAnalyze={handleAnalyze}
+                  />
+
+                  <CryptoNews />
+                </div>
+
+                {/* Right Column - Results and Data */}
+                <div className="lg:col-span-2 space-y-6">
+                  {isAnalyzing && (
+                    <div className="bg-gray-800 border border-gray-700 rounded-lg p-8 text-center">
+                      <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-emerald-500 mb-4"></div>
+                      <div className="text-white font-medium">Analyzing Market Data...</div>
+                      <div className="text-sm text-gray-400 mt-2">
+                        Processing {selectedIndicators.length} indicators and {selectedStrategies.length} strategies
+                      </div>
                     </div>
-                  </div>
-                )}
-                
-                {analysisResult && !isAnalyzing && (
-                  <AnalysisResults result={analysisResult} />
-                )}
-                
-                {!analysisResult && !isAnalyzing && (
-                  <div className="bg-gray-800 border border-gray-700 rounded-lg p-8 text-center">
-                    <div className="text-gray-400 text-lg mb-2">Ready for Market Analysis</div>
-                    <div className="text-sm text-gray-500">
-                      Configure your settings and click "Analyze Market" to get started
+                  )}
+
+                  {analysisResult && !isAnalyzing && (
+                    <AnalysisResults result={analysisResult} />
+                  )}
+
+                  {!analysisResult && !isAnalyzing && (
+                    <div className="bg-gray-800 border border-gray-700 rounded-lg p-8 text-center">
+                      <div className="text-gray-400 text-lg mb-2">Ready for Market Analysis</div>
+                      <div className="text-sm text-gray-500">
+                        Configure your settings and click "Analyze Market" to get started with your free cryptocurrency technical analysis
+                      </div>
                     </div>
-                  </div>
-                )}
-                
-                <LivePrices selectedPair={selectedPair} selectedBroker={selectedBroker} />
+                  )}
+
+                  <LivePrices selectedPair={selectedPair} selectedBroker={selectedBroker} />
+                </div>
               </div>
             </div>
           </main>

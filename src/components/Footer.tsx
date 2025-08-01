@@ -11,7 +11,7 @@ const Footer: React.FC<FooterProps> = ({ onPageChange }) => {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
         <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
           {/* Company Info */}
-          <div className="col-span-1 md:col-span-2">
+          <div className="col-span-1 md:col-span-1">
             <div className="flex items-center space-x-3 mb-4">
               <div className="flex items-center justify-center w-10 h-10 bg-gradient-to-r from-emerald-500 to-blue-600 rounded-lg">
                 <TrendingUp className="w-6 h-6 text-white" />
@@ -22,8 +22,9 @@ const Footer: React.FC<FooterProps> = ({ onPageChange }) => {
               </div>
             </div>
             <p className="text-gray-300 mb-4 max-w-md">
-              Advanced cryptocurrency technical analysis platform providing real-time market data, 
-              trading signals, and comprehensive analysis tools for professional traders and investors.
+              <strong>Free cryptocurrency technical analysis platform</strong> providing real-time Bitcoin, Ethereum, and altcoin market data
+              across 12+ exchanges. Professional trading signals, advanced technical indicators, and comprehensive crypto analysis tools
+              for both new and experienced cryptocurrency traders. Always free, no subscriptions required.
             </p>
             <div className="flex items-center space-x-4 text-sm text-gray-400">
               <span>© 2024 CryptoAnalyzer Pro</span>
@@ -75,6 +76,19 @@ const Footer: React.FC<FooterProps> = ({ onPageChange }) => {
             </ul>
           </div>
 
+          {/* Features */}
+          <div>
+            <h4 className="text-lg font-semibold text-white mb-4">Platform Features</h4>
+            <ul className="space-y-2 text-sm text-gray-300">
+              <li>• Bitcoin & Ethereum Analysis</li>
+              <li>• 25+ Technical Indicators</li>
+              <li>• Multi-Exchange Support</li>
+              <li>• Real-Time Price Data</li>
+              <li>• Free Trading Signals</li>
+              <li>• Cryptocurrency Scanner</li>
+            </ul>
+          </div>
+
           {/* Legal & Support */}
           <div>
             <h4 className="text-lg font-semibold text-white mb-4">Legal & Support</h4>
@@ -107,6 +121,25 @@ const Footer: React.FC<FooterProps> = ({ onPageChange }) => {
                 </button>
               </li>
             </ul>
+          </div>
+        </div>
+
+        {/* Scan CTA */}
+        <div className="border-t border-gray-800 mt-8 pt-8">
+          <div className="text-center mb-6">
+            <button
+              onClick={() => {
+                window.location.href = '/#scan-section';
+                setTimeout(() => {
+                  document.getElementById('scan-section')?.scrollIntoView({ behavior: 'smooth' });
+                }, 100);
+              }}
+              className="inline-flex items-center space-x-3 px-8 py-4 bg-gradient-to-r from-emerald-500 to-blue-600 hover:from-emerald-600 hover:to-blue-700 text-white font-bold text-lg rounded-xl transition-all transform hover:scale-105 shadow-xl hover:shadow-emerald-500/25"
+            >
+              <TrendingUp className="w-6 h-6" />
+              <span>START FREE ANALYSIS NOW</span>
+            </button>
+            <p className="text-sm text-gray-400 mt-2">Quick access to cryptocurrency scanning tools</p>
           </div>
         </div>
 
