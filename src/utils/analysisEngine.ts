@@ -3,6 +3,13 @@ import { technicalIndicators } from '../data/indicators';
 import { tradingStrategies } from '../data/strategies';
 import { cryptoNews } from '../data/news';
 import { getPairPrice, getFallbackPrice } from './priceAPI';
+import { 
+  generateDailyCandleData, 
+  detectAllPatterns, 
+  analyzePatterns,
+  type CandlestickPattern,
+  type PatternAnalysisResult 
+} from './candlestickPatterns';
 
 export const performAnalysis = async (
   pair: string,
@@ -21,35 +28,55 @@ export const performAnalysis = async (
     selectedStrategies.includes(strat.id)
   );
   
+  // Get LIVE current price with metadata from specific broker
+  const priceData = await getCurrentPrice(pair, broker);
+  const currentPrice = priceData.price;
+  
   // Calculate overall sentiment based on indicators and strategies
   const { sentiment, confidence } = calculateOverallSentiment(activeIndicators, activeStrategies);
+  
+  // Generate daily candlestick data for pattern analysis
+  const dailyCandleData = generateDailyCandleData(currentPrice, sentiment);
+  
+  // Detect all candlestick patterns
+  const detectedPatterns = detectAllPatterns(dailyCandleData);
+  
+  // Analyze patterns for overall sentiment and success probability
+  const patternAnalysis = analyzePatterns(detectedPatterns);
   
   // Analyze news impact for the pair
   const newsAnalysis = analyzeNewsImpact(pair, activeIndicators, activeStrategies);
   
-  // Get LIVE current price with metadata from specific broker
-  const priceData = await getCurrentPrice(pair, broker);
-  const currentPrice = priceData.price;
-  const priceLevels = calculatePriceLevels(currentPrice, sentiment, newsAnalysis.impact);
-  
-  // Generate comprehensive recommendation
-  const recommendation = generateRecommendation(
+  // Enhanced sentiment calculation incorporating candlestick patterns
+  const enhancedSentiment = calculateEnhancedSentiment(
     sentiment, 
     confidence, 
+    patternAnalysis.overallPatternSentiment,
+    patternAnalysis.patternConfidence,
+    newsAnalysis.impact
+  );
+  
+  const priceLevels = calculatePriceLevels(currentPrice, enhancedSentiment.sentiment, newsAnalysis.impact);
+  
+  // Generate comprehensive recommendation with pattern integration
+  const recommendation = generateEnhancedRecommendation(
+    enhancedSentiment.sentiment, 
+    enhancedSentiment.confidence, 
     newsAnalysis, 
     activeIndicators, 
     activeStrategies,
     currentPrice,
-    priceLevels
+    priceLevels,
+    patternAnalysis
   );
   
   return {
     pair,
     broker,
-    timeframe,
+    timeframe: 'DAILY', // Always use daily for candlestick pattern analysis
     tradeType,
-    overallSentiment: sentiment,
-    confidence,
+    overallSentiment: enhancedSentiment.sentiment,
+    confidence: enhancedSentiment.confidence,
     recommendation: recommendation.action,
     recommendedEntryPrice: recommendation.entryPrice,
     profitTarget: recommendation.profitTarget,
@@ -66,7 +93,87 @@ export const performAnalysis = async (
     indicators: activeIndicators,
     strategies: activeStrategies,
     priceSource: priceData.source,
-    priceTimestamp: priceData.timestamp
+    priceTimestamp: priceData.timestamp,
+    // New candlestick pattern fields
+    candlestickPatterns: detectedPatterns,
+    patternSentiment: patternAnalysis.overallPatternSentiment,
+    patternConfidence: patternAnalysis.patternConfidence,
+    successProbability: enhancedSentiment.successProbability,
+    patternAnalysis: patternAnalysis.analysis,
+    trendDirection: patternAnalysis.trendDirection
+  };
+};
+
+// Enhanced sentiment calculation incorporating patterns
+const calculateEnhancedSentiment = (
+  technicalSentiment: string,
+  technicalConfidence: number,
+  patternSentiment: string,
+  patternConfidence: number,
+  newsImpact: string
+) => {
+  // Weight allocation: 40% technical, 35% patterns, 25% news
+  const technicalWeight = 0.40;
+  const patternWeight = 0.35;
+  const newsWeight = 0.25;
+  
+  // Convert sentiments to numerical scores
+  const getSentimentScore = (sentiment: string): number => {
+    switch (sentiment) {
+      case 'STRONG_BULLISH': return 2;
+      case 'BULLISH': return 1;
+      case 'NEUTRAL': return 0;
+      case 'BEARISH': return -1;
+      case 'STRONG_BEARISH': return -2;
+      default: return 0;
+    }
+  };
+  
+  const technicalScore = getSentimentScore(technicalSentiment);
+  const patternScore = getSentimentScore(patternSentiment);
+  
+  // News score based on impact
+  let newsScore = 0;
+  if (newsImpact === 'HIGH') newsScore = 0.5;
+  else if (newsImpact === 'MEDIUM') newsScore = 0.3;
+  else newsScore = 0.1;
+  
+  // Calculate weighted sentiment score
+  const weightedScore = (
+    technicalScore * technicalWeight +
+    patternScore * patternWeight +
+    newsScore * newsWeight
+  );
+  
+  // Calculate combined confidence
+  const combinedConfidence = Math.min(95, Math.max(50, 
+    (technicalConfidence * technicalWeight + 
+     patternConfidence * patternWeight + 
+     70 * newsWeight) // Base news confidence of 70%
+  ));
+  
+  // Calculate success probability based on pattern reliability and overall sentiment strength
+  const baseSuccessProbability = 50;
+  const sentimentStrengthBonus = Math.abs(weightedScore) * 15; // Up to 30% bonus for strong sentiment
+  const confidenceBonus = (combinedConfidence - 50) * 0.4; // Up to 18% bonus for high confidence
+  const patternReliabilityBonus = patternConfidence > 70 ? 10 : patternConfidence > 50 ? 5 : 0;
+  
+  const successProbability = Math.min(95, Math.max(35, 
+    baseSuccessProbability + sentimentStrengthBonus + confidenceBonus + patternReliabilityBonus
+  ));
+  
+  // Convert back to sentiment
+  let finalSentiment: AnalysisResult['overallSentiment'];
+  if (weightedScore > 1.0) finalSentiment = 'STRONG_BULLISH';
+  else if (weightedScore > 0.3) finalSentiment = 'BULLISH';
+  else if (weightedScore < -1.0) finalSentiment = 'STRONG_BEARISH';
+  else if (weightedScore < -0.3) finalSentiment = 'BEARISH';
+  else finalSentiment = 'NEUTRAL';
+  
+  return {
+    sentiment: finalSentiment,
+    confidence: Math.round(combinedConfidence),
+    successProbability: Math.round(successProbability)
   };
 };
 
@@ -365,14 +472,15 @@ const analyzeNewsImpact = (pair: string, indicators: TechnicalIndicator[], strat
   };
 };
 
-const generateRecommendation = (
+const generateEnhancedRecommendation = (
   sentiment: string,
   confidence: number,
   newsAnalysis: { impact: string; analysis: string; upcomingEvents?: string[] },
   indicators: TechnicalIndicator[],
   strategies: TradingStrategy[],
   currentPrice: number,
-  priceLevels: any
+  priceLevels: any,
+  patternAnalysis: PatternAnalysisResult
 ) => {
   let action: 'STRONG_BUY' | 'BUY' | 'HOLD' | 'SELL' | 'STRONG_SELL';
   let explanation = '';
@@ -390,7 +498,7 @@ const generateRecommendation = (
     action = 'HOLD';
   }
   
-  // Adjust based on news impact
+  // Adjust based on news impact and pattern analysis
   if (newsAnalysis.impact === 'HIGH') {
     if (newsAnalysis.analysis.includes('BULLISH') && (action === 'HOLD' || action === 'BUY')) {
       action = action === 'BUY' ? 'STRONG_BUY' : 'BUY';
@@ -399,77 +507,112 @@ const generateRecommendation = (
     }
   }
   
-  // Calculate recommended prices based on action
+  // Pattern-based adjustments
+  if (patternAnalysis.overallPatternSentiment === 'STRONG_BULLISH' && patternAnalysis.patternConfidence > 75) {
+    if (action === 'HOLD' || action === 'BUY') action = 'STRONG_BUY';
+  } else if (patternAnalysis.overallPatternSentiment === 'STRONG_BEARISH' && patternAnalysis.patternConfidence > 75) {
+    if (action === 'HOLD' || action === 'SELL') action = 'STRONG_SELL';
+  }
+  
+  // Calculate recommended prices based on action and patterns
   let entryPrice = currentPrice;
   let profitTarget = currentPrice;
   let stopLoss = currentPrice;
   let riskRewardRatio = 1;
   
+  // Adjust entry, target, and stop based on pattern analysis
+  const patternMultiplier = patternAnalysis.successProbability > 75 ? 1.2 : 
+                           patternAnalysis.successProbability > 60 ? 1.1 : 1.0;
+  
   switch (action) {
     case 'STRONG_BUY':
-      entryPrice = currentPrice * 1.005; // Enter slightly above current price
-      profitTarget = currentPrice * 1.15; // 15% profit target
-      stopLoss = currentPrice * 0.95; // 5% stop loss
-      riskRewardRatio = 3.0;
+      entryPrice = currentPrice * 1.005;
+      profitTarget = currentPrice * (1.15 * patternMultiplier);
+      stopLoss = currentPrice * 0.95;
+      riskRewardRatio = 3.0 * patternMultiplier;
       break;
     case 'BUY':
       entryPrice = currentPrice * 1.002;
-      profitTarget = currentPrice * 1.10; // 10% profit target
-      stopLoss = currentPrice * 0.96; // 4% stop loss
-      riskRewardRatio = 2.5;
+      profitTarget = currentPrice * (1.10 * patternMultiplier);
+      stopLoss = currentPrice * 0.96;
+      riskRewardRatio = 2.5 * patternMultiplier;
       break;
     case 'HOLD':
       entryPrice = currentPrice;
-      profitTarget = currentPrice * 1.05; // 5% profit target
-      stopLoss = currentPrice * 0.97; // 3% stop loss
+      profitTarget = currentPrice * 1.05;
+      stopLoss = currentPrice * 0.97;
       riskRewardRatio = 1.7;
       break;
     case 'SELL':
       entryPrice = currentPrice * 0.998;
-      profitTarget = currentPrice * 0.90; // 10% profit on short
-      stopLoss = currentPrice * 1.04; // 4% stop loss
-      riskRewardRatio = 2.5;
+      profitTarget = currentPrice * (0.90 / patternMultiplier);
+      stopLoss = currentPrice * 1.04;
+      riskRewardRatio = 2.5 * patternMultiplier;
       break;
     case 'STRONG_SELL':
       entryPrice = currentPrice * 0.995;
-      profitTarget = currentPrice * 0.85; // 15% profit on short
-      stopLoss = currentPrice * 1.05; // 5% stop loss
-      riskRewardRatio = 3.0;
+      profitTarget = currentPrice * (0.85 / patternMultiplier);
+      stopLoss = currentPrice * 1.05;
+      riskRewardRatio = 3.0 * patternMultiplier;
       break;
   }
   
-  // Generate detailed explanation
-  explanation = `🎯 **${action} RECOMMENDATION** (Confidence: ${confidence}%)\n\n`;
+  // Generate comprehensive explanation with candlestick pattern integration
+  explanation = `🎯 **${action} RECOMMENDATION** (Confidence: ${confidence}%)\n`;
+  explanation += `📊 **Success Probability: ${patternAnalysis.successProbability.toFixed(1)}%**\n\n`;
   
-  explanation += `**Technical Analysis Summary:**\n`;
+  explanation += `**🕯️ DAILY TIMEFRAME ANALYSIS SUMMARY:**\n`;
   explanation += `• Overall Sentiment: ${sentiment.replace('_', ' ')}\n`;
+  explanation += `• Pattern Sentiment: ${patternAnalysis.overallPatternSentiment.replace('_', ' ')}\n`;
+  explanation += `• Trend Direction: ${patternAnalysis.trendDirection}\n`;
+  explanation += `• Pattern Confidence: ${patternAnalysis.patternConfidence.toFixed(1)}%\n\n`;
+  
+  explanation += `**📈 TECHNICAL ANALYSIS COMPONENTS:**\n`;
   explanation += `• Active Indicators: ${indicators.length} (${indicators.filter(i => i.signal === 'BUY').length} bullish, ${indicators.filter(i => i.signal === 'SELL').length} bearish)\n`;
-  explanation += `• Active Strategies: ${strategies.length} (${strategies.filter(s => s.signal.includes('BUY')).length} bullish, ${strategies.filter(s => s.signal.includes('SELL')).length} bearish)\n\n`;
+  explanation += `• Active Strategies: ${strategies.length} (${strategies.filter(s => s.signal.includes('BUY')).length} bullish, ${strategies.filter(s => s.signal.includes('SELL')).length} bearish)\n`;
+  explanation += `• Candlestick Patterns: ${patternAnalysis.patterns.length} detected (Daily timeframe)\n`;
+  explanation += `• News Impact Level: ${newsAnalysis.impact}\n\n`;
   
-  explanation += `**News Impact Analysis:**\n`;
-  explanation += `• News Impact Level: ${newsAnalysis.impact}\n`;
-  explanation += `• ${newsAnalysis.analysis.split('\n')[0]}\n\n`;
+  // Add pattern-specific insights
+  if (patternAnalysis.patterns.length > 0) {
+    const recentPatterns = patternAnalysis.patterns.slice(0, 3);
+    explanation += `**🕯️ KEY CANDLESTICK PATTERNS:**\n`;
+    recentPatterns.forEach(pattern => {
+      const emoji = pattern.type === 'BULLISH' ? '🟢' : pattern.type === 'BEARISH' ? '🔴' : '🟡';
+      explanation += `${emoji} ${pattern.name} - ${pattern.successProbability}% success rate (${pattern.reliability} reliability)\n`;
+    });
+    explanation += `\n`;
+  }
   
-  explanation += `**Key Reasoning:**\n`;
+  explanation += `**🎯 KEY REASONING:**\n`;
   
   if (action.includes('BUY')) {
-    explanation += `• 📈 Multiple bullish signals detected across technical indicators\n`;
-    explanation += `• 🎯 Strong momentum and trend confirmation\n`;
+    explanation += `• 📈 Multiple bullish signals across technical indicators and candlestick patterns\n`;
+    explanation += `• 🎯 Strong momentum confirmation from daily timeframe analysis\n`;
+    if (patternAnalysis.trendDirection === 'UPTREND') {
+      explanation += `• 📊 Candlestick patterns confirm uptrend continuation\n`;
+    }
     if (newsAnalysis.impact === 'HIGH' && newsAnalysis.analysis.includes('BULLISH')) {
       explanation += `• 📰 Positive news sentiment providing additional upward catalyst\n`;
     }
-    explanation += `• 💰 Favorable risk-reward ratio of ${riskRewardRatio}:1\n`;
+    explanation += `• 💰 Favorable risk-reward ratio of ${riskRewardRatio.toFixed(1)}:1\n`;
+    explanation += `• 🎲 Success probability enhanced by pattern reliability: ${patternAnalysis.successProbability.toFixed(1)}%\n`;
   } else if (action.includes('SELL')) {
-    explanation += `• 📉 Multiple bearish signals detected across technical indicators\n`;
-    explanation += `• ⚠️ Negative momentum and trend reversal signs\n`;
+    explanation += `• 📉 Multiple bearish signals across technical indicators and candlestick patterns\n`;
+    explanation += `• ⚠️ Negative momentum and trend reversal confirmation from daily analysis\n`;
+    if (patternAnalysis.trendDirection === 'DOWNTREND') {
+      explanation += `• 📊 Candlestick patterns confirm downtrend continuation\n`;
+    }
     if (newsAnalysis.impact === 'HIGH' && newsAnalysis.analysis.includes('BEARISH')) {
       explanation += `• 📰 Negative news sentiment creating downward pressure\n`;
     }
-    explanation += `• 🛡️ Risk-reward ratio of ${riskRewardRatio}:1 favors short position\n`;
+    explanation += `• 🛡️ Risk-reward ratio of ${riskRewardRatio.toFixed(1)}:1 favors short position\n`;
+    explanation += `• 🎲 Success probability enhanced by pattern reliability: ${patternAnalysis.successProbability.toFixed(1)}%\n`;
   } else {
-    explanation += `• ⚖️ Mixed signals from technical indicators\n`;
-    explanation += `• 🔄 Market consolidation phase detected\n`;
-    explanation += `• ⏳ Waiting for clearer directional signals\n`;
+    explanation += `• ⚖️ Mixed signals from technical indicators and patterns\n`;
+    explanation += `• 🔄 Market consolidation phase detected on daily timeframe\n`;
+    explanation += `• ⏳ Waiting for clearer directional signals from patterns\n`;
+    explanation += `• 📊 Pattern analysis suggests ${patternAnalysis.trendDirection.toLowerCase()} market structure\n`;
     if (newsAnalysis.upcomingEvents && newsAnalysis.upcomingEvents.length > 0) {
       explanation += `• 📅 Upcoming events may provide trading opportunities:\n`;
       newsAnalysis.upcomingEvents.forEach(event => {
@@ -478,18 +621,24 @@ const generateRecommendation = (
     }
   }
   
-  explanation += `\n**Risk Management:**\n`;
+  explanation += `\n**💼 RISK MANAGEMENT (Enhanced by Pattern Analysis):**\n`;
   explanation += `• Entry Price: $${entryPrice.toFixed(4)}\n`;
   explanation += `• Profit Target: $${profitTarget.toFixed(4)}\n`;
   explanation += `• Stop Loss: $${stopLoss.toFixed(4)}\n`;
-  explanation += `• Risk-Reward Ratio: ${riskRewardRatio}:1\n`;
+  explanation += `• Risk-Reward Ratio: ${riskRewardRatio.toFixed(1)}:1\n`;
+  explanation += `• Success Probability: ${patternAnalysis.successProbability.toFixed(1)}%\n`;
   
   if (action === 'HOLD') {
-    explanation += `\n**Hold Strategy:**\n`;
+    explanation += `\n**⏸️ HOLD STRATEGY:**\n`;
     explanation += `• Monitor for breakout above $${priceLevels.resistanceLevel.toFixed(4)} for bullish continuation\n`;
     explanation += `• Watch for breakdown below $${priceLevels.supportLevel.toFixed(4)} for bearish reversal\n`;
-    explanation += `• Keep position size moderate due to uncertainty\n`;
+    explanation += `• Keep position size moderate due to mixed signals\n`;
+    explanation += `• Pattern analysis suggests ${patternAnalysis.trendDirection.toLowerCase()} consolidation\n`;
   }
+  
+  // Add pattern analysis summary
+  explanation += `\n**🕯️ CANDLESTICK PATTERN SUMMARY:**\n`;
+  explanation += `${patternAnalysis.analysis.split('\n').slice(0, 5).join('\n')}\n`;
   
   return {
     action,

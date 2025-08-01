@@ -49,6 +49,21 @@ export interface PriceData {
   timestamp: number;
 }
 
+// Import candlestick pattern types
+export interface CandlestickPattern {
+  id: string;
+  name: string;
+  type: 'BULLISH' | 'BEARISH' | 'NEUTRAL' | 'REVERSAL' | 'CONTINUATION';
+  reliability: 'HIGH' | 'MEDIUM' | 'LOW';
+  successProbability: number;
+  signal: 'STRONG_BUY' | 'BUY' | 'NEUTRAL' | 'SELL' | 'STRONG_SELL';
+  description: string;
+  candles: number;
+  strength: number;
+  timeframe: string;
+  detectedAt: number;
+}
+
 export interface AnalysisResult {
   pair: string;
   broker: string;
@@ -73,6 +88,13 @@ export interface AnalysisResult {
   strategies: TradingStrategy[];
   priceSource: 'LIVE_API' | 'FALLBACK';
   priceTimestamp: number;
+  // New candlestick pattern fields
+  candlestickPatterns?: CandlestickPattern[];
+  patternSentiment?: 'STRONG_BULLISH' | 'BULLISH' | 'NEUTRAL' | 'BEARISH' | 'STRONG_BEARISH';
+  patternConfidence?: number;
+  successProbability?: number;
+  patternAnalysis?: string;
+  trendDirection?: 'UPTREND' | 'DOWNTREND' | 'SIDEWAYS';
 }
 
 export interface NewsItem {
