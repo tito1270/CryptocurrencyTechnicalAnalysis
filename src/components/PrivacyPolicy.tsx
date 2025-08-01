@@ -23,11 +23,15 @@ const PrivacyPolicy: React.FC = () => {
               <Eye className="w-6 h-6 text-emerald-400 mr-3" />
               Introduction
             </h2>
-            <p className="text-gray-300 leading-relaxed">
-              CryptoAnalyzer Pro ("we," "our," or "us") is committed to protecting your privacy. This Privacy Policy
-              explains how we collect, use, disclose, and safeguard your information when you visit our website
-              <strong className="text-white"><p>https://cryptoanalyzer.pro/</p></strong>
-              <div className="ml-4">
+            <div className="text-gray-300 leading-relaxed space-y-4">
+              <p>
+                CryptoAnalyzer Pro ("we," "our," or "us") is committed to protecting your privacy. This Privacy Policy
+                explains how we collect, use, disclose, and safeguard your information when you visit our website
+                <strong className="text-white"> https://cryptoanalyzer.pro </strong>
+                and use our services.
+              </p>
+
+              <div className="ml-4 bg-gray-900 rounded-lg p-4 border border-gray-700">
                 <h3 className="text-lg font-semibold text-white mb-1">Business Hours</h3>
                 <p className="text-gray-300 mb-2">When you can reach us.</p>
                 <div className="text-yellow-400 space-y-1">
@@ -35,10 +39,13 @@ const PrivacyPolicy: React.FC = () => {
                   <p className="mt-1">Saturday: 10:00 AM - 4:00 PM PST</p>
                   <p className="mt-1">Sunday: Closed</p>
                 </div>
-              </div> and use our services.
-              Please read this privacy policy carefully. If you do not agree with the terms of this privacy policy,
-              please do not access the site.
-            </p>
+              </div>
+
+              <p>
+                Please read this privacy policy carefully. If you do not agree with the terms of this privacy policy,
+                please do not access the site.
+              </p>
+            </div>
           </section>
 
           {/* Information We Collect */}
