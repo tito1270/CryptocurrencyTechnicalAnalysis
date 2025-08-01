@@ -132,28 +132,11 @@ const parseCoinGeckoData = (data: any[]): PriceData[] => {
   return results;
 };
 
-// Fetch additional prices from CoinCap API as backup
+// Fetch additional prices from CoinCap API as backup (DISABLED due to CORS issues)
 export const fetchCoinCapPrices = async (): Promise<PriceData[]> => {
-  try {
-    const cacheKey = 'coincap_prices';
-    const cached = priceCache.get(cacheKey);
-    
-    if (cached && Date.now() - cached.timestamp < CACHE_DURATION) {
-      return parseCoinCapData(cached.data);
-    }
-
-    console.log('📊 Fetching additional prices from CoinCap API...');
-    
-    const response = await makeApiRequest(`${API_ENDPOINTS.coincap}/assets?limit=100`);
-    
-    priceCache.set(cacheKey, { data: response.data.data, timestamp: Date.now() });
-    const parsed = parseCoinCapData(response.data.data);
-    console.log(`✅ CoinCap: Fetched ${parsed.length} additional prices`);
-    return parsed;
-  } catch (error) {
-    console.error('Error fetching CoinCap prices:', error);
-    return [];
-  }
+  // Disabled due to CORS network errors
+  console.log('⚠️ CoinCap API disabled due to CORS restrictions');
+  return [];
 };
 
 // Parse CoinCap API response
@@ -287,7 +270,7 @@ export const fetchRealTimePrices = async (selectedBrokers?: string[]): Promise<P
       return await generateEnhancedFallbackData();
     }
   } catch (error) {
-    console.error('❌ Error in main price fetching:', error);
+    console.error('�� Error in main price fetching:', error);
     console.log('🔄 Using enhanced real-time simulation with current market prices');
     return await generateEnhancedFallbackData();
   }
