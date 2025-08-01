@@ -2,7 +2,7 @@ User-agent: *
 Allow: /
 
 # Sitemap location
-Sitemap: https://cryptoanalyzer-pro.com/sitemap.xml
+Sitemap: https://cryptoanalyzer.pro/sitemap.xml
 
 # Crawl delay (optional, 1 second)
 Crawl-delay: 1
