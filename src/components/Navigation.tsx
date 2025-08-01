@@ -102,6 +102,25 @@ const Navigation: React.FC<NavigationProps> = ({ currentPage, onPageChange }) =>
         {isMobileMenuOpen && (
           <div className="lg:hidden border-t border-gray-800">
             <div className="py-4 space-y-1">
+              {/* Mobile Scan Button */}
+              <button
+                onClick={() => {
+                  if (currentPage !== 'home') {
+                    handlePageChange('home');
+                    setTimeout(() => {
+                      document.getElementById('scan-section')?.scrollIntoView({ behavior: 'smooth' });
+                    }, 100);
+                  } else {
+                    document.getElementById('scan-section')?.scrollIntoView({ behavior: 'smooth' });
+                  }
+                  setIsMobileMenuOpen(false);
+                }}
+                className="w-full flex items-center space-x-3 px-4 py-3 text-left rounded-lg transition-all bg-gradient-to-r from-emerald-500 to-blue-600 text-white hover:from-emerald-600 hover:to-blue-700 font-bold shadow-lg mb-2"
+              >
+                <TrendingUp className="w-5 h-5" />
+                <span>START SCANNING NOW</span>
+              </button>
+
               {navigationItems.map((item) => {
                 const Icon = item.icon;
                 return (
