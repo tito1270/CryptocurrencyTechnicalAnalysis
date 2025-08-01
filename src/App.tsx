@@ -325,6 +325,12 @@ function AppContent() {
 
   return (
     <div className="min-h-screen bg-gray-900">
+      <SEOHead
+        title={seoData.title}
+        description={seoData.description}
+        keywords={seoData.keywords}
+        structuredData={seoData.structuredData}
+      />
       <Navigation currentPage={currentPage} onPageChange={setCurrentPage} />
       {renderCurrentPage()}
       <Footer onPageChange={setCurrentPage} />
