@@ -194,9 +194,44 @@ const TradingControls: React.FC<TradingControlsProps> = ({
               {copied ? <Check className="w-4 h-4" /> : <Copy className="w-4 h-4" />}
             </button>
           </div>
-          <div className="flex items-center space-x-2 text-xs text-gray-400 mt-1">
-            <Link className="w-3 h-3" />
-            <span>Quick select or search {currentBroker?.pairs.length || 0} pairs • URL updates automatically</span>
+          <div className="flex items-center justify-between text-xs text-gray-400 mt-1">
+            <div className="flex items-center space-x-2">
+              <Link className="w-3 h-3" />
+              <span>Quick select or search {currentBroker?.pairs.length || 0} pairs • URL updates automatically</span>
+            </div>
+
+            {/* Dropdown Pagination Controls */}
+            {totalPages > 1 && (
+              <div className="flex items-center space-x-2">
+                <button
+                  onClick={() => setCurrentDropdownPage(prev => Math.max(0, prev - 1))}
+                  disabled={!hasPrevPage}
+                  className={`px-2 py-1 rounded text-xs font-medium transition-colors ${
+                    hasPrevPage
+                      ? 'bg-gray-600 hover:bg-gray-500 text-gray-300'
+                      : 'bg-gray-700 text-gray-500 cursor-not-allowed'
+                  }`}
+                >
+                  PREV
+                </button>
+
+                <span className="text-xs text-gray-400">
+                  {currentDropdownPage + 1} / {totalPages}
+                </span>
+
+                <button
+                  onClick={() => setCurrentDropdownPage(prev => Math.min(totalPages - 1, prev + 1))}
+                  disabled={!hasNextPage}
+                  className={`px-2 py-1 rounded text-xs font-medium transition-colors ${
+                    hasNextPage
+                      ? 'bg-emerald-600 hover:bg-emerald-700 text-white'
+                      : 'bg-gray-700 text-gray-500 cursor-not-allowed'
+                  }`}
+                >
+                  NEXT
+                </button>
+              </div>
+            )}
           </div>
         </div>
       </div>
