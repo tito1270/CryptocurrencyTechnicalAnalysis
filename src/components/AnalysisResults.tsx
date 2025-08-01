@@ -79,8 +79,10 @@ const AnalysisResults: React.FC<AnalysisResultsProps> = ({ result }) => {
             </div>
             <div className="flex items-center space-x-2">
               <span className="text-lg font-bold text-emerald-400">${result.entryPrice.toFixed(6)}</span>
-              <div className="w-2 h-2 bg-emerald-500 rounded-full animate-pulse"></div>
-              <span className="text-xs text-emerald-400">LIVE PRICE</span>
+              <div className={`w-2 h-2 rounded-full animate-pulse ${result.priceSource === 'LIVE_API' ? 'bg-emerald-500' : 'bg-yellow-500'}`}></div>
+              <span className={`text-xs ${result.priceSource === 'LIVE_API' ? 'text-emerald-400' : 'text-yellow-400'}`}>
+                {result.priceSource === 'LIVE_API' ? `LIVE ${result.broker.toUpperCase()}` : 'FALLBACK'}
+              </span>
             </div>
           </div>
         </div>
