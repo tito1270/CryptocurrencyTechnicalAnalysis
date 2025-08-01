@@ -1,12 +1,13 @@
 import React, { useState } from 'react';
-import { TrendingUp, Menu, X, Home, Info, Mail, Shield, FileText, AlertTriangle, Map } from 'lucide-react';
+import { TrendingUp, Menu, X, Home, Info, Mail, Shield, FileText, AlertTriangle, Map, RefreshCw } from 'lucide-react';
 
 interface NavigationProps {
   currentPage: string;
   onPageChange: (page: string) => void;
+  onRefresh?: () => void;
 }
 
-const Navigation: React.FC<NavigationProps> = ({ currentPage, onPageChange }) => {
+const Navigation: React.FC<NavigationProps> = ({ currentPage, onPageChange, onRefresh }) => {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
   const navigationItems = [
@@ -24,12 +25,25 @@ const Navigation: React.FC<NavigationProps> = ({ currentPage, onPageChange }) =>
     setIsMobileMenuOpen(false);
   };
 
+  const handleHomeAndRefresh = () => {
+    handlePageChange('home');
+    if (onRefresh) {
+      onRefresh();
+    }
+  };
+
+  const handleRefresh = () => {
+    if (onRefresh) {
+      onRefresh();
+    }
+  };
+
   return (
     <nav className="bg-gray-900 border-b border-gray-800 sticky top-0 z-50">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex items-center justify-between h-16">
           {/* Logo */}
-          <div className="flex items-center space-x-3 cursor-pointer" onClick={() => handlePageChange('home')}>
+          <div className="flex items-center space-x-3 cursor-pointer" onClick={handleHomeAndRefresh}>
             <div className="flex items-center justify-center w-10 h-10 bg-gradient-to-r from-emerald-500 to-blue-600 rounded-lg">
               <TrendingUp className="w-6 h-6 text-white" />
             </div>
@@ -59,6 +73,16 @@ const Navigation: React.FC<NavigationProps> = ({ currentPage, onPageChange }) =>
               );
             })}
 
+            {/* Refresh Button */}
+            <button
+              onClick={handleRefresh}
+              className="flex items-center space-x-2 px-3 py-2 rounded-lg text-sm font-medium transition-all bg-gray-700 hover:bg-gray-600 text-gray-300 hover:text-white ml-2 shadow-md"
+              title="Refresh all data and reset analysis"
+            >
+              <RefreshCw className="w-4 h-4" />
+              <span className="hidden sm:inline">Refresh</span>
+            </button>
+
             {/* Scan Now Button */}
             <button
               onClick={() => {
@@ -71,7 +95,7 @@ const Navigation: React.FC<NavigationProps> = ({ currentPage, onPageChange }) =>
                   document.getElementById('scan-section')?.scrollIntoView({ behavior: 'smooth' });
                 }
               }}
-              className="flex items-center space-x-2 px-4 py-2 rounded-lg text-sm font-bold transition-all bg-gradient-to-r from-emerald-500 to-blue-600 text-white hover:from-emerald-600 hover:to-blue-700 ml-4 shadow-lg hover:shadow-emerald-500/25"
+              className="flex items-center space-x-2 px-4 py-2 rounded-lg text-sm font-bold transition-all bg-gradient-to-r from-emerald-500 to-blue-600 text-white hover:from-emerald-600 hover:to-blue-700 ml-2 shadow-lg hover:shadow-emerald-500/25"
             >
               <TrendingUp className="w-4 h-4" />
               <span>SCAN NOW</span>
@@ -103,6 +127,18 @@ const Navigation: React.FC<NavigationProps> = ({ currentPage, onPageChange }) =>
         {isMobileMenuOpen && (
           <div className="lg:hidden border-t border-gray-800">
             <div className="py-4 space-y-1">
+              {/* Mobile Refresh Button */}
+              <button
+                onClick={() => {
+                  handleRefresh();
+                  setIsMobileMenuOpen(false);
+                }}
+                className="w-full flex items-center space-x-3 px-4 py-3 text-left rounded-lg transition-all bg-gray-700 hover:bg-gray-600 text-gray-300 hover:text-white font-medium shadow-md mb-2"
+              >
+                <RefreshCw className="w-5 h-5" />
+                <span>REFRESH ALL DATA</span>
+              </button>
+
               {/* Mobile Scan Button */}
               <button
                 onClick={() => {
