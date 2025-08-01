@@ -64,7 +64,9 @@ export const performAnalysis = async (
     supportLevel: priceLevels.supportLevel,
     resistanceLevel: priceLevels.resistanceLevel,
     indicators: activeIndicators,
-    strategies: activeStrategies
+    strategies: activeStrategies,
+    priceSource: priceData.source,
+    priceTimestamp: priceData.timestamp
   };
 };
 
