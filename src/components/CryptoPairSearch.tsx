@@ -199,19 +199,26 @@ const CryptoPairSearch: React.FC<CryptoPairSearchProps> = ({
               <button
                 key={pair}
                 onClick={() => handlePairSelect(pair)}
-                className={`flex items-center justify-between p-3 rounded-lg text-left transition-colors ${
+                className={`group flex items-center justify-between p-3 rounded-lg text-left transition-all duration-200 hover:scale-[1.02] ${
                   selectedPair === pair
-                    ? 'bg-emerald-600 text-white'
-                    : 'bg-gray-700 hover:bg-gray-600 text-gray-300'
+                    ? 'bg-emerald-600 text-white shadow-lg ring-2 ring-emerald-400'
+                    : 'bg-gray-700 hover:bg-gray-600 text-gray-300 hover:shadow-md'
                 }`}
+                title={`Click to scan ${pair} - URL will update automatically`}
               >
                 <div className="flex items-center space-x-3">
                   <div className={`w-2 h-2 rounded-full ${getPairCategoryColor(pair)}`}></div>
                   <span className="font-medium">{pair}</span>
+                  <ExternalLink className="w-3 h-3 opacity-0 group-hover:opacity-100 transition-opacity text-emerald-400" />
                 </div>
-                <span className="text-xs text-gray-400">
-                  {getPairCategory(pair)}
-                </span>
+                <div className="flex flex-col items-end">
+                  <span className="text-xs text-gray-400">
+                    {getPairCategory(pair)}
+                  </span>
+                  <span className="text-xs text-emerald-400 opacity-0 group-hover:opacity-100 transition-opacity">
+                    Go to Scan
+                  </span>
+                </div>
               </button>
             ))}
           </div>
