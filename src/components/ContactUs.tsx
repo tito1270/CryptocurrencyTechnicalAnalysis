@@ -39,9 +39,11 @@ const ContactUs: React.FC = () => {
       <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
         {/* Header */}
         <div className="text-center mb-12">
-          <h1 className="text-4xl font-bold text-white mb-4">Contact Us</h1>
+          <h1 className="text-4xl font-bold text-white mb-4">Contact CryptoAnalyzer Pro Support</h1>
           <p className="text-xl text-gray-300 max-w-2xl mx-auto mb-6">
-            Get in touch with our team. We're here to help you with any questions about CryptoAnalyzer Pro.
+            Get professional support for <strong>cryptocurrency trading</strong> and <strong>technical analysis</strong>.
+            Our expert team provides assistance with <strong>Bitcoin analysis</strong>, <strong>crypto scanning tools</strong>,
+            and platform features. Fast response guaranteed.
           </p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
             <button
@@ -105,19 +107,23 @@ const ContactUs: React.FC = () => {
 
             {/* FAQ Section */}
             <div className="bg-gray-800 rounded-lg p-8 border border-gray-700">
-              <h3 className="text-xl font-semibold text-white mb-4">Frequently Asked Questions</h3>
+              <h3 className="text-xl font-semibold text-white mb-4">Cryptocurrency Trading Support FAQ</h3>
               <div className="space-y-4">
                 <div>
-                  <h4 className="text-emerald-400 font-medium mb-1">How accurate are your trading signals?</h4>
-                  <p className="text-gray-300 text-sm">Our signals are based on comprehensive technical analysis and news sentiment. While we strive for accuracy, all trading involves risk.</p>
+                  <h4 className="text-emerald-400 font-medium mb-1">How accurate are your Bitcoin and crypto trading signals?</h4>
+                  <p className="text-gray-300 text-sm">Our <strong>cryptocurrency trading signals</strong> are based on comprehensive <strong>technical analysis</strong> and <strong>news sentiment</strong>. While we strive for accuracy, all crypto trading involves risk.</p>
                 </div>
                 <div>
-                  <h4 className="text-emerald-400 font-medium mb-1">Do you provide investment advice?</h4>
-                  <p className="text-gray-300 text-sm">No, we provide educational tools and analysis. Always consult with financial advisors for investment decisions.</p>
+                  <h4 className="text-emerald-400 font-medium mb-1">Do you provide Bitcoin investment advice?</h4>
+                  <p className="text-gray-300 text-sm">No, we provide <strong>educational crypto tools</strong> and <strong>market analysis</strong>. Always consult with financial advisors for cryptocurrency investment decisions.</p>
                 </div>
                 <div>
-                  <h4 className="text-emerald-400 font-medium mb-1">Which exchanges do you support?</h4>
-                  <p className="text-gray-300 text-sm">We support 15+ major exchanges including Binance, Coinbase, Kraken, KuCoin, and many others.</p>
+                  <h4 className="text-emerald-400 font-medium mb-1">Which cryptocurrency exchanges do you support?</h4>
+                  <p className="text-gray-300 text-sm">We support 15+ major <strong>cryptocurrency exchanges</strong> including <strong>Binance</strong>, <strong>Coinbase</strong>, <strong>Kraken</strong>, <strong>KuCoin</strong>, and many others for comprehensive <strong>crypto analysis</strong>.</p>
+                </div>
+                <div>
+                  <h4 className="text-emerald-400 font-medium mb-1">Is the crypto scanner really free?</h4>
+                  <p className="text-gray-300 text-sm">Yes! Our <strong>cryptocurrency scanner</strong> and <strong>technical analysis tools</strong> are completely free. No subscriptions or hidden fees for basic features.</p>
                 </div>
               </div>
             </div>

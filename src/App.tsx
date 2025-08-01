@@ -12,6 +12,9 @@ import TradingControls from './components/TradingControls';
 import AnalysisResults from './components/AnalysisResults';
 import LivePrices from './components/LivePrices';
 import CryptoNews from './components/CryptoNews';
+import BulkScanner from './components/BulkScanner';
+import Sitemap from './components/Sitemap';
+import SEOHead from './components/SEOHead';
 import { AnalysisResult } from './types';
 import { performAnalysis } from './utils/analysisEngine';
 import { brokers } from './data/brokers';
@@ -101,6 +104,114 @@ function AppContent() {
     }
   };
 
+  // SEO data for each page
+  const getSEOData = () => {
+    switch (currentPage) {
+      case 'about':
+        return {
+          title: 'About CryptoAnalyzer Pro - Professional Cryptocurrency Analysis Platform | Free Trading Tools',
+          description: 'Learn about CryptoAnalyzer Pro, the leading cryptocurrency technical analysis platform. Discover our mission, advanced features, and commitment to providing free professional-grade trading tools for Bitcoin, Ethereum, and 1000+ cryptocurrencies.',
+          keywords: 'about crypto analyzer, cryptocurrency platform history, trading tools company, bitcoin analysis platform, ethereum technical analysis, crypto trading mission, professional crypto tools, cryptocurrency analysis company, trading platform features, crypto market analysis tools',
+          structuredData: {
+            "@context": "https://schema.org",
+            "@type": "AboutPage",
+            "name": "About CryptoAnalyzer Pro",
+            "description": "Professional cryptocurrency analysis platform providing free trading tools and market analysis"
+          }
+        };
+      case 'contact':
+        return {
+          title: 'Contact CryptoAnalyzer Pro - Support & Technical Assistance | Crypto Trading Help',
+          description: 'Get professional support for CryptoAnalyzer Pro. Contact our technical team for help with cryptocurrency analysis, trading tools, platform features, and technical indicators. Fast response guaranteed.',
+          keywords: 'crypto support, cryptocurrency platform support, bitcoin analysis help, ethereum trading assistance, technical indicator support, crypto scanner help, trading platform contact, cryptocurrency tool support, crypto analysis assistance, trading signal support',
+          structuredData: {
+            "@context": "https://schema.org",
+            "@type": "ContactPage",
+            "name": "Contact CryptoAnalyzer Pro",
+            "description": "Professional support for cryptocurrency trading platform"
+          }
+        };
+      case 'privacy':
+        return {
+          title: 'Privacy Policy - CryptoAnalyzer Pro Data Protection | Cryptocurrency Trading Privacy',
+          description: 'CryptoAnalyzer Pro privacy policy explaining how we protect your cryptocurrency trading data, personal information, and platform usage. GDPR compliant with transparent data practices.',
+          keywords: 'crypto privacy policy, cryptocurrency data protection, trading data privacy, crypto platform security, GDPR compliance crypto, bitcoin trading privacy, ethereum analysis privacy, crypto tool data protection, trading signal privacy',
+          structuredData: {
+            "@context": "https://schema.org",
+            "@type": "WebPage",
+            "name": "Privacy Policy",
+            "description": "Data protection and privacy policy for cryptocurrency trading platform"
+          }
+        };
+      case 'terms':
+        return {
+          title: 'Terms of Service - CryptoAnalyzer Pro Platform Usage | Cryptocurrency Trading Terms',
+          description: 'Terms and conditions for using CryptoAnalyzer Pro cryptocurrency analysis platform. Legal framework for Bitcoin, Ethereum analysis tools, trading signals, and platform features.',
+          keywords: 'crypto terms of service, cryptocurrency platform terms, bitcoin analysis terms, ethereum trading terms, crypto tool usage terms, trading platform legal, cryptocurrency analysis legal, trading signal terms',
+          structuredData: {
+            "@context": "https://schema.org",
+            "@type": "WebPage",
+            "name": "Terms of Service",
+            "description": "Terms and conditions for cryptocurrency trading platform usage"
+          }
+        };
+      case 'disclaimer':
+        return {
+          title: 'Trading Disclaimer - CryptoAnalyzer Pro Risk Warning | Cryptocurrency Investment Risks',
+          description: 'Important risk disclaimers for cryptocurrency trading using CryptoAnalyzer Pro. Understand Bitcoin, Ethereum trading risks, market volatility, and investment warnings before using our analysis tools.',
+          keywords: 'crypto trading disclaimer, cryptocurrency risk warning, bitcoin trading risks, ethereum investment risks, crypto market volatility, trading signal disclaimer, cryptocurrency analysis risks, crypto investment warning',
+          structuredData: {
+            "@context": "https://schema.org",
+            "@type": "WebPage",
+            "name": "Trading Disclaimer",
+            "description": "Risk warnings and disclaimers for cryptocurrency trading platform"
+          }
+        };
+      case 'sitemap':
+        return {
+          title: 'Sitemap - CryptoAnalyzer Pro Navigation | All Cryptocurrency Analysis Tools & Pages',
+          description: 'Complete sitemap for CryptoAnalyzer Pro cryptocurrency platform. Navigate all Bitcoin analysis tools, Ethereum trading features, crypto scanners, market data, and platform sections easily.',
+          keywords: 'crypto platform sitemap, cryptocurrency analysis navigation, bitcoin tool sitemap, ethereum analysis sitemap, crypto scanner navigation, trading platform map, cryptocurrency tool directory, crypto analysis sections',
+          structuredData: {
+            "@context": "https://schema.org",
+            "@type": "SiteNavigationElement",
+            "name": "CryptoAnalyzer Pro Sitemap",
+            "description": "Complete navigation for cryptocurrency analysis platform"
+          }
+        };
+      default:
+        return {
+          title: 'Free Cryptocurrency Technical Analysis Tool - CryptoAnalyzer Pro | Bitcoin, Ethereum Trading Platform',
+          description: 'Professional cryptocurrency technical analysis platform for traders. Analyze Bitcoin, Ethereum, and 1000+ crypto pairs across 15+ exchanges with 25+ indicators. Free forever for beginners and professionals. Real-time market analysis, trading signals, and comprehensive crypto scanning tools.',
+          keywords: 'cryptocurrency technical analysis, crypto trading platform, bitcoin analysis, ethereum technical indicators, free crypto scanner, multi-exchange trading, cryptocurrency signals, crypto market analysis, trading indicators, blockchain analysis, DeFi tokens, altcoin scanner, crypto charts, technical analysis tools, cryptocurrency trading strategies, free crypto tools, bitcoin price prediction, crypto portfolio tracker, trading bot signals, cryptocurrency trends, bulk crypto scanner, crypto news analysis, real-time crypto data',
+          structuredData: {
+            "@context": "https://schema.org",
+            "@type": "WebApplication",
+            "name": "CryptoAnalyzer Pro",
+            "description": "Professional cryptocurrency technical analysis platform for traders",
+            "url": "https://cryptoanalyzer-pro.com",
+            "applicationCategory": "FinanceApplication",
+            "operatingSystem": "Web Browser",
+            "offers": {
+              "@type": "Offer",
+              "price": "0",
+              "priceCurrency": "USD"
+            },
+            "featureList": [
+              "Multi-exchange cryptocurrency analysis",
+              "25+ technical indicators",
+              "Real-time market data",
+              "Trading signals",
+              "Bulk crypto scanning",
+              "News sentiment analysis"
+            ]
+          }
+        };
+    }
+  };
+
+  const seoData = getSEOData();
+
   const renderCurrentPage = () => {
     switch (currentPage) {
       case 'about':
@@ -113,6 +224,8 @@ function AppContent() {
         return <TermsOfService />;
       case 'disclaimer':
         return <Disclaimer />;
+      case 'sitemap':
+        return <Sitemap onPageChange={setCurrentPage} />;
       default:
         return (
           <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
@@ -152,7 +265,9 @@ function AppContent() {
                     onAnalyze={handleAnalyze}
                   />
 
-                  <CryptoNews />
+                  <div id="crypto-news">
+                    <CryptoNews />
+                  </div>
                 </div>
 
                 {/* Right Column - Results and Data */}
@@ -180,8 +295,31 @@ function AppContent() {
                     </div>
                   )}
 
-                  <LivePrices selectedPair={selectedPair} selectedBroker={selectedBroker} />
+                  <div id="live-prices">
+                    <LivePrices selectedPair={selectedPair} selectedBroker={selectedBroker} />
+                  </div>
                 </div>
+              </div>
+
+              {/* Bulk Scanner Section */}
+              <div id="bulk-scanner" className="border-t border-gray-700 pt-12 mt-12 scroll-mt-20">
+                <div className="text-center mb-8">
+                  <h2 className="text-3xl font-bold text-white mb-4">
+                    Advanced Bulk Market Scanner
+                  </h2>
+                  <p className="text-lg text-gray-300 max-w-4xl mx-auto">
+                    Scan multiple cryptocurrency pairs simultaneously with advanced filtering options. Get comprehensive
+                    technical analysis with news integration for hundreds of pairs in organized batches of 100.
+                  </p>
+                </div>
+
+                <BulkScanner
+                  selectedBroker={selectedBroker}
+                  selectedTimeframe={selectedTimeframe}
+                  tradeType={tradeType}
+                  selectedIndicators={selectedIndicators}
+                  selectedStrategies={selectedStrategies}
+                />
               </div>
             </div>
           </main>
@@ -191,6 +329,12 @@ function AppContent() {
 
   return (
     <div className="min-h-screen bg-gray-900">
+      <SEOHead
+        title={seoData.title}
+        description={seoData.description}
+        keywords={seoData.keywords}
+        structuredData={seoData.structuredData}
+      />
       <Navigation currentPage={currentPage} onPageChange={setCurrentPage} />
       {renderCurrentPage()}
       <Footer onPageChange={setCurrentPage} />
