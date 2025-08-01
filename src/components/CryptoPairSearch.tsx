@@ -302,14 +302,18 @@ const CryptoPairSearch: React.FC<CryptoPairSearchProps> = ({
                 <div className="flex items-center space-x-3">
                   <div className={`w-2 h-2 rounded-full ${getPairCategoryColor(pair)}`}></div>
                   <span className="font-medium">{pair}</span>
-                  <ExternalLink className="w-3 h-3 opacity-0 group-hover:opacity-100 transition-opacity text-emerald-400" />
+                  {selectingPair === pair ? (
+                    <div className="inline-block animate-spin rounded-full h-3 w-3 border border-white border-t-transparent"></div>
+                  ) : (
+                    <ExternalLink className="w-3 h-3 opacity-0 group-hover:opacity-100 transition-opacity text-emerald-400" />
+                  )}
                 </div>
                 <div className="flex flex-col items-end">
                   <span className="text-xs text-gray-400">
                     {getPairCategory(pair)}
                   </span>
                   <span className="text-xs text-emerald-400 opacity-0 group-hover:opacity-100 transition-opacity">
-                    Go to Scan
+                    {selectingPair === pair ? 'Selecting...' : 'Go to Scan'}
                   </span>
                 </div>
               </button>
