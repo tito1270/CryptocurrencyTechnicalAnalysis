@@ -127,108 +127,50 @@ function AppContent() {
     navigate(`${location.pathname}`, { replace: true });
   };
 
-  // SEO data for each page
+  // SEO data for each page - Google compliant with proper length limits
   const getSEOData = () => {
     switch (currentPage) {
       case 'about':
         return {
-          title: 'About CryptoAnalyzer Pro - Professional Cryptocurrency Analysis Platform | Free Trading Tools',
-          description: 'Learn about CryptoAnalyzer Pro, the leading cryptocurrency technical analysis platform. Discover our mission, advanced features, and commitment to providing free professional-grade trading tools for Bitcoin, Ethereum, and 1000+ cryptocurrencies.',
-          keywords: 'about crypto analyzer, cryptocurrency platform history, trading tools company, bitcoin analysis platform, ethereum technical analysis, crypto trading mission, professional crypto tools, cryptocurrency analysis company, trading platform features, crypto market analysis tools',
-          structuredData: {
-            "@context": "https://schema.org",
-            "@type": "AboutPage",
-            "name": "About CryptoAnalyzer Pro",
-            "description": "Professional cryptocurrency analysis platform providing free trading tools and market analysis"
-          }
+          title: 'About CryptoAnalyzer Pro - Professional Crypto Analysis Platform',
+          description: 'Learn about CryptoAnalyzer Pro, the leading cryptocurrency technical analysis platform. Discover our advanced features and commitment to providing free trading tools.',
+          keywords: ['about crypto analyzer', 'cryptocurrency platform', 'trading tools company', 'bitcoin analysis platform', 'ethereum technical analysis', 'professional crypto tools', 'trading platform features']
         };
       case 'contact':
         return {
-          title: 'Contact CryptoAnalyzer Pro - Support & Technical Assistance | Crypto Trading Help',
-          description: 'Get professional support for CryptoAnalyzer Pro. Contact our technical team for help with cryptocurrency analysis, trading tools, platform features, and technical indicators. Fast response guaranteed.',
-          keywords: 'crypto support, cryptocurrency platform support, bitcoin analysis help, ethereum trading assistance, technical indicator support, crypto scanner help, trading platform contact, cryptocurrency tool support, crypto analysis assistance, trading signal support',
-          structuredData: {
-            "@context": "https://schema.org",
-            "@type": "ContactPage",
-            "name": "Contact CryptoAnalyzer Pro",
-            "description": "Professional support for cryptocurrency trading platform"
-          }
+          title: 'Contact CryptoAnalyzer Pro - Support & Technical Help',
+          description: 'Get professional support for CryptoAnalyzer Pro. Contact our technical team for help with cryptocurrency analysis, trading tools, and platform features.',
+          keywords: ['crypto support', 'technical support', 'platform help', 'cryptocurrency assistance', 'trading support', 'crypto analyzer contact', 'bitcoin analysis help']
         };
       case 'privacy':
         return {
-          title: 'Privacy Policy - CryptoAnalyzer Pro Data Protection | Cryptocurrency Trading Privacy',
-          description: 'CryptoAnalyzer Pro privacy policy explaining how we protect your cryptocurrency trading data, personal information, and platform usage. GDPR compliant with transparent data practices.',
-          keywords: 'crypto privacy policy, cryptocurrency data protection, trading data privacy, crypto platform security, GDPR compliance crypto, bitcoin trading privacy, ethereum analysis privacy, crypto tool data protection, trading signal privacy',
-          structuredData: {
-            "@context": "https://schema.org",
-            "@type": "WebPage",
-            "name": "Privacy Policy",
-            "description": "Data protection and privacy policy for cryptocurrency trading platform"
-          }
+          title: 'Privacy Policy - CryptoAnalyzer Pro Data Protection',
+          description: 'CryptoAnalyzer Pro privacy policy explaining data protection practices for cryptocurrency trading platform. GDPR compliant with transparent data handling.',
+          keywords: ['privacy policy', 'data protection', 'crypto privacy', 'trading data security', 'GDPR compliance', 'cryptocurrency privacy', 'platform security']
         };
       case 'terms':
         return {
-          title: 'Terms of Service - CryptoAnalyzer Pro Platform Usage | Cryptocurrency Trading Terms',
-          description: 'Terms and conditions for using CryptoAnalyzer Pro cryptocurrency analysis platform. Legal framework for Bitcoin, Ethereum analysis tools, trading signals, and platform features.',
-          keywords: 'crypto terms of service, cryptocurrency platform terms, bitcoin analysis terms, ethereum trading terms, crypto tool usage terms, trading platform legal, cryptocurrency analysis legal, trading signal terms',
-          structuredData: {
-            "@context": "https://schema.org",
-            "@type": "WebPage",
-            "name": "Terms of Service",
-            "description": "Terms and conditions for cryptocurrency trading platform usage"
-          }
+          title: 'Terms of Service - CryptoAnalyzer Pro Platform Usage',
+          description: 'Terms and conditions for using CryptoAnalyzer Pro cryptocurrency analysis platform. Legal framework for trading tools, signals, and platform features.',
+          keywords: ['terms of service', 'platform terms', 'crypto terms', 'trading platform legal', 'cryptocurrency analysis terms', 'usage agreement', 'legal framework']
         };
       case 'disclaimer':
         return {
-          title: 'Trading Disclaimer - CryptoAnalyzer Pro Risk Warning | Cryptocurrency Investment Risks',
-          description: 'Important risk disclaimers for cryptocurrency trading using CryptoAnalyzer Pro. Understand Bitcoin, Ethereum trading risks, market volatility, and investment warnings before using our analysis tools.',
-          keywords: 'crypto trading disclaimer, cryptocurrency risk warning, bitcoin trading risks, ethereum investment risks, crypto market volatility, trading signal disclaimer, cryptocurrency analysis risks, crypto investment warning',
-          structuredData: {
-            "@context": "https://schema.org",
-            "@type": "WebPage",
-            "name": "Trading Disclaimer",
-            "description": "Risk warnings and disclaimers for cryptocurrency trading platform"
-          }
+          title: 'Trading Disclaimer - CryptoAnalyzer Pro Risk Warning',
+          description: 'Important risk disclaimers for cryptocurrency trading. Understand Bitcoin, Ethereum trading risks, market volatility warnings before using analysis tools.',
+          keywords: ['trading disclaimer', 'crypto risk warning', 'investment risks', 'cryptocurrency disclaimer', 'trading risks', 'market volatility', 'investment warning']
         };
       case 'sitemap':
         return {
-          title: 'Sitemap - CryptoAnalyzer Pro Navigation | All Cryptocurrency Analysis Tools & Pages',
-          description: 'Complete sitemap for CryptoAnalyzer Pro cryptocurrency platform. Navigate all Bitcoin analysis tools, Ethereum trading features, crypto scanners, market data, and platform sections easily.',
-          keywords: 'crypto platform sitemap, cryptocurrency analysis navigation, bitcoin tool sitemap, ethereum analysis sitemap, crypto scanner navigation, trading platform map, cryptocurrency tool directory, crypto analysis sections',
-          structuredData: {
-            "@context": "https://schema.org",
-            "@type": "SiteNavigationElement",
-            "name": "CryptoAnalyzer Pro Sitemap",
-            "description": "Complete navigation for cryptocurrency analysis platform"
-          }
+          title: 'Sitemap - CryptoAnalyzer Pro Complete Navigation Guide',
+          description: 'Complete sitemap for CryptoAnalyzer Pro cryptocurrency platform. Navigate all Bitcoin analysis tools, Ethereum trading features, and crypto scanners.',
+          keywords: ['crypto sitemap', 'platform navigation', 'crypto tools directory', 'bitcoin analysis sitemap', 'ethereum trading sitemap', 'cryptocurrency navigation']
         };
       default:
         return {
-          title: 'Free Cryptocurrency Technical Analysis Tool - CryptoAnalyzer Pro | Bitcoin, Ethereum Trading Platform',
-          description: 'Professional cryptocurrency technical analysis platform for traders. Analyze Bitcoin, Ethereum, and 1000+ crypto pairs across 15+ exchanges with 25+ indicators. Free forever for beginners and professionals. Real-time market analysis, trading signals, and comprehensive crypto scanning tools.',
-          keywords: 'cryptocurrency technical analysis, crypto trading platform, bitcoin analysis, ethereum technical indicators, free crypto scanner, multi-exchange trading, cryptocurrency signals, crypto market analysis, trading indicators, blockchain analysis, DeFi tokens, altcoin scanner, crypto charts, technical analysis tools, cryptocurrency trading strategies, free crypto tools, bitcoin price prediction, crypto portfolio tracker, trading bot signals, cryptocurrency trends, bulk crypto scanner, crypto news analysis, real-time crypto data',
-          structuredData: {
-            "@context": "https://schema.org",
-            "@type": "WebApplication",
-            "name": "CryptoAnalyzer Pro",
-            "description": "Professional cryptocurrency technical analysis platform for traders",
-            "url": "https://cryptoanalyzer-pro.com",
-            "applicationCategory": "FinanceApplication",
-            "operatingSystem": "Web Browser",
-            "offers": {
-              "@type": "Offer",
-              "price": "0",
-              "priceCurrency": "USD"
-            },
-            "featureList": [
-              "Multi-exchange cryptocurrency analysis",
-              "25+ technical indicators",
-              "Real-time market data",
-              "Trading signals",
-              "Bulk crypto scanning",
-              "News sentiment analysis"
-            ]
-          }
+          title: 'Free Crypto Analysis - CryptoAnalyzer Pro | Bitcoin & Ethereum',
+          description: 'Professional cryptocurrency technical analysis platform. Analyze Bitcoin, Ethereum & 1000+ crypto pairs with 25+ indicators across 15+ exchanges. Free forever.',
+          keywords: ['cryptocurrency analysis', 'bitcoin analysis', 'ethereum trading', 'crypto scanner', 'free crypto tools', 'technical indicators', 'trading signals', 'blockchain analysis']
         };
     }
   };
