@@ -289,11 +289,14 @@ const CryptoPairSearch: React.FC<CryptoPairSearchProps> = ({
               <button
                 key={pair}
                 onClick={() => handlePairSelect(pair)}
+                disabled={selectingPair !== null}
                 className={`group flex items-center justify-between p-3 rounded-lg text-left transition-all duration-200 hover:scale-[1.02] ${
-                  selectedPair === pair
+                  selectingPair === pair
+                    ? 'bg-emerald-500 text-white shadow-lg ring-2 ring-emerald-300 animate-pulse'
+                    : selectedPair === pair
                     ? 'bg-emerald-600 text-white shadow-lg ring-2 ring-emerald-400'
                     : 'bg-gray-700 hover:bg-gray-600 text-gray-300 hover:shadow-md'
-                }`}
+                } ${selectingPair !== null && selectingPair !== pair ? 'opacity-50 cursor-not-allowed' : ''}`}
                 title={`Click to scan ${pair} - URL will update automatically`}
               >
                 <div className="flex items-center space-x-3">
