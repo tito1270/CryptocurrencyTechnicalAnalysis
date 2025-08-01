@@ -198,8 +198,8 @@ const LivePrices: React.FC<LivePricesProps> = ({ selectedPair, selectedBroker })
       <div className="text-center">
         <div className="inline-flex items-center space-x-2 px-4 py-2 bg-gray-800 border border-emerald-500/30 rounded-lg">
           <div className="w-2 h-2 bg-emerald-500 rounded-full animate-pulse"></div>
-          <span className="text-sm text-emerald-400 font-medium">LIVE MARKET DATA</span>
-          <span className="text-xs text-gray-400">• Real prices from CoinGecko & Exchange APIs • Auto-refresh</span>
+          <span className="text-sm text-emerald-400 font-medium">COMPREHENSIVE LIVE DATA</span>
+          <span className="text-xs text-gray-400">• Real prices verified across multiple sources • All broker spreads accurate • Auto-refresh</span>
         </div>
       </div>
     </div>
