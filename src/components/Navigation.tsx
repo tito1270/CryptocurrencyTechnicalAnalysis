@@ -13,6 +13,7 @@ const Navigation: React.FC<NavigationProps> = ({ currentPage, onPageChange }) =>
     { id: 'home', label: 'Home', icon: Home },
     { id: 'about', label: 'About Us', icon: Info },
     { id: 'contact', label: 'Contact', icon: Mail },
+    { id: 'sitemap', label: 'Sitemap', icon: Map },
     { id: 'privacy', label: 'Privacy Policy', icon: Shield },
     { id: 'terms', label: 'Terms of Service', icon: FileText },
     { id: 'disclaimer', label: 'Disclaimer', icon: AlertTriangle },
