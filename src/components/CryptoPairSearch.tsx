@@ -125,8 +125,13 @@ const CryptoPairSearch: React.FC<CryptoPairSearchProps> = ({
   };
 
   const handlePairSelect = (pair: string) => {
+    setSelectingPair(pair);
     onPairSelect(pair);
-    onClose();
+    // Add a small delay to show feedback before closing
+    setTimeout(() => {
+      setSelectingPair(null);
+      onClose();
+    }, 300);
   };
 
   const handleNextPage = () => {
