@@ -176,12 +176,15 @@ const AnalysisResults: React.FC<AnalysisResultsProps> = ({ result }) => {
             <div className="text-2xl font-bold text-white">{result.confidence}%</div>
             <div className="text-sm text-gray-400">Confidence</div>
           </div>
-          <div className="text-center">
-            <div className="text-2xl font-bold text-white">${result.entryPrice.toFixed(4)}</div>
-            <div className="text-sm text-gray-400">Current Price</div>
+          <div className="text-center bg-gray-800 rounded-lg p-3 border-l-2 border-emerald-500">
+            <div className="flex items-center justify-center space-x-2">
+              <div className="text-2xl font-bold text-emerald-400">${result.entryPrice.toFixed(6)}</div>
+              <div className="w-2 h-2 bg-emerald-500 rounded-full animate-pulse"></div>
+            </div>
+            <div className="text-sm text-emerald-300 font-medium">Live Market Price</div>
           </div>
           <div className="text-center">
-            <div className="text-2xl font-bold text-emerald-400">${result.targetPrice.toFixed(4)}</div>
+            <div className="text-2xl font-bold text-blue-400">${result.targetPrice.toFixed(4)}</div>
             <div className="text-sm text-gray-400">Price Target</div>
           </div>
           <div className="text-center">
