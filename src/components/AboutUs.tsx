@@ -12,7 +12,8 @@ const AboutUs: React.FC = () => {
           </div>
           <h1 className="text-4xl font-bold text-white mb-4">About CryptoAnalyzer Pro</h1>
           <p className="text-xl text-gray-300 max-w-2xl mx-auto mb-6">
-            Your trusted partner in cryptocurrency trading and market analysis since 2024
+            Your trusted partner in <strong>cryptocurrency trading</strong> and <strong>Bitcoin market analysis</strong> since 2024.
+            Professional-grade <strong>crypto analysis tools</strong> for traders worldwide.
           </p>
           <button
             onClick={() => {
