@@ -21,6 +21,7 @@ const CryptoPairSearch: React.FC<CryptoPairSearchProps> = ({
 }) => {
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedTypes, setSelectedTypes] = useState<string[]>(['all']);
+  const [selectedQuoteCurrencies, setSelectedQuoteCurrencies] = useState<string[]>(['all']);
   const [currentPage, setCurrentPage] = useState(1);
   const [showTypeFilter, setShowTypeFilter] = useState(false);
 
