@@ -84,6 +84,22 @@ const CryptoPairSearch: React.FC<CryptoPairSearchProps> = ({
     }
   };
 
+  const handleQuoteCurrencyToggle = (currency: string) => {
+    if (currency === 'all') {
+      setSelectedQuoteCurrencies(['all']);
+    } else {
+      setSelectedQuoteCurrencies(prev => {
+        const newCurrencies = prev.filter(id => id !== 'all');
+        if (newCurrencies.includes(currency)) {
+          const filtered = newCurrencies.filter(id => id !== currency);
+          return filtered.length === 0 ? ['all'] : filtered;
+        } else {
+          return [...newCurrencies, currency];
+        }
+      });
+    }
+  };
+
   const handlePairSelect = (pair: string) => {
     onPairSelect(pair);
     onClose();
