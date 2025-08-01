@@ -218,28 +218,59 @@ const CryptoPairSearch: React.FC<CryptoPairSearchProps> = ({
 
           {/* Type Filters */}
           {showTypeFilter && (
-            <div className="mt-4 p-4 bg-gray-700 rounded-lg">
-              <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-2">
-                <label className="flex items-center space-x-2 cursor-pointer">
-                  <input
-                    type="checkbox"
-                    checked={selectedTypes.includes('all')}
-                    onChange={() => handleTypeToggle('all')}
-                    className="rounded border-gray-500 text-emerald-500 focus:ring-emerald-500"
-                  />
-                  <span className="text-sm text-gray-300">All Types</span>
-                </label>
-                {cryptoPairTypes.map(type => (
-                  <label key={type.id} className="flex items-center space-x-2 cursor-pointer">
+            <div className="mt-4 p-4 bg-gray-700 rounded-lg space-y-6">
+              {/* Crypto Type Filters */}
+              <div>
+                <h4 className="text-sm font-medium text-gray-300 mb-3">Filter by Token Type</h4>
+                <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-2">
+                  <label className="flex items-center space-x-2 cursor-pointer">
                     <input
                       type="checkbox"
-                      checked={selectedTypes.includes(type.id)}
-                      onChange={() => handleTypeToggle(type.id)}
+                      checked={selectedTypes.includes('all')}
+                      onChange={() => handleTypeToggle('all')}
                       className="rounded border-gray-500 text-emerald-500 focus:ring-emerald-500"
                     />
-                    <span className="text-sm text-gray-300">{type.name}</span>
+                    <span className="text-sm text-gray-300">All Types</span>
                   </label>
-                ))}
+                  {cryptoPairTypes.map(type => (
+                    <label key={type.id} className="flex items-center space-x-2 cursor-pointer">
+                      <input
+                        type="checkbox"
+                        checked={selectedTypes.includes(type.id)}
+                        onChange={() => handleTypeToggle(type.id)}
+                        className="rounded border-gray-500 text-emerald-500 focus:ring-emerald-500"
+                      />
+                      <span className="text-sm text-gray-300">{type.name}</span>
+                    </label>
+                  ))}
+                </div>
+              </div>
+
+              {/* Quote Currency Filters */}
+              <div>
+                <h4 className="text-sm font-medium text-gray-300 mb-3">Filter by Quote Currency</h4>
+                <div className="grid grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-2">
+                  <label className="flex items-center space-x-2 cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={selectedQuoteCurrencies.includes('all')}
+                      onChange={() => handleQuoteCurrencyToggle('all')}
+                      className="rounded border-gray-500 text-blue-500 focus:ring-blue-500"
+                    />
+                    <span className="text-sm text-gray-300">All Quotes</span>
+                  </label>
+                  {availableQuoteCurrencies.map(currency => (
+                    <label key={currency} className="flex items-center space-x-2 cursor-pointer">
+                      <input
+                        type="checkbox"
+                        checked={selectedQuoteCurrencies.includes(currency)}
+                        onChange={() => handleQuoteCurrencyToggle(currency)}
+                        className="rounded border-gray-500 text-blue-500 focus:ring-blue-500"
+                      />
+                      <span className="text-sm text-gray-300 font-mono">{currency}</span>
+                    </label>
+                  ))}
+                </div>
               </div>
             </div>
           )}
