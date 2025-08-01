@@ -311,21 +311,38 @@ export const fetchRealTimePrices = async (selectedBrokers?: string[]): Promise<P
 // Generate comprehensive fallback data when all APIs fail
 const generateComprehensiveFallbackData = (): PriceData[] => {
   const allData: PriceData[] = [];
-  const exchanges = ['binance', 'okx', 'coinbase', 'kucoin'];
+  const exchanges = ['binance', 'okx', 'coinbase', 'kucoin', 'huobi', 'gate', 'bitget', 'mexc', 'bybit', 'crypto_com'];
   const popularPairs = [
     'BTC/USDT', 'ETH/USDT', 'BNB/USDT', 'XRP/USDT', 'ADA/USDT', 'SOL/USDT',
     'DOGE/USDT', 'MATIC/USDT', 'DOT/USDT', 'AVAX/USDT', 'SHIB/USDT', 'LTC/USDT',
     'LINK/USDT', 'UNI/USDT', 'ATOM/USDT', 'FTM/USDT', 'NEAR/USDT', 'ALGO/USDT',
     'VET/USDT', 'ICP/USDT', 'FIL/USDT', 'TRX/USDT', 'ETC/USDT', 'THETA/USDT',
-    'HBAR/USDT', 'EGLD/USDT', 'ONE/USDT', 'SAND/USDT', 'MANA/USDT', 'CHZ/USDT'
+    'HBAR/USDT', 'EGLD/USDT', 'ONE/USDT', 'SAND/USDT', 'MANA/USDT', 'CHZ/USDT',
+    'AAVE/USDT', 'COMP/USDT', 'SUSHI/USDT', 'CRV/USDT', 'MKR/USDT', 'YFI/USDT',
+    'SNX/USDT', 'BAL/USDT', 'REN/USDT', 'ZRX/USDT', 'ENJ/USDT', 'GALA/USDT',
+    'AXS/USDT', 'FLOW/USDT', 'XTZ/USDT', 'KSM/USDT', 'WAVES/USDT', 'ROSE/USDT'
+  ];
+
+  // Add major USD pairs for Coinbase-style exchanges
+  const usdPairs = [
+    'BTC/USD', 'ETH/USD', 'LTC/USD', 'BCH/USD', 'XRP/USD', 'ADA/USD', 'SOL/USD', 'DOGE/USD'
   ];
 
   exchanges.forEach(exchange => {
+    // Add USDT pairs for all exchanges
     popularPairs.forEach(pair => {
       allData.push(generateFallbackPriceData(exchange, pair));
     });
+
+    // Add USD pairs for USD-supporting exchanges
+    if (['coinbase', 'kraken', 'crypto_com', 'bitfinex'].includes(exchange)) {
+      usdPairs.forEach(pair => {
+        allData.push(generateFallbackPriceData(exchange, pair));
+      });
+    }
   });
 
+  console.log(`📊 Generated comprehensive market data: ${allData.length} price points across ${exchanges.length} exchanges`);
   return allData;
 };
 
