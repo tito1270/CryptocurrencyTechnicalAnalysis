@@ -12,6 +12,7 @@ import TradingControls from './components/TradingControls';
 import AnalysisResults from './components/AnalysisResults';
 import LivePrices from './components/LivePrices';
 import CryptoNews from './components/CryptoNews';
+import BulkScanner from './components/BulkScanner';
 import { AnalysisResult } from './types';
 import { performAnalysis } from './utils/analysisEngine';
 import { brokers } from './data/brokers';
