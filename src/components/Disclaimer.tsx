@@ -245,7 +245,6 @@ const Disclaimer: React.FC = () => {
             </p>
             <div className="space-y-2 text-gray-300">
               <p><strong className="text-white">Email:</strong> <span className="text-emerald-400">legal@cryptoanalyzer.pro</span></p>
-              <p><strong className="text-white">Phone:</strong> <span className="text-blue-400">+1 (555) 123-4567</span></p>
             </div>
           </div>
 
