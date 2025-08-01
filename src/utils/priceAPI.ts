@@ -381,17 +381,17 @@ export const getPairPrice = async (broker: string, pair: string): Promise<number
   try {
     const prices = await fetchRealTimePrices([broker]);
     const pairData = prices.find(p => p.broker === broker && p.pair === pair);
-    
-    if (pairData) {
+
+    if (pairData && pairData.price > 0) {
       console.log(`✅ Price found: ${pair} on ${broker} = $${pairData.price.toLocaleString()}`);
       return pairData.price;
     } else {
-      console.warn(`⚠️ No price for ${pair} on ${broker}`);
-      return null;
+      console.log(`⚠️ No valid price for ${pair} on ${broker}, using fallback`);
+      return getFallbackPrice(pair);
     }
   } catch (error) {
-    console.error(`❌ Error getting price for ${pair} from ${broker}:`, error);
-    return null;
+    console.log(`⚠️ Error getting price for ${pair} from ${broker}, using fallback`);
+    return getFallbackPrice(pair);
   }
 };
 
