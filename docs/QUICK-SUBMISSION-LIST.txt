@@ -1,0 +1,53 @@
+🚀 COPY-PASTE URLS FOR GOOGLE SEARCH CONSOLE MANUAL SUBMISSION
+
+=== HIGH PRIORITY (Submit First) ===
+https://345802ad972c4af787784794479cf010-dff421b12ad741fca167bff05.fly.dev/
+https://345802ad972c4af787784794479cf010-dff421b12ad741fca167bff05.fly.dev/#scan-section
+https://345802ad972c4af787784794479cf010-dff421b12ad741fca167bff05.fly.dev/#bulk-scanner
+https://345802ad972c4af787784794479cf010-dff421b12ad741fca167bff05.fly.dev/?pair=BTC/USDT
+https://345802ad972c4af787784794479cf010-dff421b12ad741fca167bff05.fly.dev/?pair=ETH/USDT
+
+=== MAIN PAGES ===
+https://345802ad972c4af787784794479cf010-dff421b12ad741fca167bff05.fly.dev/about
+https://345802ad972c4af787784794479cf010-dff421b12ad741fca167bff05.fly.dev/contact
+https://345802ad972c4af787784794479cf010-dff421b12ad741fca167bff05.fly.dev/sitemap
+https://345802ad972c4af787784794479cf010-dff421b12ad741fca167bff05.fly.dev/#live-prices
+https://345802ad972c4af787784794479cf010-dff421b12ad741fca167bff05.fly.dev/#crypto-news
+
+=== LEGAL PAGES ===
+https://345802ad972c4af787784794479cf010-dff421b12ad741fca167bff05.fly.dev/privacy
+https://345802ad972c4af787784794479cf010-dff421b12ad741fca167bff05.fly.dev/terms
+https://345802ad972c4af787784794479cf010-dff421b12ad741fca167bff05.fly.dev/disclaimer
+
+=== POPULAR CRYPTO PAIRS ===
+https://345802ad972c4af787784794479cf010-dff421b12ad741fca167bff05.fly.dev/?pair=BNB/USDT
+https://345802ad972c4af787784794479cf010-dff421b12ad741fca167bff05.fly.dev/?pair=XRP/USDT
+https://345802ad972c4af787784794479cf010-dff421b12ad741fca167bff05.fly.dev/?pair=ADA/USDT
+https://345802ad972c4af787784794479cf010-dff421b12ad741fca167bff05.fly.dev/?pair=SOL/USDT
+https://345802ad972c4af787784794479cf010-dff421b12ad741fca167bff05.fly.dev/?pair=DOGE/USDT
+https://345802ad972c4af787784794479cf010-dff421b12ad741fca167bff05.fly.dev/?pair=DOT/USDT
+https://345802ad972c4af787784794479cf010-dff421b12ad741fca167bff05.fly.dev/?pair=MATIC/USDT
+https://345802ad972c4af787784794479cf010-dff421b12ad741fca167bff05.fly.dev/?pair=AVAX/USDT
+
+=== TECHNICAL ANALYSIS ===
+https://345802ad972c4af787784794479cf010-dff421b12ad741fca167bff05.fly.dev/?timeframe=1m
+https://345802ad972c4af787784794479cf010-dff421b12ad741fca167bff05.fly.dev/?timeframe=5m
+https://345802ad972c4af787784794479cf010-dff421b12ad741fca167bff05.fly.dev/?timeframe=15m
+https://345802ad972c4af787784794479cf010-dff421b12ad741fca167bff05.fly.dev/?timeframe=1h
+https://345802ad972c4af787784794479cf010-dff421b12ad741fca167bff05.fly.dev/?timeframe=4h
+https://345802ad972c4af787784794479cf010-dff421b12ad741fca167bff05.fly.dev/?timeframe=1d
+
+=== SITEMAP XML ===
+https://345802ad972c4af787784794479cf010-dff421b12ad741fca167bff05.fly.dev/sitemap.xml
+
+📋 INSTRUCTIONS:
+1. Go to: https://search.google.com/search-console
+2. Add your website property
+3. Use "URL Inspection" tool
+4. Copy-paste each URL above one by one
+5. Click "Request Indexing" for each URL
+6. Submit 5-10 URLs per day (don't submit all at once)
+
+🎯 TOTAL: 27 URLs to submit manually
+⏱️ ESTIMATED TIME: 3-5 days (gradual submission)
+📈 EXPECTED INDEXING: 1-2 weeks

@@ -1,5 +1,6 @@
 import React from 'react';
 import { Home, Info, Mail, Shield, FileText, AlertTriangle, TrendingUp, Search, Newspaper, BarChart3, Zap } from 'lucide-react';
+import SEOManager from './SEOManager';
 
 interface SitemapProps {
   onPageChange: (page: string) => void;
@@ -291,6 +292,11 @@ const Sitemap: React.FC<SitemapProps> = ({ onPageChange }) => {
               <span className="text-sm text-white">Contact</span>
             </button>
           </div>
+        </div>
+
+        {/* SEO Automation Manager */}
+        <div className="mt-12">
+          <SEOManager autoSubmit={false} />
         </div>
 
         {/* XML Sitemap Info */}

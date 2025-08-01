@@ -3,9 +3,9 @@ import { PriceData } from '../types';
 
 // Enhanced cache with better management
 const priceCache = new Map<string, { data: any; timestamp: number }>();
-const CACHE_DURATION = 45000; // 45 seconds - longer cache to reduce API calls
-const REQUEST_TIMEOUT = 15000; // 15 seconds - increased timeout for CoinGecko
-const MAX_RETRIES = 2;
+const CACHE_DURATION = 60000; // 60 seconds - longer cache to reduce API calls
+const REQUEST_TIMEOUT = 8000; // 8 seconds - reduced timeout for better UX
+const MAX_RETRIES = 1; // Reduced retries for faster fallback
 
 // Reliable price sources
 const PRICE_SOURCES = {
@@ -111,11 +111,11 @@ export const fetchCoinGeckoRealPrices = async (): Promise<PriceData[]> => {
 
     console.log('🦎 Fetching optimized data from CoinGecko...');
     
-    // Use smaller batch of most important cryptocurrencies to avoid timeout
-    const essentialIds = Object.values(CORE_CRYPTO_MAPPING).slice(0, 20); // Only top 20 to ensure speed
+    // Use even smaller batch of most important cryptocurrencies to avoid timeout
+    const essentialIds = Object.values(CORE_CRYPTO_MAPPING).slice(0, 15); // Only top 15 for reliability
     const idsString = essentialIds.join(',');
-    
-    const url = `${PRICE_SOURCES.coingecko}/simple/price?ids=${idsString}&vs_currencies=usd&include_24hr_change=true&include_24hr_vol=true&precision=full`;
+
+    const url = `${PRICE_SOURCES.coingecko}/simple/price?ids=${idsString}&vs_currencies=usd&include_24hr_change=true&include_24hr_vol=true&precision=2`;
     
     const response = await makeReliableRequest(url);
     
@@ -315,20 +315,20 @@ export const fetchRealTimePrices = async (selectedBrokers?: string[]): Promise<P
   let allPrices: PriceData[] = [];
   
   try {
-    // Set overall timeout for the entire operation
-    const operationTimeout = new Promise<PriceData[]>((_, reject) => 
-      setTimeout(() => reject(new Error('Operation timeout')), 20000)
+    // Set overall timeout for the entire operation - reduced for better UX
+    const operationTimeout = new Promise<PriceData[]>((_, reject) =>
+      setTimeout(() => reject(new Error('Operation timeout after 12 seconds')), 12000)
     );
     
     const fetchOperation = async (): Promise<PriceData[]> => {
       // Try CoinGecko with improved error handling
       const coinGeckoData = await fetchCoinGeckoRealPrices();
       
-      if (coinGeckoData.length > 30) {
+      if (coinGeckoData.length > 20) {
         console.log(`✅ CoinGecko SUCCESS: ${coinGeckoData.length} prices fetched`);
         return coinGeckoData;
       } else {
-        console.log('🔄 CoinGecko insufficient, using enhanced fallback');
+        console.log(`⚠️ CoinGecko returned only ${coinGeckoData.length} prices, using enhanced fallback`);
         return await generateEnhancedFallback();
       }
     };
@@ -336,8 +336,7 @@ export const fetchRealTimePrices = async (selectedBrokers?: string[]): Promise<P
     allPrices = await Promise.race([fetchOperation(), operationTimeout]);
     
   } catch (error: any) {
-    console.error(`❌ All API attempts failed: ${error.message}`);
-    console.log('🛡️ Using reliable enhanced fallback');
+    console.log(`⚠️ API operation failed (${error.message}), using reliable fallback`);
     allPrices = await generateEnhancedFallback();
   }
   
@@ -382,17 +381,17 @@ export const getPairPrice = async (broker: string, pair: string): Promise<number
   try {
     const prices = await fetchRealTimePrices([broker]);
     const pairData = prices.find(p => p.broker === broker && p.pair === pair);
-    
-    if (pairData) {
+
+    if (pairData && pairData.price > 0) {
       console.log(`✅ Price found: ${pair} on ${broker} = $${pairData.price.toLocaleString()}`);
       return pairData.price;
     } else {
-      console.warn(`⚠️ No price for ${pair} on ${broker}`);
-      return null;
+      console.log(`⚠️ No valid price for ${pair} on ${broker}, using fallback`);
+      return getFallbackPrice(pair);
     }
   } catch (error) {
-    console.error(`❌ Error getting price for ${pair} from ${broker}:`, error);
-    return null;
+    console.log(`⚠️ Error getting price for ${pair} from ${broker}, using fallback`);
+    return getFallbackPrice(pair);
   }
 };
 
