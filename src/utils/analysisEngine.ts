@@ -27,8 +27,9 @@ export const performAnalysis = async (
   // Analyze news impact for the pair
   const newsAnalysis = analyzeNewsImpact(pair, activeIndicators, activeStrategies);
   
-  // Get real current price
-  const currentPrice = await getCurrentPrice(pair, broker);
+  // Get real current price with metadata
+  const priceData = await getCurrentPrice(pair, broker);
+  const currentPrice = priceData.price;
   const priceLevels = calculatePriceLevels(currentPrice, sentiment, newsAnalysis.impact);
   
   // Generate comprehensive recommendation
@@ -63,7 +64,9 @@ export const performAnalysis = async (
     supportLevel: priceLevels.supportLevel,
     resistanceLevel: priceLevels.resistanceLevel,
     indicators: activeIndicators,
-    strategies: activeStrategies
+    strategies: activeStrategies,
+    priceSource: priceData.source,
+    priceTimestamp: priceData.timestamp
   };
 };
 
@@ -139,19 +142,33 @@ const calculateOverallSentiment = (
   return { sentiment, confidence };
 };
 
-const getCurrentPrice = async (pair: string, broker: string): Promise<number> => {
+const getCurrentPrice = async (pair: string, broker: string): Promise<{price: number, source: 'LIVE_API' | 'FALLBACK', timestamp: number}> => {
   try {
-    // Try to get real-time price from API
+    console.log(`Fetching live price for ${pair} from ${broker.toUpperCase()} exchange...`);
+
+    // Try to get real-time price specifically from the selected broker's API
     const realPrice = await getPairPrice(broker, pair);
     if (realPrice && realPrice > 0) {
-      return realPrice;
+      console.log(`✅ Live price from ${broker.toUpperCase()}: $${realPrice.toFixed(6)} for ${pair}`);
+      return {
+        price: realPrice,
+        source: 'LIVE_API',
+        timestamp: Date.now()
+      };
+    } else {
+      console.warn(`⚠️ No price data available for ${pair} on ${broker.toUpperCase()}`);
     }
   } catch (error) {
-    console.error('Error fetching real-time price:', error);
+    console.error(`❌ Error fetching ${pair} price from ${broker.toUpperCase()}:`, error);
   }
-  
-  // Fallback to simulated price
-  return getFallbackPrice(pair);
+
+  // Fallback to simulated price only if broker-specific price fails
+  console.log(`🔄 Using fallback price for ${pair} (${broker.toUpperCase()} unavailable)`);
+  return {
+    price: getFallbackPrice(pair),
+    source: 'FALLBACK',
+    timestamp: Date.now()
+  };
 };
 
 const calculatePriceLevels = (currentPrice: number, sentiment: string, newsImpact: string) => {

@@ -43,12 +43,70 @@ const TradingControls: React.FC<TradingControlsProps> = ({
   const currentBroker = brokers.find(b => b.id === selectedBroker);
   const [showAdvancedPairSearch, setShowAdvancedPairSearch] = useState(false);
   const [copied, setCopied] = useState(false);
+  const [currentDropdownPage, setCurrentDropdownPage] = useState(0);
+
+  // Reset pagination when broker changes
+  React.useEffect(() => {
+    setCurrentDropdownPage(0);
+  }, [selectedBroker]);
   
-  // Show limited pairs for the dropdown
-  const limitedPairs = useMemo(() => {
-    if (!currentBroker) return [];
-    return currentBroker.pairs.slice(0, 20); // Show first 20 pairs in dropdown
-  }, [currentBroker]);
+  // Pagination constants
+  const PAIRS_PER_PAGE = 19; // Leave room for selected pair
+
+  // Show limited pairs for the dropdown with pagination, ensuring selected pair is always first
+  const { limitedPairs, totalPages, hasNextPage, hasPrevPage } = useMemo(() => {
+    if (!currentBroker) return { limitedPairs: [], totalPages: 0, hasNextPage: false, hasPrevPage: false };
+
+    const allPairs = currentBroker.pairs;
+    const totalPairs = allPairs.length;
+    const totalPagesCount = Math.ceil(totalPairs / PAIRS_PER_PAGE);
+
+    // Always include the selected pair first if it exists
+    const selectedPairIncluded = selectedPair && allPairs.includes(selectedPair);
+
+    // Get pairs for current page
+    const startIndex = currentDropdownPage * PAIRS_PER_PAGE;
+    let pagePairs = allPairs.slice(startIndex, startIndex + PAIRS_PER_PAGE);
+
+    // If selected pair is included, ensure it's always first and adjust the list
+    if (selectedPairIncluded) {
+      // Remove selected pair from page pairs if it's there
+      pagePairs = pagePairs.filter(pair => pair !== selectedPair);
+      // Add selected pair at the beginning and limit to PAIRS_PER_PAGE
+      pagePairs = [selectedPair, ...pagePairs.slice(0, PAIRS_PER_PAGE - 1)];
+    }
+
+    return {
+      limitedPairs: pagePairs,
+      totalPages: totalPagesCount,
+      hasNextPage: currentDropdownPage < totalPagesCount - 1,
+      hasPrevPage: currentDropdownPage > 0
+    };
+  }, [currentBroker, selectedPair, currentDropdownPage]);
+
+  const fallbackCopyTextToClipboard = (text: string) => {
+    const textArea = document.createElement("textarea");
+    textArea.value = text;
+
+    // Avoid scrolling to bottom
+    textArea.style.top = "0";
+    textArea.style.left = "0";
+    textArea.style.position = "fixed";
+    textArea.style.opacity = "0";
+
+    document.body.appendChild(textArea);
+    textArea.focus();
+    textArea.select();
+
+    try {
+      const successful = document.execCommand('copy');
+      document.body.removeChild(textArea);
+      return successful;
+    } catch (err) {
+      document.body.removeChild(textArea);
+      return false;
+    }
+  };
 
   const handleCopyLink = async () => {
     const currentUrl = new URL(window.location.href);
@@ -56,13 +114,39 @@ const TradingControls: React.FC<TradingControlsProps> = ({
     currentUrl.searchParams.set('broker', selectedBroker);
     currentUrl.searchParams.set('timeframe', selectedTimeframe);
     currentUrl.searchParams.set('type', tradeType);
-    
+
+    const urlString = currentUrl.toString();
+
+    // Check if we're in an iframe or restricted context - use fallback directly
+    const isRestricted = window.self !== window.top || !window.isSecureContext;
+
+    if (isRestricted || !navigator.clipboard) {
+      // Use fallback method directly for restricted environments
+      const success = fallbackCopyTextToClipboard(urlString);
+      if (success) {
+        setCopied(true);
+        setTimeout(() => setCopied(false), 2000);
+      } else {
+        console.error('Failed to copy link using fallback method');
+      }
+      return;
+    }
+
     try {
-      await navigator.clipboard.writeText(currentUrl.toString());
+      // Only try clipboard API in unrestricted, secure contexts
+      await navigator.clipboard.writeText(urlString);
       setCopied(true);
       setTimeout(() => setCopied(false), 2000);
     } catch (err) {
-      console.error('Failed to copy link:', err);
+      console.error('Clipboard API failed, trying fallback:', err);
+      // Try fallback method
+      const success = fallbackCopyTextToClipboard(urlString);
+      if (success) {
+        setCopied(true);
+        setTimeout(() => setCopied(false), 2000);
+      } else {
+        console.error('Failed to copy link: Both methods failed');
+      }
     }
   };
 
@@ -115,9 +199,44 @@ const TradingControls: React.FC<TradingControlsProps> = ({
               {copied ? <Check className="w-4 h-4" /> : <Copy className="w-4 h-4" />}
             </button>
           </div>
-          <div className="flex items-center space-x-2 text-xs text-gray-400 mt-1">
-            <Link className="w-3 h-3" />
-            <span>Quick select or search {currentBroker?.pairs.length || 0} pairs • URL updates automatically</span>
+          <div className="flex items-center justify-between text-xs text-gray-400 mt-1">
+            <div className="flex items-center space-x-2">
+              <Link className="w-3 h-3" />
+              <span>Quick select or search {currentBroker?.pairs.length || 0} pairs • URL updates automatically</span>
+            </div>
+
+            {/* Dropdown Pagination Controls */}
+            {totalPages > 1 && (
+              <div className="flex items-center space-x-2">
+                <button
+                  onClick={() => setCurrentDropdownPage(prev => Math.max(0, prev - 1))}
+                  disabled={!hasPrevPage}
+                  className={`px-2 py-1 rounded text-xs font-medium transition-colors ${
+                    hasPrevPage
+                      ? 'bg-gray-600 hover:bg-gray-500 text-gray-300'
+                      : 'bg-gray-700 text-gray-500 cursor-not-allowed'
+                  }`}
+                >
+                  PREV
+                </button>
+
+                <span className="text-xs text-gray-400">
+                  {currentDropdownPage + 1} / {totalPages}
+                </span>
+
+                <button
+                  onClick={() => setCurrentDropdownPage(prev => Math.min(totalPages - 1, prev + 1))}
+                  disabled={!hasNextPage}
+                  className={`px-2 py-1 rounded text-xs font-medium transition-colors ${
+                    hasNextPage
+                      ? 'bg-emerald-600 hover:bg-emerald-700 text-white'
+                      : 'bg-gray-700 text-gray-500 cursor-not-allowed'
+                  }`}
+                >
+                  NEXT
+                </button>
+              </div>
+            )}
           </div>
         </div>
       </div>

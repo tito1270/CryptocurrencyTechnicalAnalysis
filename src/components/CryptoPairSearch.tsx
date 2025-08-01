@@ -1,5 +1,5 @@
 import React, { useState, useMemo, useEffect } from 'react';
-import { Search, X, ChevronLeft, ChevronRight, Filter, ArrowRight } from 'lucide-react';
+import { Search, X, ChevronLeft, ChevronRight, Filter, ArrowRight, ExternalLink } from 'lucide-react';
 import { cryptoPairTypes, categorizeToken } from '../data/cryptoPairTypes';
 
 interface CryptoPairSearchProps {
@@ -21,13 +21,15 @@ const CryptoPairSearch: React.FC<CryptoPairSearchProps> = ({
 }) => {
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedTypes, setSelectedTypes] = useState<string[]>(['all']);
+  const [selectedQuoteCurrencies, setSelectedQuoteCurrencies] = useState<string[]>(['all']);
   const [currentPage, setCurrentPage] = useState(1);
   const [showTypeFilter, setShowTypeFilter] = useState(false);
+  const [selectingPair, setSelectingPair] = useState<string | null>(null);
 
   // Reset to first page when search query or filters change
   useEffect(() => {
     setCurrentPage(1);
-  }, [searchQuery, selectedTypes]);
+  }, [searchQuery, selectedTypes, selectedQuoteCurrencies]);
 
   // Filter and categorize pairs
   const filteredPairs = useMemo(() => {
@@ -48,8 +50,41 @@ const CryptoPairSearch: React.FC<CryptoPairSearchProps> = ({
       });
     }
 
+    // Apply quote currency filter
+    if (!selectedQuoteCurrencies.includes('all')) {
+      filtered = filtered.filter(pair => {
+        const quoteCurrency = pair.split('/')[1]; // Get the part after '/'
+        return selectedQuoteCurrencies.some(currency =>
+          quoteCurrency && quoteCurrency.toUpperCase() === currency.toUpperCase()
+        );
+      });
+    }
+
     return filtered.sort();
-  }, [pairs, searchQuery, selectedTypes]);
+  }, [pairs, searchQuery, selectedTypes, selectedQuoteCurrencies]);
+
+  // Get available quote currencies from all pairs
+  const availableQuoteCurrencies = useMemo(() => {
+    const quoteCurrencies = new Set<string>();
+    pairs.forEach(pair => {
+      const quoteCurrency = pair.split('/')[1];
+      if (quoteCurrency) {
+        quoteCurrencies.add(quoteCurrency.toUpperCase());
+      }
+    });
+    // Sort by common currencies first, then alphabetically
+    const commonCurrencies = ['USDT', 'BTC', 'ETH', 'BUSD', 'USDC', 'BNB', 'FDUSD'];
+    const sortedCurrencies = Array.from(quoteCurrencies).sort((a, b) => {
+      const aIndex = commonCurrencies.indexOf(a);
+      const bIndex = commonCurrencies.indexOf(b);
+
+      if (aIndex !== -1 && bIndex !== -1) return aIndex - bIndex;
+      if (aIndex !== -1) return -1;
+      if (bIndex !== -1) return 1;
+      return a.localeCompare(b);
+    });
+    return sortedCurrencies;
+  }, [pairs]);
 
   // Pagination
   const totalPages = Math.ceil(filteredPairs.length / ITEMS_PER_PAGE);
@@ -73,9 +108,30 @@ const CryptoPairSearch: React.FC<CryptoPairSearchProps> = ({
     }
   };
 
+  const handleQuoteCurrencyToggle = (currency: string) => {
+    if (currency === 'all') {
+      setSelectedQuoteCurrencies(['all']);
+    } else {
+      setSelectedQuoteCurrencies(prev => {
+        const newCurrencies = prev.filter(id => id !== 'all');
+        if (newCurrencies.includes(currency)) {
+          const filtered = newCurrencies.filter(id => id !== currency);
+          return filtered.length === 0 ? ['all'] : filtered;
+        } else {
+          return [...newCurrencies, currency];
+        }
+      });
+    }
+  };
+
   const handlePairSelect = (pair: string) => {
+    setSelectingPair(pair);
     onPairSelect(pair);
-    onClose();
+    // Add a small delay to show feedback before closing
+    setTimeout(() => {
+      setSelectingPair(null);
+      onClose();
+    }, 300);
   };
 
   const handleNextPage = () => {
@@ -126,7 +182,10 @@ const CryptoPairSearch: React.FC<CryptoPairSearchProps> = ({
         {/* Header */}
         <div className="p-6 border-b border-gray-700">
           <div className="flex items-center justify-between mb-4">
-            <h2 className="text-xl font-semibold text-white">Select Trading Pair</h2>
+            <div>
+              <h2 className="text-xl font-semibold text-white">Select Trading Pair</h2>
+              <p className="text-sm text-gray-400 mt-1">Click any pair to automatically replace current selection and scan</p>
+            </div>
             <button
               onClick={onClose}
               className="p-2 hover:bg-gray-700 rounded-lg transition-colors"
@@ -165,28 +224,59 @@ const CryptoPairSearch: React.FC<CryptoPairSearchProps> = ({
 
           {/* Type Filters */}
           {showTypeFilter && (
-            <div className="mt-4 p-4 bg-gray-700 rounded-lg">
-              <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-2">
-                <label className="flex items-center space-x-2 cursor-pointer">
-                  <input
-                    type="checkbox"
-                    checked={selectedTypes.includes('all')}
-                    onChange={() => handleTypeToggle('all')}
-                    className="rounded border-gray-500 text-emerald-500 focus:ring-emerald-500"
-                  />
-                  <span className="text-sm text-gray-300">All Types</span>
-                </label>
-                {cryptoPairTypes.map(type => (
-                  <label key={type.id} className="flex items-center space-x-2 cursor-pointer">
+            <div className="mt-4 p-4 bg-gray-700 rounded-lg space-y-6">
+              {/* Crypto Type Filters */}
+              <div>
+                <h4 className="text-sm font-medium text-gray-300 mb-3">Filter by Token Type</h4>
+                <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-2">
+                  <label className="flex items-center space-x-2 cursor-pointer">
                     <input
                       type="checkbox"
-                      checked={selectedTypes.includes(type.id)}
-                      onChange={() => handleTypeToggle(type.id)}
+                      checked={selectedTypes.includes('all')}
+                      onChange={() => handleTypeToggle('all')}
                       className="rounded border-gray-500 text-emerald-500 focus:ring-emerald-500"
                     />
-                    <span className="text-sm text-gray-300">{type.name}</span>
+                    <span className="text-sm text-gray-300">All Types</span>
                   </label>
-                ))}
+                  {cryptoPairTypes.map(type => (
+                    <label key={type.id} className="flex items-center space-x-2 cursor-pointer">
+                      <input
+                        type="checkbox"
+                        checked={selectedTypes.includes(type.id)}
+                        onChange={() => handleTypeToggle(type.id)}
+                        className="rounded border-gray-500 text-emerald-500 focus:ring-emerald-500"
+                      />
+                      <span className="text-sm text-gray-300">{type.name}</span>
+                    </label>
+                  ))}
+                </div>
+              </div>
+
+              {/* Quote Currency Filters */}
+              <div>
+                <h4 className="text-sm font-medium text-gray-300 mb-3">Filter by Quote Currency</h4>
+                <div className="grid grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-2">
+                  <label className="flex items-center space-x-2 cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={selectedQuoteCurrencies.includes('all')}
+                      onChange={() => handleQuoteCurrencyToggle('all')}
+                      className="rounded border-gray-500 text-blue-500 focus:ring-blue-500"
+                    />
+                    <span className="text-sm text-gray-300">All Quotes</span>
+                  </label>
+                  {availableQuoteCurrencies.map(currency => (
+                    <label key={currency} className="flex items-center space-x-2 cursor-pointer">
+                      <input
+                        type="checkbox"
+                        checked={selectedQuoteCurrencies.includes(currency)}
+                        onChange={() => handleQuoteCurrencyToggle(currency)}
+                        className="rounded border-gray-500 text-blue-500 focus:ring-blue-500"
+                      />
+                      <span className="text-sm text-gray-300 font-mono">{currency}</span>
+                    </label>
+                  ))}
+                </div>
               </div>
             </div>
           )}
@@ -199,19 +289,33 @@ const CryptoPairSearch: React.FC<CryptoPairSearchProps> = ({
               <button
                 key={pair}
                 onClick={() => handlePairSelect(pair)}
-                className={`flex items-center justify-between p-3 rounded-lg text-left transition-colors ${
-                  selectedPair === pair
-                    ? 'bg-emerald-600 text-white'
-                    : 'bg-gray-700 hover:bg-gray-600 text-gray-300'
-                }`}
+                disabled={selectingPair !== null}
+                className={`group flex items-center justify-between p-3 rounded-lg text-left transition-all duration-200 hover:scale-[1.02] ${
+                  selectingPair === pair
+                    ? 'bg-emerald-500 text-white shadow-lg ring-2 ring-emerald-300 animate-pulse'
+                    : selectedPair === pair
+                    ? 'bg-emerald-600 text-white shadow-lg ring-2 ring-emerald-400'
+                    : 'bg-gray-700 hover:bg-gray-600 text-gray-300 hover:shadow-md'
+                } ${selectingPair !== null && selectingPair !== pair ? 'opacity-50 cursor-not-allowed' : ''}`}
+                title={`Click to scan ${pair} - URL will update automatically`}
               >
                 <div className="flex items-center space-x-3">
                   <div className={`w-2 h-2 rounded-full ${getPairCategoryColor(pair)}`}></div>
                   <span className="font-medium">{pair}</span>
+                  {selectingPair === pair ? (
+                    <div className="inline-block animate-spin rounded-full h-3 w-3 border border-white border-t-transparent"></div>
+                  ) : (
+                    <ExternalLink className="w-3 h-3 opacity-0 group-hover:opacity-100 transition-opacity text-emerald-400" />
+                  )}
                 </div>
-                <span className="text-xs text-gray-400">
-                  {getPairCategory(pair)}
-                </span>
+                <div className="flex flex-col items-end">
+                  <span className="text-xs text-gray-400">
+                    {getPairCategory(pair)}
+                  </span>
+                  <span className="text-xs text-emerald-400 opacity-0 group-hover:opacity-100 transition-opacity">
+                    {selectingPair === pair ? 'Selecting...' : 'Go to Scan'}
+                  </span>
+                </div>
               </button>
             ))}
           </div>

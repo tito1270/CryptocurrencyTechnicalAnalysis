@@ -71,6 +71,8 @@ export interface AnalysisResult {
   resistanceLevel: number;
   indicators: TechnicalIndicator[];
   strategies: TradingStrategy[];
+  priceSource: 'LIVE_API' | 'FALLBACK';
+  priceTimestamp: number;
 }
 
 export interface NewsItem {
