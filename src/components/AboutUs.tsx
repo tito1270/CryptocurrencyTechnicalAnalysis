@@ -11,9 +11,21 @@ const AboutUs: React.FC = () => {
             <TrendingUp className="w-8 h-8 text-white" />
           </div>
           <h1 className="text-4xl font-bold text-white mb-4">About CryptoAnalyzer Pro</h1>
-          <p className="text-xl text-gray-300 max-w-2xl mx-auto">
+          <p className="text-xl text-gray-300 max-w-2xl mx-auto mb-6">
             Your trusted partner in cryptocurrency trading and market analysis since 2024
           </p>
+          <button
+            onClick={() => {
+              window.location.href = '/#scan-section';
+              setTimeout(() => {
+                document.getElementById('scan-section')?.scrollIntoView({ behavior: 'smooth' });
+              }, 100);
+            }}
+            className="inline-flex items-center space-x-2 px-6 py-3 bg-emerald-600 hover:bg-emerald-700 text-white font-semibold rounded-lg transition-all"
+          >
+            <TrendingUp className="w-5 h-5" />
+            <span>Try Our Platform</span>
+          </button>
         </div>
 
         {/* Mission Statement */}
