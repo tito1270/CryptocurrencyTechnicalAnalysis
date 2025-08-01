@@ -333,18 +333,29 @@ const Homepage: React.FC = () => {
             Join thousands of traders using our free platform to make informed cryptocurrency trading decisions. 
             No registration required, no credit card needed - start analyzing immediately.
           </p>
-          <div className="flex flex-col sm:flex-row gap-4 justify-center items-center">
-            <div className="flex items-center space-x-2 text-emerald-400">
-              <CheckCircle className="w-5 h-5" />
-              <span>Instant Access</span>
-            </div>
-            <div className="flex items-center space-x-2 text-emerald-400">
-              <CheckCircle className="w-5 h-5" />
-              <span>No Registration</span>
-            </div>
-            <div className="flex items-center space-x-2 text-emerald-400">
-              <CheckCircle className="w-5 h-5" />
-              <span>Always Free</span>
+          <div className="flex flex-col items-center gap-6">
+            <button
+              onClick={() => document.getElementById('scan-section')?.scrollIntoView({ behavior: 'smooth' })}
+              className="inline-flex items-center space-x-3 px-10 py-4 bg-gradient-to-r from-emerald-500 to-blue-600 hover:from-emerald-600 hover:to-blue-700 text-white font-bold text-xl rounded-xl transition-all transform hover:scale-105 shadow-xl hover:shadow-emerald-500/25"
+            >
+              <TrendingUp className="w-7 h-7" />
+              <span>START SCANNING NOW</span>
+              <ArrowRight className="w-6 h-6" />
+            </button>
+
+            <div className="flex flex-col sm:flex-row gap-4 justify-center items-center">
+              <div className="flex items-center space-x-2 text-emerald-400">
+                <CheckCircle className="w-5 h-5" />
+                <span>Instant Access</span>
+              </div>
+              <div className="flex items-center space-x-2 text-emerald-400">
+                <CheckCircle className="w-5 h-5" />
+                <span>No Registration</span>
+              </div>
+              <div className="flex items-center space-x-2 text-emerald-400">
+                <CheckCircle className="w-5 h-5" />
+                <span>Always Free</span>
+              </div>
             </div>
           </div>
         </div>
