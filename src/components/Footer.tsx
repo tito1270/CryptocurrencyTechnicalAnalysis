@@ -124,6 +124,25 @@ const Footer: React.FC<FooterProps> = ({ onPageChange }) => {
           </div>
         </div>
 
+        {/* Scan CTA */}
+        <div className="border-t border-gray-800 mt-8 pt-8">
+          <div className="text-center mb-6">
+            <button
+              onClick={() => {
+                window.location.href = '/#scan-section';
+                setTimeout(() => {
+                  document.getElementById('scan-section')?.scrollIntoView({ behavior: 'smooth' });
+                }, 100);
+              }}
+              className="inline-flex items-center space-x-3 px-8 py-4 bg-gradient-to-r from-emerald-500 to-blue-600 hover:from-emerald-600 hover:to-blue-700 text-white font-bold text-lg rounded-xl transition-all transform hover:scale-105 shadow-xl hover:shadow-emerald-500/25"
+            >
+              <TrendingUp className="w-6 h-6" />
+              <span>START FREE ANALYSIS NOW</span>
+            </button>
+            <p className="text-sm text-gray-400 mt-2">Quick access to cryptocurrency scanning tools</p>
+          </div>
+        </div>
+
         {/* Contact Info */}
         <div className="border-t border-gray-800 mt-8 pt-8">
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm text-gray-400">
