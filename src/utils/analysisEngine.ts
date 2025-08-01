@@ -27,8 +27,9 @@ export const performAnalysis = async (
   // Analyze news impact for the pair
   const newsAnalysis = analyzeNewsImpact(pair, activeIndicators, activeStrategies);
   
-  // Get real current price
-  const currentPrice = await getCurrentPrice(pair, broker);
+  // Get real current price with metadata
+  const priceData = await getCurrentPrice(pair, broker);
+  const currentPrice = priceData.price;
   const priceLevels = calculatePriceLevels(currentPrice, sentiment, newsAnalysis.impact);
   
   // Generate comprehensive recommendation
