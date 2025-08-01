@@ -65,12 +65,23 @@ const Footer: React.FC<FooterProps> = ({ onPageChange }) => {
                 </button>
               </li>
               <li>
-                <button 
+                <button
                   onClick={() => onPageChange('contact')}
                   className="text-gray-300 hover:text-emerald-400 transition-colors flex items-center space-x-2"
                 >
                   <Mail className="w-4 h-4" />
                   <span>Contact Us</span>
+                </button>
+              </li>
+              <li>
+                <button
+                  onClick={() => onPageChange('sitemap')}
+                  className="text-gray-300 hover:text-emerald-400 transition-colors flex items-center space-x-2"
+                >
+                  <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                    <path fillRule="evenodd" d="M3 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm0 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm0 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm0 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1z" clipRule="evenodd" />
+                  </svg>
+                  <span>Sitemap</span>
                 </button>
               </li>
             </ul>
