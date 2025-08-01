@@ -1,5 +1,6 @@
 import React from 'react';
 import { Home, Info, Mail, Shield, FileText, AlertTriangle, TrendingUp, Search, Newspaper, BarChart3, Zap } from 'lucide-react';
+import SEOManager from './SEOManager';
 
 interface SitemapProps {
   onPageChange: (page: string) => void;
