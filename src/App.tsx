@@ -122,7 +122,7 @@ function AppContent() {
             </div>
 
             {/* Trading Analysis Section */}
-            <div className="border-t border-gray-700 pt-12">
+            <div id="scan-section" className="border-t border-gray-700 pt-12 scroll-mt-20">
               <div className="text-center mb-8">
                 <h2 className="text-3xl font-bold text-white mb-4">
                   Start Your Free Cryptocurrency Analysis
