@@ -126,7 +126,10 @@ const CryptoPairSearch: React.FC<CryptoPairSearchProps> = ({
         {/* Header */}
         <div className="p-6 border-b border-gray-700">
           <div className="flex items-center justify-between mb-4">
-            <h2 className="text-xl font-semibold text-white">Select Trading Pair</h2>
+            <div>
+              <h2 className="text-xl font-semibold text-white">Select Trading Pair</h2>
+              <p className="text-sm text-gray-400 mt-1">Click any pair to automatically replace current selection and scan</p>
+            </div>
             <button
               onClick={onClose}
               className="p-2 hover:bg-gray-700 rounded-lg transition-colors"
