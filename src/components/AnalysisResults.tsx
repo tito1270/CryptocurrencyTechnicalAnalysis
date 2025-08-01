@@ -178,12 +178,19 @@ const AnalysisResults: React.FC<AnalysisResultsProps> = ({ result }) => {
             <div className="text-2xl font-bold text-white">{result.confidence}%</div>
             <div className="text-sm text-gray-400">Confidence</div>
           </div>
-          <div className="text-center bg-gray-800 rounded-lg p-3 border-l-2 border-emerald-500">
+          <div className={`text-center bg-gray-800 rounded-lg p-3 border-l-2 ${result.priceSource === 'LIVE_API' ? 'border-emerald-500' : 'border-yellow-500'}`}>
             <div className="flex items-center justify-center space-x-2">
-              <div className="text-2xl font-bold text-emerald-400">${result.entryPrice.toFixed(6)}</div>
-              <div className="w-2 h-2 bg-emerald-500 rounded-full animate-pulse"></div>
+              <div className={`text-2xl font-bold ${result.priceSource === 'LIVE_API' ? 'text-emerald-400' : 'text-yellow-400'}`}>
+                ${result.entryPrice.toFixed(6)}
+              </div>
+              <div className={`w-2 h-2 rounded-full animate-pulse ${result.priceSource === 'LIVE_API' ? 'bg-emerald-500' : 'bg-yellow-500'}`}></div>
             </div>
-            <div className="text-sm text-emerald-300 font-medium">Live Market Price</div>
+            <div className={`text-sm font-medium ${result.priceSource === 'LIVE_API' ? 'text-emerald-300' : 'text-yellow-300'}`}>
+              {result.priceSource === 'LIVE_API' ? `Live ${result.broker.toUpperCase()} Price` : 'Fallback Price'}
+            </div>
+            <div className="text-xs text-gray-400 mt-1">
+              Updated: {new Date(result.priceTimestamp).toLocaleTimeString()}
+            </div>
           </div>
           <div className="text-center">
             <div className="text-2xl font-bold text-blue-400">${result.targetPrice.toFixed(4)}</div>
