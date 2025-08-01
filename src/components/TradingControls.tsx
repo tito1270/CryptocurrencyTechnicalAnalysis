@@ -45,21 +45,39 @@ const TradingControls: React.FC<TradingControlsProps> = ({
   const [copied, setCopied] = useState(false);
   const [currentDropdownPage, setCurrentDropdownPage] = useState(0);
   
-  // Show limited pairs for the dropdown, ensuring selected pair is always first
-  const limitedPairs = useMemo(() => {
-    if (!currentBroker) return [];
+  // Pagination constants
+  const PAIRS_PER_PAGE = 19; // Leave room for selected pair
+
+  // Show limited pairs for the dropdown with pagination, ensuring selected pair is always first
+  const { limitedPairs, totalPages, hasNextPage, hasPrevPage } = useMemo(() => {
+    if (!currentBroker) return { limitedPairs: [], totalPages: 0, hasNextPage: false, hasPrevPage: false };
 
     const allPairs = currentBroker.pairs;
+    const totalPairs = allPairs.length;
+    const totalPagesCount = Math.ceil(totalPairs / PAIRS_PER_PAGE);
 
-    // Always include the selected pair first if it exists in the broker's pairs
-    if (selectedPair && allPairs.includes(selectedPair)) {
-      const otherPairs = allPairs.filter(pair => pair !== selectedPair).slice(0, 19);
-      return [selectedPair, ...otherPairs];
+    // Always include the selected pair first if it exists
+    const selectedPairIncluded = selectedPair && allPairs.includes(selectedPair);
+
+    // Get pairs for current page
+    const startIndex = currentDropdownPage * PAIRS_PER_PAGE;
+    let pagePairs = allPairs.slice(startIndex, startIndex + PAIRS_PER_PAGE);
+
+    // If selected pair is included, ensure it's always first and adjust the list
+    if (selectedPairIncluded) {
+      // Remove selected pair from page pairs if it's there
+      pagePairs = pagePairs.filter(pair => pair !== selectedPair);
+      // Add selected pair at the beginning and limit to PAIRS_PER_PAGE
+      pagePairs = [selectedPair, ...pagePairs.slice(0, PAIRS_PER_PAGE - 1)];
     }
 
-    // If selected pair is not in broker's pairs, just show first 20
-    return allPairs.slice(0, 20);
-  }, [currentBroker, selectedPair]);
+    return {
+      limitedPairs: pagePairs,
+      totalPages: totalPagesCount,
+      hasNextPage: currentDropdownPage < totalPagesCount - 1,
+      hasPrevPage: currentDropdownPage > 0
+    };
+  }, [currentBroker, selectedPair, currentDropdownPage]);
 
   const fallbackCopyTextToClipboard = (text: string) => {
     const textArea = document.createElement("textarea");
