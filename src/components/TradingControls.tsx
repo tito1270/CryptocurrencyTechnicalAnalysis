@@ -83,22 +83,26 @@ const TradingControls: React.FC<TradingControlsProps> = ({
 
     const urlString = currentUrl.toString();
 
-    try {
-      // Try modern clipboard API first
-      if (navigator.clipboard && window.isSecureContext) {
-        await navigator.clipboard.writeText(urlString);
+    // Check if we're in an iframe or restricted context - use fallback directly
+    const isRestricted = window.self !== window.top || !window.isSecureContext;
+
+    if (isRestricted || !navigator.clipboard) {
+      // Use fallback method directly for restricted environments
+      const success = fallbackCopyTextToClipboard(urlString);
+      if (success) {
         setCopied(true);
         setTimeout(() => setCopied(false), 2000);
       } else {
-        // Fallback for older browsers or insecure contexts
-        const success = fallbackCopyTextToClipboard(urlString);
-        if (success) {
-          setCopied(true);
-          setTimeout(() => setCopied(false), 2000);
-        } else {
-          console.error('Failed to copy link: Both clipboard API and fallback failed');
-        }
+        console.error('Failed to copy link using fallback method');
       }
+      return;
+    }
+
+    try {
+      // Only try clipboard API in unrestricted, secure contexts
+      await navigator.clipboard.writeText(urlString);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
     } catch (err) {
       console.error('Clipboard API failed, trying fallback:', err);
       // Try fallback method
