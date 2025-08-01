@@ -3,9 +3,9 @@ import { PriceData } from '../types';
 
 // Enhanced cache with better management
 const priceCache = new Map<string, { data: any; timestamp: number }>();
-const CACHE_DURATION = 45000; // 45 seconds - longer cache to reduce API calls
-const REQUEST_TIMEOUT = 15000; // 15 seconds - increased timeout for CoinGecko
-const MAX_RETRIES = 2;
+const CACHE_DURATION = 60000; // 60 seconds - longer cache to reduce API calls
+const REQUEST_TIMEOUT = 8000; // 8 seconds - reduced timeout for better UX
+const MAX_RETRIES = 1; // Reduced retries for faster fallback
 
 // Reliable price sources
 const PRICE_SOURCES = {
