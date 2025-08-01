@@ -11,9 +11,24 @@ const Disclaimer: React.FC = () => {
             <AlertTriangle className="w-8 h-8 text-white" />
           </div>
           <h1 className="text-4xl font-bold text-white mb-4">Risk Disclaimer</h1>
-          <p className="text-xl text-gray-300">
+          <p className="text-xl text-gray-300 mb-6">
             Important Information About Cryptocurrency Trading Risks
           </p>
+          <div className="text-center">
+            <button
+              onClick={() => {
+                window.location.href = '/#scan-section';
+                setTimeout(() => {
+                  document.getElementById('scan-section')?.scrollIntoView({ behavior: 'smooth' });
+                }, 100);
+              }}
+              className="inline-flex items-center space-x-2 px-6 py-3 bg-emerald-600 hover:bg-emerald-700 text-white font-semibold rounded-lg transition-all"
+            >
+              <TrendingUp className="w-5 h-5" />
+              <span>Try Free Analysis (No Risk)</span>
+            </button>
+            <p className="text-sm text-gray-400 mt-2">Practice with our tools before risking real money</p>
+          </div>
         </div>
 
         <div className="space-y-8">
