@@ -1,20 +1,12 @@
 import axios from 'axios';
 import { PriceData } from '../types';
 
-// API endpoints for different exchanges
+// API endpoints for real cryptocurrency price data (CORS-friendly)
 const API_ENDPOINTS = {
-  binance: 'https://api.binance.com/api/v3/ticker/24hr',
-  okx: 'https://www.okx.com/api/v5/market/tickers?instType=SPOT',
-  coinbase: 'https://api.exchange.coinbase.com/products',
-  kraken: 'https://api.kraken.com/0/public/Ticker',
-  kucoin: '/kucoin-api/api/v1/market/allTickers',
-  huobi: 'https://api.huobi.pro/market/tickers',
-  gate: 'https://api.gateio.ws/api/v4/spot/tickers',
-  bitget: 'https://api.bitget.com/api/spot/v1/market/tickers',
-  mexc: 'https://api.mexc.com/api/v3/ticker/24hr',
-  bybit: 'https://api.bybit.com/v5/market/tickers?category=spot',
-  crypto_com: 'https://api.crypto.com/v2/public/get-ticker',
-  bitfinex: 'https://api-pub.bitfinex.com/v2/tickers?symbols=ALL'
+  coingecko: 'https://api.coingecko.com/api/v3',
+  coincap: 'https://api.coincap.io/v2',
+  binance_cors: 'https://api.binance.com/api/v3',
+  kraken_cors: 'https://api.kraken.com/0/public'
 };
 
 // Cache for API responses to avoid too many requests
