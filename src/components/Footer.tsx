@@ -76,6 +76,19 @@ const Footer: React.FC<FooterProps> = ({ onPageChange }) => {
             </ul>
           </div>
 
+          {/* Features */}
+          <div>
+            <h4 className="text-lg font-semibold text-white mb-4">Platform Features</h4>
+            <ul className="space-y-2 text-sm text-gray-300">
+              <li>• Bitcoin & Ethereum Analysis</li>
+              <li>• 25+ Technical Indicators</li>
+              <li>• Multi-Exchange Support</li>
+              <li>• Real-Time Price Data</li>
+              <li>• Free Trading Signals</li>
+              <li>• Cryptocurrency Scanner</li>
+            </ul>
+          </div>
+
           {/* Legal & Support */}
           <div>
             <h4 className="text-lg font-semibold text-white mb-4">Legal & Support</h4>
