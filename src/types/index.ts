@@ -82,6 +82,8 @@ export interface NewsItem {
   sentiment: 'POSITIVE' | 'NEGATIVE' | 'NEUTRAL';
   impact: 'HIGH' | 'MEDIUM' | 'LOW';
   source: string;
+  url: string;
+  publishedAt: string;
   timestamp: number;
   relevantPairs: string[];
 }
