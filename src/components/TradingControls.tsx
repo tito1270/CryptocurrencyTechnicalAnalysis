@@ -50,19 +50,65 @@ const TradingControls: React.FC<TradingControlsProps> = ({
     return currentBroker.pairs.slice(0, 20); // Show first 20 pairs in dropdown
   }, [currentBroker]);
 
+  const fallbackCopyTextToClipboard = (text: string) => {
+    const textArea = document.createElement("textarea");
+    textArea.value = text;
+
+    // Avoid scrolling to bottom
+    textArea.style.top = "0";
+    textArea.style.left = "0";
+    textArea.style.position = "fixed";
+    textArea.style.opacity = "0";
+
+    document.body.appendChild(textArea);
+    textArea.focus();
+    textArea.select();
+
+    try {
+      const successful = document.execCommand('copy');
+      document.body.removeChild(textArea);
+      return successful;
+    } catch (err) {
+      document.body.removeChild(textArea);
+      return false;
+    }
+  };
+
   const handleCopyLink = async () => {
     const currentUrl = new URL(window.location.href);
     currentUrl.searchParams.set('pair', selectedPair);
     currentUrl.searchParams.set('broker', selectedBroker);
     currentUrl.searchParams.set('timeframe', selectedTimeframe);
     currentUrl.searchParams.set('type', tradeType);
-    
+
+    const urlString = currentUrl.toString();
+
     try {
-      await navigator.clipboard.writeText(currentUrl.toString());
-      setCopied(true);
-      setTimeout(() => setCopied(false), 2000);
+      // Try modern clipboard API first
+      if (navigator.clipboard && window.isSecureContext) {
+        await navigator.clipboard.writeText(urlString);
+        setCopied(true);
+        setTimeout(() => setCopied(false), 2000);
+      } else {
+        // Fallback for older browsers or insecure contexts
+        const success = fallbackCopyTextToClipboard(urlString);
+        if (success) {
+          setCopied(true);
+          setTimeout(() => setCopied(false), 2000);
+        } else {
+          console.error('Failed to copy link: Both clipboard API and fallback failed');
+        }
+      }
     } catch (err) {
-      console.error('Failed to copy link:', err);
+      console.error('Clipboard API failed, trying fallback:', err);
+      // Try fallback method
+      const success = fallbackCopyTextToClipboard(urlString);
+      if (success) {
+        setCopied(true);
+        setTimeout(() => setCopied(false), 2000);
+      } else {
+        console.error('Failed to copy link: Both methods failed');
+      }
     }
   };
 
