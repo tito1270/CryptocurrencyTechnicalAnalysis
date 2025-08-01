@@ -70,10 +70,17 @@ const Homepage: React.FC = () => {
           <h2 className="text-3xl font-bold text-white mb-4">
             Perfect for New Cryptocurrency Traders
           </h2>
-          <p className="text-lg text-gray-300 max-w-3xl mx-auto">
-            Start your cryptocurrency trading journey with confidence. Our platform provides everything new traders need 
+          <p className="text-lg text-gray-300 max-w-3xl mx-auto mb-6">
+            Start your cryptocurrency trading journey with confidence. Our platform provides everything new traders need
             to understand market movements and make informed decisions without risking capital on expensive tools.
           </p>
+          <button
+            onClick={() => document.getElementById('scan-section')?.scrollIntoView({ behavior: 'smooth' })}
+            className="inline-flex items-center space-x-2 px-6 py-3 bg-emerald-600 hover:bg-emerald-700 text-white font-semibold rounded-lg transition-all"
+          >
+            <Target className="w-5 h-5" />
+            <span>Try Free Analysis</span>
+          </button>
         </div>
         
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
