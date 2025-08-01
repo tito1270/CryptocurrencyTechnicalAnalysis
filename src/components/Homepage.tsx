@@ -18,8 +18,18 @@ const Homepage: React.FC = () => {
   return (
     <div className="space-y-16">
       {/* Hero Section with Main Description */}
-      <section className="text-center py-12 bg-gradient-to-r from-emerald-900/20 to-blue-900/20 rounded-xl border border-gray-700">
-        <div className="max-w-4xl mx-auto px-6">
+      <section className="text-center py-12 bg-gradient-to-r from-emerald-900/20 to-blue-900/20 rounded-xl border border-gray-700 relative overflow-hidden">
+        {/* Background Image */}
+        <div className="absolute inset-0 opacity-10">
+          <img
+            src="https://images.pexels.com/photos/32299962/pexels-photo-32299962.jpeg"
+            alt="Vibrant trading setup with multiple screens displaying cryptocurrency charts and data analysis tools"
+            className="w-full h-full object-cover object-center"
+          />
+          <div className="absolute inset-0 bg-gradient-to-r from-emerald-900/40 to-blue-900/40"></div>
+        </div>
+
+        <div className="max-w-4xl mx-auto px-6 relative z-10">
           <h1 className="text-4xl md:text-5xl font-bold text-white mb-6 leading-tight">
             Free Cryptocurrency Technical Analysis Platform
             <span className="block text-2xl md:text-3xl text-emerald-400 mt-2">
