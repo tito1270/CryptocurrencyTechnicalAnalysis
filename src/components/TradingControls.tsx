@@ -44,11 +44,21 @@ const TradingControls: React.FC<TradingControlsProps> = ({
   const [showAdvancedPairSearch, setShowAdvancedPairSearch] = useState(false);
   const [copied, setCopied] = useState(false);
   
-  // Show limited pairs for the dropdown
+  // Show limited pairs for the dropdown, ensuring selected pair is always first
   const limitedPairs = useMemo(() => {
     if (!currentBroker) return [];
-    return currentBroker.pairs.slice(0, 20); // Show first 20 pairs in dropdown
-  }, [currentBroker]);
+
+    const allPairs = currentBroker.pairs;
+
+    // Always include the selected pair first if it exists in the broker's pairs
+    if (selectedPair && allPairs.includes(selectedPair)) {
+      const otherPairs = allPairs.filter(pair => pair !== selectedPair).slice(0, 19);
+      return [selectedPair, ...otherPairs];
+    }
+
+    // If selected pair is not in broker's pairs, just show first 20
+    return allPairs.slice(0, 20);
+  }, [currentBroker, selectedPair]);
 
   const fallbackCopyTextToClipboard = (text: string) => {
     const textArea = document.createElement("textarea");
