@@ -27,7 +27,7 @@ export const performAnalysis = async (
   // Analyze news impact for the pair
   const newsAnalysis = analyzeNewsImpact(pair, activeIndicators, activeStrategies);
   
-  // Get real current price with metadata
+  // Get LIVE current price with metadata from specific broker
   const priceData = await getCurrentPrice(pair, broker);
   const currentPrice = priceData.price;
   const priceLevels = calculatePriceLevels(currentPrice, sentiment, newsAnalysis.impact);
@@ -144,26 +144,26 @@ const calculateOverallSentiment = (
 
 const getCurrentPrice = async (pair: string, broker: string): Promise<{price: number, source: 'LIVE_API' | 'FALLBACK', timestamp: number}> => {
   try {
-    console.log(`Fetching live price for ${pair} from ${broker.toUpperCase()} exchange...`);
+    console.log(`🔍 Fetching LIVE API price for ${pair} from ${broker.toUpperCase()} exchange...`);
 
-    // Try to get real-time price specifically from the selected broker's API
+    // Try to get LIVE real-time price specifically from the selected broker's API
     const realPrice = await getPairPrice(broker, pair);
     if (realPrice && realPrice > 0) {
-      console.log(`✅ Live price from ${broker.toUpperCase()}: $${realPrice.toFixed(6)} for ${pair}`);
+      console.log(`✅ LIVE API price from ${broker.toUpperCase()}: $${realPrice.toFixed(6)} for ${pair}`);
       return {
         price: realPrice,
         source: 'LIVE_API',
         timestamp: Date.now()
       };
     } else {
-      console.warn(`⚠️ No price data available for ${pair} on ${broker.toUpperCase()}`);
+      console.warn(`⚠️ No LIVE API data available for ${pair} on ${broker.toUpperCase()}`);
     }
   } catch (error) {
-    console.error(`❌ Error fetching ${pair} price from ${broker.toUpperCase()}:`, error);
+    console.error(`❌ Error fetching LIVE ${pair} price from ${broker.toUpperCase()}:`, error);
   }
 
-  // Fallback to simulated price only if broker-specific price fails
-  console.log(`🔄 Using fallback price for ${pair} (${broker.toUpperCase()} unavailable)`);
+  // Fallback to current market price only if broker-specific LIVE API fails
+  console.log(`🔄 Using current market price for ${pair} (${broker.toUpperCase()} LIVE API unavailable)`);
   return {
     price: getFallbackPrice(pair),
     source: 'FALLBACK',

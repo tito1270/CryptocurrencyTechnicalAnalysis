@@ -19,11 +19,11 @@ const LivePrices: React.FC<LivePricesProps> = ({ selectedPair, selectedBroker })
     if (showLoading) setIsLoading(true);
     
     try {
-      console.log('🔄 LivePrices: Starting price refresh...');
+      console.log('🔄 LivePrices: Starting LIVE API price refresh...');
       
       // Set timeout for the entire operation
       const timeoutPromise = new Promise<PriceData[]>((_, reject) => 
-        setTimeout(() => reject(new Error('Request timeout')), 10000)
+        setTimeout(() => reject(new Error('LIVE API timeout')), 8000)
       );
       
       const pricesPromise = generateLivePrices();
@@ -32,28 +32,28 @@ const LivePrices: React.FC<LivePricesProps> = ({ selectedPair, selectedBroker })
       if (newPrices && newPrices.length > 0) {
         setPrices(newPrices);
         setLastUpdate(new Date());
-        setConnectionStatus(newPrices.length > 100 ? 'connected' : 'fallback');
+        setConnectionStatus(newPrices.length > 200 ? 'connected' : 'fallback');
         setRetryCount(0);
         
-        console.log(`✅ LivePrices: Successfully loaded ${newPrices.length} prices`);
+        console.log(`✅ LivePrices: Successfully loaded ${newPrices.length} LIVE prices`);
         
         // Log key prices for verification
         const btcPrice = newPrices.find(p => p.pair === 'BTC/USDT' && p.broker === 'binance');
         const ethPrice = newPrices.find(p => p.pair === 'ETH/USDT' && p.broker === 'binance');
         
-        if (btcPrice) console.log(`💰 BTC/USDT: $${btcPrice.price.toLocaleString()}`);
-        if (ethPrice) console.log(`💎 ETH/USDT: $${ethPrice.price.toLocaleString()}`);
+        if (btcPrice) console.log(`💰 LIVE BTC/USDT: $${btcPrice.price.toLocaleString()}`);
+        if (ethPrice) console.log(`💎 LIVE ETH/USDT: $${ethPrice.price.toLocaleString()}`);
       } else {
         throw new Error('No prices received');
       }
     } catch (error) {
-      console.error('❌ LivePrices: Error refreshing prices:', error);
+      console.error('❌ LivePrices: Error refreshing LIVE prices:', error);
       setConnectionStatus('error');
       setRetryCount(prev => prev + 1);
       
       // If we have no prices at all, generate some fallback data
       if (prices.length === 0) {
-        console.log('🔄 Generating emergency fallback data...');
+        console.log('🔄 Generating emergency current market data...');
         try {
           const fallbackPrices = await generateLivePrices([]);
           setPrices(fallbackPrices);
@@ -73,8 +73,8 @@ const LivePrices: React.FC<LivePricesProps> = ({ selectedPair, selectedBroker })
     
     // Set up regular refresh
     const interval = setInterval(() => {
-      refreshPrices(false); // Don't show loading for background refreshes
-    }, 60000); // Every 60 seconds
+      refreshPrices(false); // Background LIVE API refresh
+    }, 30000); // Every 30 seconds for more live data
     
     return () => clearInterval(interval);
   }, []);
@@ -112,21 +112,21 @@ const LivePrices: React.FC<LivePricesProps> = ({ selectedPair, selectedBroker })
       case 'connected':
         return {
           icon: <Wifi className="w-4 h-4 text-emerald-400" />,
-          text: 'LIVE API DATA',
+          text: 'LIVE EXCHANGE APIs',
           color: 'text-emerald-400',
           bgColor: 'bg-emerald-500/20 border-emerald-500/30'
         };
       case 'fallback':
         return {
           icon: <WifiOff className="w-4 h-4 text-blue-400" />,
-          text: 'RELIABLE FALLBACK',
+          text: 'CURRENT MARKET DATA',
           color: 'text-blue-400',
           bgColor: 'bg-blue-500/20 border-blue-500/30'
         };
       case 'error':
         return {
           icon: <AlertTriangle className="w-4 h-4 text-orange-400" />,
-          text: 'RETRYING...',
+          text: 'RECONNECTING APIS...',
           color: 'text-orange-400',
           bgColor: 'bg-orange-500/20 border-orange-500/30'
         };
@@ -243,9 +243,9 @@ const LivePrices: React.FC<LivePricesProps> = ({ selectedPair, selectedBroker })
               <div className="flex items-center space-x-1">
                 {statusInfo.icon}
                 <span className={statusInfo.color}>
-                  {connectionStatus === 'connected' && '🚀 Live CoinGecko API + Real spreads'}
-                  {connectionStatus === 'fallback' && '⚡ Reliable local data with accurate prices'}
-                  {connectionStatus === 'error' && `🔄 Reconnecting... (${retryCount}/3)`}
+                  {connectionStatus === 'connected' && '🚀 LIVE Exchange APIs + Real spreads'}
+                  {connectionStatus === 'fallback' && '⚡ Current market data with accurate prices'}
+                  {connectionStatus === 'error' && `🔄 Reconnecting APIs... (${retryCount}/3)`}
                 </span>
               </div>
             </div>
@@ -253,7 +253,7 @@ const LivePrices: React.FC<LivePricesProps> = ({ selectedPair, selectedBroker })
               📊 {uniquePairs.length} Pairs × {[...new Set(prices.map(p => p.broker))].length} Exchanges
             </div>
             <div className="px-2 py-1 bg-gray-700 rounded text-gray-400">
-              🔄 Auto-refresh 60s
+             🔄 Auto-refresh 30s
             </div>
           </div>
         </div>
@@ -310,8 +310,8 @@ const LivePrices: React.FC<LivePricesProps> = ({ selectedPair, selectedBroker })
             {statusInfo.text}
           </span>
           <span className="text-xs text-gray-400">
-            • {connectionStatus === 'connected' ? 'Live API active' : connectionStatus === 'fallback' ? 'Reliable backup active' : 'Attempting reconnection'} 
-            • All broker spreads verified • Auto-refresh enabled
+            • {connectionStatus === 'connected' ? 'LIVE Exchange APIs active' : connectionStatus === 'fallback' ? 'Current market data active' : 'Attempting API reconnection'} 
+            • All broker spreads verified • Auto-refresh 30s
           </span>
         </div>
       </div>

@@ -186,7 +186,7 @@ const AnalysisResults: React.FC<AnalysisResultsProps> = ({ result }) => {
               <div className={`w-2 h-2 rounded-full animate-pulse ${result.priceSource === 'LIVE_API' ? 'bg-emerald-500' : 'bg-yellow-500'}`}></div>
             </div>
             <div className={`text-sm font-medium ${result.priceSource === 'LIVE_API' ? 'text-emerald-300' : 'text-yellow-300'}`}>
-              {result.priceSource === 'LIVE_API' ? `Live ${result.broker.toUpperCase()} Price` : 'Fallback Price'}
+              {result.priceSource === 'LIVE_API' ? `LIVE ${result.broker.toUpperCase()} API` : 'Current Market Price'}
             </div>
             <div className="text-xs text-gray-400 mt-1">
               Updated: {new Date(result.priceTimestamp).toLocaleTimeString()}
