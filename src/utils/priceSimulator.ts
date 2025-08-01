@@ -4,37 +4,37 @@ import { fetchRealTimePrices, getPairPrice, getFallbackPrice } from './priceAPI'
 
 // Simplified live price generation with better error handling
 export const generateLivePrices = async (selectedPairs?: string[]): Promise<PriceData[]> => {
+  console.log('🔄 PriceSimulator: Starting reliable price fetch...');
+
   try {
-    console.log('🔄 PriceSimulator: Starting simplified price fetch...');
-    
-    // Try to fetch real prices with timeout
-    const timeoutPromise = new Promise<PriceData[]>((_, reject) => 
-      setTimeout(() => reject(new Error('Timeout')), 8000)
+    // Try to fetch real prices with shorter timeout for better UX
+    const timeoutPromise = new Promise<PriceData[]>((_, reject) =>
+      setTimeout(() => reject(new Error('Timeout after 5 seconds')), 5000)
     );
-    
+
     const pricesPromise = fetchRealTimePrices();
-    
+
     const realPrices = await Promise.race([pricesPromise, timeoutPromise]);
-    
-    if (realPrices && realPrices.length > 20) {
-      console.log(`✅ PriceSimulator: Got ${realPrices.length} real prices`);
-      
+
+    if (realPrices && realPrices.length > 10) {
+      console.log(`✅ PriceSimulator: Successfully got ${realPrices.length} real prices`);
+
       // Filter for specific pairs if requested
       if (selectedPairs && selectedPairs.length > 0) {
-        const filtered = realPrices.filter(price => 
+        const filtered = realPrices.filter(price =>
           selectedPairs.some(pair => price.pair === pair)
         );
         console.log(`📊 Filtered to ${filtered.length} prices for requested pairs`);
         return filtered.length > 0 ? filtered : realPrices.slice(0, 100);
       }
-      
+
       return realPrices;
     } else {
-      console.warn('⚠️ API returned insufficient data, using local fallback');
+      console.log('⚠️ API returned insufficient data, using reliable fallback');
       return generateLocalFallback(selectedPairs);
     }
   } catch (error) {
-    console.error('❌ PriceSimulator: API failed, using local fallback:', error);
+    console.log(`⚠️ PriceSimulator: API timeout/error (${error instanceof Error ? error.message : 'unknown'}), using fallback`);
     return generateLocalFallback(selectedPairs);
   }
 };
