@@ -86,7 +86,7 @@ function AppContent() {
 
   const handleAnalyze = async () => {
     setIsAnalyzing(true);
-    
+
     try {
       const result = await performAnalysis(
         selectedPair,
@@ -102,6 +102,29 @@ function AppContent() {
     } finally {
       setIsAnalyzing(false);
     }
+  };
+
+  const handleRefresh = () => {
+    // Clear analysis result to reset scanned data
+    setAnalysisResult(null);
+    setIsAnalyzing(false);
+
+    // Reset to default values
+    setSelectedPair('BTC/USDT');
+    setSelectedBroker(brokers[0].id);
+    setSelectedTimeframe('1h');
+    setTradeType('SPOT');
+    setSelectedIndicators([
+      'rsi', 'macd', 'stochastic', 'bollinger', 'williams_r'
+    ]);
+    setSelectedStrategies([
+      'golden_cross', 'breakout', 'momentum', 'support_resistance'
+    ]);
+
+    // Clear URL parameters
+    const params = new URLSearchParams(location.search);
+    params.delete('pair');
+    navigate(`${location.pathname}`, { replace: true });
   };
 
   // SEO data for each page
