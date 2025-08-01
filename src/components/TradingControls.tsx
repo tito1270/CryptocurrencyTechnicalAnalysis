@@ -44,6 +44,11 @@ const TradingControls: React.FC<TradingControlsProps> = ({
   const [showAdvancedPairSearch, setShowAdvancedPairSearch] = useState(false);
   const [copied, setCopied] = useState(false);
   const [currentDropdownPage, setCurrentDropdownPage] = useState(0);
+
+  // Reset pagination when broker changes
+  React.useEffect(() => {
+    setCurrentDropdownPage(0);
+  }, [selectedBroker]);
   
   // Pagination constants
   const PAIRS_PER_PAGE = 19; // Leave room for selected pair
