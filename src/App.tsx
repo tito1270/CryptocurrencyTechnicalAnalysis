@@ -13,6 +13,8 @@ import AnalysisResults from './components/AnalysisResults';
 import LivePrices from './components/LivePrices';
 import CryptoNews from './components/CryptoNews';
 import BulkScanner from './components/BulkScanner';
+import Sitemap from './components/Sitemap';
+import SEOHead from './components/SEOHead';
 import { AnalysisResult } from './types';
 import { performAnalysis } from './utils/analysisEngine';
 import { brokers } from './data/brokers';
