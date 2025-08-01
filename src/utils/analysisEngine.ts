@@ -141,16 +141,22 @@ const calculateOverallSentiment = (
 
 const getCurrentPrice = async (pair: string, broker: string): Promise<number> => {
   try {
-    // Try to get real-time price from API
+    console.log(`Fetching live price for ${pair} from ${broker.toUpperCase()} exchange...`);
+
+    // Try to get real-time price specifically from the selected broker's API
     const realPrice = await getPairPrice(broker, pair);
     if (realPrice && realPrice > 0) {
+      console.log(`✅ Live price from ${broker.toUpperCase()}: $${realPrice.toFixed(6)} for ${pair}`);
       return realPrice;
+    } else {
+      console.warn(`⚠️ No price data available for ${pair} on ${broker.toUpperCase()}`);
     }
   } catch (error) {
-    console.error('Error fetching real-time price:', error);
+    console.error(`❌ Error fetching ${pair} price from ${broker.toUpperCase()}:`, error);
   }
-  
-  // Fallback to simulated price
+
+  // Fallback to simulated price only if broker-specific price fails
+  console.log(`🔄 Using fallback price for ${pair} (${broker.toUpperCase()} unavailable)`);
   return getFallbackPrice(pair);
 };
 
@@ -360,7 +366,7 @@ const generateRecommendation = (
     explanation += `• 📉 Multiple bearish signals detected across technical indicators\n`;
     explanation += `• ⚠️ Negative momentum and trend reversal signs\n`;
     if (newsAnalysis.impact === 'HIGH' && newsAnalysis.analysis.includes('BEARISH')) {
-      explanation += `• 📰 Negative news sentiment creating downward pressure\n`;
+      explanation += `��� 📰 Negative news sentiment creating downward pressure\n`;
     }
     explanation += `• 🛡️ Risk-reward ratio of ${riskRewardRatio}:1 favors short position\n`;
   } else {
