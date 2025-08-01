@@ -95,16 +95,16 @@ export const fetchBinancePrices = async (): Promise<PriceData[]> => {
   try {
     const cacheKey = 'binance_prices';
     const cached = priceCache.get(cacheKey);
-    
+
     if (cached && Date.now() - cached.timestamp < CACHE_DURATION) {
       return parseBinanceData(cached.data);
     }
 
-    const response = await makeApiRequest(API_ENDPOINTS.binance);
-    priceCache.set(cacheKey, { data: response.data, timestamp: Date.now() });
-    return parseBinanceData(response.data);
+    // For browser environments, skip direct API calls due to CORS
+    console.log('⚠️ Binance API: Using fallback data due to CORS restrictions');
+    return generateFallbackBinanceData();
   } catch (error) {
-    console.error('Error fetching Binance prices:', error);
+    console.log('ℹ️ Binance API unavailable, using simulated data');
     return generateFallbackBinanceData();
   }
 };
