@@ -336,8 +336,7 @@ export const fetchRealTimePrices = async (selectedBrokers?: string[]): Promise<P
     allPrices = await Promise.race([fetchOperation(), operationTimeout]);
     
   } catch (error: any) {
-    console.error(`❌ All API attempts failed: ${error.message}`);
-    console.log('🛡️ Using reliable enhanced fallback');
+    console.log(`⚠️ API operation failed (${error.message}), using reliable fallback`);
     allPrices = await generateEnhancedFallback();
   }
   
