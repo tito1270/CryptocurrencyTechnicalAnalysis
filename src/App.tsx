@@ -358,7 +358,7 @@ function AppContent() {
         keywords={seoData.keywords}
         structuredData={seoData.structuredData}
       />
-      <Navigation currentPage={currentPage} onPageChange={setCurrentPage} />
+      <Navigation currentPage={currentPage} onPageChange={setCurrentPage} onRefresh={handleRefresh} />
       {renderCurrentPage()}
       <Footer onPageChange={setCurrentPage} />
     </div>
