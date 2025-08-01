@@ -1,13 +1,30 @@
 import { PriceData } from '../types';
 import { brokers } from '../data/brokers';
 import { fetchRealTimePrices, getPairPrice, getFallbackPrice } from './priceAPI';
+import livePriceStreamer from './livePriceStreamer';
 
-// Enhanced live price generation with real API integration
+// Enhanced live price generation with real API integration and streaming support
 export const generateLivePrices = async (selectedPairs?: string[]): Promise<PriceData[]> => {
   console.log('🚀 PriceSimulator: Starting LIVE price fetch from all exchanges...');
 
   try {
-    // Set timeout for the entire operation
+    // First check if we have live streamer data available
+    const streamerPrices = livePriceStreamer.getLastPrices();
+    if (streamerPrices.length > 100 && livePriceStreamer.isStreamingLive()) {
+      console.log(`⚡ Using live streamer data: ${streamerPrices.length} prices`);
+      
+      // Filter for selected pairs if specified
+      if (selectedPairs && selectedPairs.length > 0) {
+        const filtered = streamerPrices.filter(price =>
+          selectedPairs.some(pair => price.pair === pair)
+        );
+        return filtered.length > 0 ? filtered : streamerPrices;
+      }
+      
+      return streamerPrices;
+    }
+
+    // Fallback to direct API call with timeout
     const timeoutPromise = new Promise<PriceData[]>((_, reject) =>
       setTimeout(() => reject(new Error('Operation timeout after 8 seconds')), 8000)
     );
