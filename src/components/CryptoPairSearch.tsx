@@ -49,8 +49,18 @@ const CryptoPairSearch: React.FC<CryptoPairSearchProps> = ({
       });
     }
 
+    // Apply quote currency filter
+    if (!selectedQuoteCurrencies.includes('all')) {
+      filtered = filtered.filter(pair => {
+        const quoteCurrency = pair.split('/')[1]; // Get the part after '/'
+        return selectedQuoteCurrencies.some(currency =>
+          quoteCurrency && quoteCurrency.toUpperCase() === currency.toUpperCase()
+        );
+      });
+    }
+
     return filtered.sort();
-  }, [pairs, searchQuery, selectedTypes]);
+  }, [pairs, searchQuery, selectedTypes, selectedQuoteCurrencies]);
 
   // Pagination
   const totalPages = Math.ceil(filteredPairs.length / ITEMS_PER_PAGE);
