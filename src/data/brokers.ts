@@ -2,12 +2,13 @@ import { Broker } from '../types';
 
 // Define realistic trading pairs based on actual exchange offerings
 const generateRealisticPairs = (baseCurrency: string = 'USDT', exchangeType: 'major' | 'altcoin' = 'major'): string[] => {
-  // Major cryptocurrencies that are widely available across all exchanges
+  // Major cryptocurrencies that are widely available across all exchanges (updated for 2025)
   const majorCryptos = [
     'BTC', 'ETH', 'BNB', 'XRP', 'ADA', 'SOL', 'DOGE', 'DOT', 'MATIC', 'AVAX',
     'ATOM', 'LINK', 'UNI', 'LTC', 'BCH', 'XLM', 'ALGO', 'VET', 'ICP', 'FIL',
     'TRX', 'ETC', 'THETA', 'NEAR', 'FTM', 'HBAR', 'ONE', 'SAND', 'MANA', 'CRO',
-    'APE', 'LRC', 'ENJ', 'CHZ', 'GALA', 'AXS', 'FLOW', 'XTZ', 'WAVES', 'KAVA'
+    'APE', 'LRC', 'ENJ', 'CHZ', 'GALA', 'AXS', 'FLOW', 'XTZ', 'WAVES', 'KAVA',
+    'SHIB', 'PEPE', 'WIF', 'BONK', 'FLOKI', 'OP', 'ARB', 'SUI', 'TIA', 'JUP'
   ];
 
   // Popular altcoins and newer tokens (more selective)

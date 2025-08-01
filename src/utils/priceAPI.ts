@@ -1,11 +1,11 @@
 import axios from 'axios';
 import { PriceData } from '../types';
 
-// Enhanced cache with better management
+// Enhanced cache with better management for live streaming
 const priceCache = new Map<string, { data: any; timestamp: number }>();
-const CACHE_DURATION = 30000; // 30 seconds - shorter cache for more live data
-const REQUEST_TIMEOUT = 5000; // 5 seconds - faster timeout
-const MAX_RETRIES = 1; // Quick fallback
+const CACHE_DURATION = 10000; // 10 seconds - much shorter cache for live data
+const REQUEST_TIMEOUT = 3000; // 3 seconds - faster timeout for real-time
+const MAX_RETRIES = 2; // Quick fallback with one retry
 
 // Live API endpoints for each exchange
 const EXCHANGE_APIS = {
@@ -212,6 +212,93 @@ export const fetchBybitLivePrices = async (): Promise<PriceData[]> => {
   }
 };
 
+// Gate.io live prices
+export const fetchGateLivePrices = async (): Promise<PriceData[]> => {
+  try {
+    const cacheKey = 'gate_live';
+    const cached = priceCache.get(cacheKey);
+    
+    if (cached && Date.now() - cached.timestamp < CACHE_DURATION) {
+      return parseGateData(cached.data);
+    }
+
+    console.log('🟠 Fetching live data from Gate.io...');
+    const url = `${EXCHANGE_APIS.gate}/spot/tickers`;
+    const response = await makeExchangeRequest(url);
+    
+    if (response && Array.isArray(response)) {
+      priceCache.set(cacheKey, { data: response, timestamp: Date.now() });
+      const parsed = parseGateData(response);
+      console.log(`✅ Gate.io LIVE: ${parsed.length} prices`);
+      return parsed;
+    }
+    
+    throw new Error('Invalid Gate.io data format');
+    
+  } catch (error: any) {
+    console.error(`❌ Gate.io API failed: ${error.message}`);
+    return [];
+  }
+};
+
+// MEXC live prices
+export const fetchMEXCLivePrices = async (): Promise<PriceData[]> => {
+  try {
+    const cacheKey = 'mexc_live';
+    const cached = priceCache.get(cacheKey);
+    
+    if (cached && Date.now() - cached.timestamp < CACHE_DURATION) {
+      return parseMEXCData(cached.data);
+    }
+
+    console.log('🔷 Fetching live data from MEXC...');
+    const url = `${EXCHANGE_APIS.mexc}/ticker/24hr`;
+    const response = await makeExchangeRequest(url);
+    
+    if (response && Array.isArray(response)) {
+      priceCache.set(cacheKey, { data: response, timestamp: Date.now() });
+      const parsed = parseMEXCData(response);
+      console.log(`✅ MEXC LIVE: ${parsed.length} prices`);
+      return parsed;
+    }
+    
+    throw new Error('Invalid MEXC data format');
+    
+  } catch (error: any) {
+    console.error(`❌ MEXC API failed: ${error.message}`);
+    return [];
+  }
+};
+
+// Bitget live prices
+export const fetchBitgetLivePrices = async (): Promise<PriceData[]> => {
+  try {
+    const cacheKey = 'bitget_live';
+    const cached = priceCache.get(cacheKey);
+    
+    if (cached && Date.now() - cached.timestamp < CACHE_DURATION) {
+      return parseBitgetData(cached.data);
+    }
+
+    console.log('🟨 Fetching live data from Bitget...');
+    const url = `${EXCHANGE_APIS.bitget}/market/tickers`;
+    const response = await makeExchangeRequest(url);
+    
+    if (response?.data && Array.isArray(response.data)) {
+      priceCache.set(cacheKey, { data: response.data, timestamp: Date.now() });
+      const parsed = parseBitgetData(response.data);
+      console.log(`✅ Bitget LIVE: ${parsed.length} prices`);
+      return parsed;
+    }
+    
+    throw new Error('Invalid Bitget data format');
+    
+  } catch (error: any) {
+    console.error(`❌ Bitget API failed: ${error.message}`);
+    return [];
+  }
+};
+
 // Data parsing functions
 const parseBinanceData = (data: any[]): PriceData[] => {
   return data
@@ -303,6 +390,59 @@ const parseBybitData = (data: any[]): PriceData[] => {
     .filter(item => item.pair.includes('/'));
 };
 
+const parseGateData = (data: any[]): PriceData[] => {
+  return data
+    .filter(item => item.currency_pair && item.last && parseFloat(item.last) > 0)
+    .map(item => ({
+      broker: 'gate',
+      pair: item.currency_pair.replace('_', '/'),
+      price: parseFloat(item.last),
+      change24h: parseFloat(item.change_percentage || '0'),
+      volume: parseFloat(item.quote_volume || '0'),
+      high24h: parseFloat(item.high_24h || item.last),
+      low24h: parseFloat(item.low_24h || item.last),
+      timestamp: Date.now()
+    }))
+    .filter(item => item.pair.includes('/'));
+};
+
+const parseMEXCData = (data: any[]): PriceData[] => {
+  return data
+    .filter(item => item.symbol && item.lastPrice && parseFloat(item.lastPrice) > 0)
+    .map(item => {
+      const symbol = item.symbol;
+      const pair = formatBinancePair(symbol); // MEXC uses similar format to Binance
+      
+      return {
+        broker: 'mexc',
+        pair,
+        price: parseFloat(item.lastPrice),
+        change24h: parseFloat(item.priceChangePercent || '0'),
+        volume: parseFloat(item.quoteVolume || '0'),
+        high24h: parseFloat(item.highPrice || item.lastPrice),
+        low24h: parseFloat(item.lowPrice || item.lastPrice),
+        timestamp: Date.now()
+      };
+    })
+    .filter(item => item.pair.includes('/'));
+};
+
+const parseBitgetData = (data: any[]): PriceData[] => {
+  return data
+    .filter(item => item.symbol && item.close && parseFloat(item.close) > 0)
+    .map(item => ({
+      broker: 'bitget',
+      pair: item.symbol.replace('_', '/'),
+      price: parseFloat(item.close),
+      change24h: parseFloat(item.change || '0'),
+      volume: parseFloat(item.quoteVol || '0'),
+      high24h: parseFloat(item.high || item.close),
+      low24h: parseFloat(item.low || item.close),
+      timestamp: Date.now()
+    }))
+    .filter(item => item.pair.includes('/'));
+};
+
 // Helper function to format Binance pairs
 const formatBinancePair = (symbol: string): string => {
   const stablecoins = ['USDT', 'USDC', 'BUSD', 'FDUSD', 'TUSD'];
@@ -336,7 +476,10 @@ export const fetchRealTimePrices = async (selectedBrokers?: string[]): Promise<P
     { name: 'okx', fetcher: fetchOKXLivePrices },
     { name: 'coinbase', fetcher: fetchCoinbaseLivePrices },
     { name: 'kucoin', fetcher: fetchKuCoinLivePrices },
-    { name: 'bybit', fetcher: fetchBybitLivePrices }
+    { name: 'bybit', fetcher: fetchBybitLivePrices },
+    { name: 'gate', fetcher: fetchGateLivePrices },
+    { name: 'mexc', fetcher: fetchMEXCLivePrices },
+    { name: 'bitget', fetcher: fetchBitgetLivePrices }
   ];
   
   const allPrices: PriceData[] = [];
@@ -367,8 +510,8 @@ export const fetchRealTimePrices = async (selectedBrokers?: string[]): Promise<P
     }
   });
   
-  // Add remaining exchanges with fallback data
-  const remainingExchanges = ['huobi', 'gate', 'bitget', 'mexc', 'crypto_com', 'bingx', 'bitfinex', 'phemex', 'deribit'];
+  // Add remaining exchanges with fallback data (those without live APIs)
+  const remainingExchanges = ['huobi', 'crypto_com', 'bingx', 'bitfinex', 'phemex', 'deribit', 'kraken'];
   remainingExchanges.forEach(exchange => {
     if (!selectedBrokers || selectedBrokers.includes(exchange)) {
       allPrices.push(...generateFallbackForExchange(exchange));
@@ -646,3 +789,7 @@ export const fetchBinancePrices = fetchBinanceLivePrices;
 export const fetchOKXPrices = fetchOKXLivePrices;
 export const fetchCoinbasePrices = fetchCoinbaseLivePrices;
 export const fetchKuCoinPrices = fetchKuCoinLivePrices;
+export const fetchBybitPrices = fetchBybitLivePrices;
+export const fetchGatePrices = fetchGateLivePrices;
+export const fetchMEXCPrices = fetchMEXCLivePrices;
+export const fetchBitgetPrices = fetchBitgetLivePrices;

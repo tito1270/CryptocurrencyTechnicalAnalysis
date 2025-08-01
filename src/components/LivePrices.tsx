@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { PriceData } from '../types';
 import { generateLivePrices } from '../utils/priceSimulator';
-import { TrendingUp, TrendingDown, RefreshCw, Trophy, AlertTriangle, Wifi, WifiOff } from 'lucide-react';
+import livePriceStreamer from '../utils/livePriceStreamer';
+import { TrendingUp, TrendingDown, RefreshCw, Trophy, AlertTriangle, Wifi, WifiOff, Zap } from 'lucide-react';
 
 interface LivePricesProps {
   selectedPair?: string;
@@ -14,6 +15,8 @@ const LivePrices: React.FC<LivePricesProps> = ({ selectedPair, selectedBroker })
   const [lastUpdate, setLastUpdate] = useState<Date | null>(null);
   const [connectionStatus, setConnectionStatus] = useState<'connected' | 'fallback' | 'error'>('connected');
   const [retryCount, setRetryCount] = useState(0);
+  const [wsStatus, setWsStatus] = useState<{ [key: string]: boolean }>({});
+  const [isStreamingLive, setIsStreamingLive] = useState(false);
 
   const refreshPrices = async (showLoading = true) => {
     if (showLoading) setIsLoading(true);
@@ -68,15 +71,60 @@ const LivePrices: React.FC<LivePricesProps> = ({ selectedPair, selectedBroker })
   };
 
   useEffect(() => {
-    // Initial load
-    refreshPrices();
+    // Initialize live price streaming
+    const initializeLiveStreaming = async () => {
+      console.log('🚀 Initializing live price streaming...');
+      
+      // Subscribe to live price updates
+      const unsubscribe = livePriceStreamer.subscribe((newPrices: PriceData[]) => {
+        setPrices(newPrices);
+        setLastUpdate(new Date());
+        setIsStreamingLive(livePriceStreamer.isStreamingLive());
+        setWsStatus(livePriceStreamer.getWebSocketStatus());
+        
+        // Determine connection status
+        const activeWebSockets = Object.values(livePriceStreamer.getWebSocketStatus()).filter(Boolean).length;
+        if (activeWebSockets > 0) {
+          setConnectionStatus('connected');
+        } else if (newPrices.length > 200) {
+          setConnectionStatus('fallback');
+        } else {
+          setConnectionStatus('error');
+        }
+        
+        setRetryCount(0);
+        console.log(`📊 Live prices updated: ${newPrices.length} prices from ${activeWebSockets} WebSocket connections`);
+      });
+      
+      // Start the live price streamer
+      try {
+        await livePriceStreamer.start();
+        setIsLoading(false);
+      } catch (error) {
+        console.error('❌ Failed to start live price streamer:', error);
+        setConnectionStatus('error');
+        setIsLoading(false);
+        
+        // Fallback to manual refresh
+        refreshPrices();
+      }
+      
+      return unsubscribe;
+    };
     
-    // Set up regular refresh
-    const interval = setInterval(() => {
-      refreshPrices(false); // Background LIVE API refresh
-    }, 30000); // Every 30 seconds for more live data
+    setIsLoading(true);
+    let unsubscribe: (() => void) | undefined;
     
-    return () => clearInterval(interval);
+    initializeLiveStreaming().then((unsub) => {
+      unsubscribe = unsub;
+    });
+    
+    return () => {
+      if (unsubscribe) {
+        unsubscribe();
+      }
+      livePriceStreamer.stop();
+    };
   }, []);
 
   // Auto-retry on error
@@ -108,11 +156,13 @@ const LivePrices: React.FC<LivePricesProps> = ({ selectedPair, selectedBroker })
   const worstPerformers = sortedPairs.slice(-30).reverse();
 
   const getStatusInfo = () => {
+    const activeWebSockets = Object.values(wsStatus).filter(Boolean).length;
+    
     switch (connectionStatus) {
       case 'connected':
         return {
-          icon: <Wifi className="w-4 h-4 text-emerald-400" />,
-          text: 'LIVE EXCHANGE APIs',
+          icon: isStreamingLive ? <Zap className="w-4 h-4 text-emerald-400" /> : <Wifi className="w-4 h-4 text-emerald-400" />,
+          text: isStreamingLive ? `LIVE STREAMING (${activeWebSockets} WebSockets)` : 'LIVE EXCHANGE APIs',
           color: 'text-emerald-400',
           bgColor: 'bg-emerald-500/20 border-emerald-500/30'
         };
@@ -149,6 +199,14 @@ const LivePrices: React.FC<LivePricesProps> = ({ selectedPair, selectedBroker })
           {selectedBroker && (
             <span className="text-gray-400">• {selectedBroker.toUpperCase()}</span>
           )}
+          <button
+            onClick={() => refreshPrices()}
+            disabled={isLoading}
+            className="ml-2 p-1 rounded-md bg-gray-700 hover:bg-gray-600 transition-colors disabled:opacity-50"
+            title="Manual refresh"
+          >
+            <RefreshCw className={`w-3 h-3 text-gray-400 ${isLoading ? 'animate-spin' : ''}`} />
+          </button>
         </div>
       </div>
       
@@ -233,29 +291,57 @@ const LivePrices: React.FC<LivePricesProps> = ({ selectedPair, selectedBroker })
           </div>
         </div>
         
-        <div className="space-y-2">
+        <div className="space-y-3">
           <p className="text-gray-300 text-sm">
-            Real-time cryptocurrency market performance{selectedBroker ? ` from ${selectedBroker.charAt(0).toUpperCase() + selectedBroker.slice(1)} exchange` : ' across all exchanges'}.
-            Data is automatically refreshed every minute to ensure accuracy.
+            {isStreamingLive ? (
+              <>🔥 <strong>LIVE STREAMING</strong> cryptocurrency prices with WebSocket connections{selectedBroker ? ` from ${selectedBroker.charAt(0).toUpperCase() + selectedBroker.slice(1)}` : ' across all exchanges'}. Real-time updates every few seconds.</>
+            ) : (
+              <>Real-time cryptocurrency market performance{selectedBroker ? ` from ${selectedBroker.charAt(0).toUpperCase() + selectedBroker.slice(1)} exchange` : ' across all exchanges'}. Data is automatically refreshed.</>
+            )}
           </p>
+          
           <div className="flex flex-wrap items-center gap-2 text-xs">
             <div className={`px-2 py-1 border rounded ${statusInfo.bgColor}`}>
               <div className="flex items-center space-x-1">
                 {statusInfo.icon}
                 <span className={statusInfo.color}>
-                  {connectionStatus === 'connected' && '🚀 LIVE Exchange APIs + Real spreads'}
-                  {connectionStatus === 'fallback' && '⚡ Current market data with accurate prices'}
-                  {connectionStatus === 'error' && `🔄 Reconnecting APIs... (${retryCount}/3)`}
+                  {statusInfo.text}
                 </span>
               </div>
             </div>
+            
             <div className="px-2 py-1 bg-purple-500/20 border border-purple-500/30 rounded text-purple-400">
               📊 {uniquePairs.length} Pairs × {[...new Set(prices.map(p => p.broker))].length} Exchanges
             </div>
+            
+            {isStreamingLive && (
+              <div className="px-2 py-1 bg-emerald-500/20 border border-emerald-500/30 rounded text-emerald-400">
+                ⚡ Live Streaming Active
+              </div>
+            )}
+            
             <div className="px-2 py-1 bg-gray-700 rounded text-gray-400">
-             🔄 Auto-refresh 30s
+              {isStreamingLive ? '🔄 Real-time updates' : '🔄 Auto-refresh 5s'}
             </div>
           </div>
+          
+          {Object.keys(wsStatus).length > 0 && (
+            <div className="flex flex-wrap items-center gap-1 text-xs">
+              <span className="text-gray-400 mr-2">WebSocket Status:</span>
+              {Object.entries(wsStatus).map(([exchange, isConnected]) => (
+                <div
+                  key={exchange}
+                  className={`px-2 py-1 rounded text-xs ${
+                    isConnected 
+                      ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30' 
+                      : 'bg-gray-700 text-gray-400'
+                  }`}
+                >
+                  {exchange.toUpperCase()} {isConnected ? '🟢' : '🔴'}
+                </div>
+              ))}
+            </div>
+          )}
         </div>
         
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-4">
