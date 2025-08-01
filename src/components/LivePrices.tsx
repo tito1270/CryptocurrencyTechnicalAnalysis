@@ -144,8 +144,8 @@ const LivePrices: React.FC<LivePricesProps> = ({ selectedPair, selectedBroker })
         </div>
         
         <p className="text-gray-300 text-sm">
-          Real-time cryptocurrency market performance showing the top 30 best and worst performing coins across all exchanges.
-          {selectedBroker && ` Data filtered for ${selectedBroker.toUpperCase()} exchange.`}
+          Real-time cryptocurrency market performance showing the top 30 best and worst performing coins{selectedBroker ? ` from ${selectedBroker.charAt(0).toUpperCase() + selectedBroker.slice(1)} exchange` : ' across all exchanges'}.
+          {selectedBroker && ` You can change the exchange in the trading configuration above.`}
         </p>
         
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-4">
