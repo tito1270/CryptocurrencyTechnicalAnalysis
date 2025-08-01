@@ -148,9 +148,12 @@ const LivePrices: React.FC<LivePricesProps> = ({ selectedPair, selectedBroker })
             Real-time cryptocurrency market performance showing the top 30 best and worst performing coins{selectedBroker ? ` from ${selectedBroker.charAt(0).toUpperCase() + selectedBroker.slice(1)} exchange` : ' across all exchanges'}.
             {selectedBroker && ` You can change the exchange in the trading configuration above.`}
           </p>
-          <div className="flex items-center space-x-2 text-xs">
+          <div className="flex flex-wrap items-center gap-2 text-xs">
             <div className="px-2 py-1 bg-emerald-500/20 border border-emerald-500/30 rounded text-emerald-400">
-              🟢 LIVE PRICES: Real cryptocurrency market data from CoinGecko, CoinCap & Exchange APIs
+              🚀 COMPREHENSIVE REAL PRICES: Live data from CoinGecko, Coinbase & Multiple Exchange APIs
+            </div>
+            <div className="px-2 py-1 bg-blue-500/20 border border-blue-500/30 rounded text-blue-400">
+              📊 50+ Cryptocurrencies × 10+ Exchanges = 500+ Real Price Points
             </div>
             <div className="px-2 py-1 bg-gray-700 rounded text-gray-400">
               🔄 Updates every 30 seconds
