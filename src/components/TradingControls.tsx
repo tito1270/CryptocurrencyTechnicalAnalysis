@@ -320,16 +320,10 @@ const TradingControls: React.FC<TradingControlsProps> = ({
       
       {/* Analyze Button */}
       <button
-        onClick={() => {
-          // Set timeframe to daily before analysis
-          if (selectedTimeframe !== '1d') {
-            onTimeframeChange('1d');
-          }
-          onAnalyze();
-        }}
+        onClick={onAnalyze}
         className="w-full bg-gradient-to-r from-emerald-600 to-blue-600 hover:from-emerald-700 hover:to-blue-700 text-white font-semibold py-3 px-6 rounded-lg transition-all duration-200 transform hover:scale-105 shadow-lg"
       >
-        🚀 Analyze Market & Get Recommendation (Daily Chart)
+        🚀 Analyze Market & Get Recommendation ({selectedTimeframe} Chart)
       </button>
       
       <div className="text-xs text-gray-400 text-center mt-2">

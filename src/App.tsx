@@ -20,8 +20,8 @@ import { AnalysisResult } from './types';
 import { performAnalysis } from './utils/analysisEngine';
 import { brokers } from './data/brokers';
 
-// URL parameter hook for trading pair
-const useTradingPairFromURL = () => {
+// URL parameter hook for trading parameters
+const useTradingParametersFromURL = () => {
   const location = useLocation();
   const navigate = useNavigate();
   
@@ -30,20 +30,45 @@ const useTradingPairFromURL = () => {
     return params.get('pair') || 'BTC/USDT';
   };
   
+  const getTimeframeFromURL = () => {
+    const params = new URLSearchParams(location.search);
+    return params.get('timeframe') || '1h';
+  };
+  
+  const getBrokerFromURL = () => {
+    const params = new URLSearchParams(location.search);
+    return params.get('broker') || brokers[0].id;
+  };
+  
+  const getTradeTypeFromURL = () => {
+    const params = new URLSearchParams(location.search);
+    return (params.get('type') as 'SPOT' | 'FUTURES') || 'SPOT';
+  };
+  
   const updatePairInURL = (pair: string) => {
     const params = new URLSearchParams(location.search);
     params.set('pair', pair);
     navigate(`${location.pathname}?${params.toString()}`, { replace: true });
   };
   
-  return { getPairFromURL, updatePairInURL };
+  const updateTimeframeInURL = (timeframe: string) => {
+    const params = new URLSearchParams(location.search);
+    params.set('timeframe', timeframe);
+    navigate(`${location.pathname}?${params.toString()}`, { replace: true });
+  };
+  
+  return { 
+    getPairFromURL, 
+    getTimeframeFromURL,
+    getBrokerFromURL,
+    getTradeTypeFromURL,
+    updatePairInURL,
+    updateTimeframeInURL
+  };
 };
 
 function AppContent() {
   const [currentPage, setCurrentPage] = useState('home');
-  const [selectedBroker, setSelectedBroker] = useState(brokers[0].id);
-  const [selectedTimeframe, setSelectedTimeframe] = useState('1h');
-  const [tradeType, setTradeType] = useState<'SPOT' | 'FUTURES'>('SPOT');
   const [selectedIndicators, setSelectedIndicators] = useState<string[]>([
     'rsi', 'macd', 'stochastic', 'bollinger', 'williams_r'
   ]);
@@ -53,16 +78,40 @@ function AppContent() {
   const [analysisResult, setAnalysisResult] = useState<AnalysisResult | null>(null);
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   
-  const { getPairFromURL, updatePairInURL } = useTradingPairFromURL();
+  const { 
+    getPairFromURL, 
+    getTimeframeFromURL,
+    getBrokerFromURL,
+    getTradeTypeFromURL,
+    updatePairInURL,
+    updateTimeframeInURL 
+  } = useTradingParametersFromURL();
+  
   const [selectedPair, setSelectedPair] = useState(getPairFromURL());
+  const [selectedBroker, setSelectedBroker] = useState(getBrokerFromURL());
+  const [selectedTimeframe, setSelectedTimeframe] = useState(getTimeframeFromURL());
+  const [tradeType, setTradeType] = useState<'SPOT' | 'FUTURES'>(getTradeTypeFromURL());
 
-  // Update selected pair when URL changes
+  // Update parameters when URL changes
   useEffect(() => {
     const pairFromURL = getPairFromURL();
+    const timeframeFromURL = getTimeframeFromURL();
+    const brokerFromURL = getBrokerFromURL();
+    const tradeTypeFromURL = getTradeTypeFromURL();
+    
     if (pairFromURL !== selectedPair) {
       setSelectedPair(pairFromURL);
     }
-  }, [getPairFromURL]);
+    if (timeframeFromURL !== selectedTimeframe) {
+      setSelectedTimeframe(timeframeFromURL);
+    }
+    if (brokerFromURL !== selectedBroker) {
+      setSelectedBroker(brokerFromURL);
+    }
+    if (tradeTypeFromURL !== tradeType) {
+      setTradeType(tradeTypeFromURL);
+    }
+  }, [getPairFromURL, getTimeframeFromURL, getBrokerFromURL, getTradeTypeFromURL]);
 
   const handleIndicatorToggle = (indicatorId: string) => {
     setSelectedIndicators(prev => 
@@ -83,6 +132,11 @@ function AppContent() {
   const handlePairChange = (pair: string) => {
     setSelectedPair(pair);
     updatePairInURL(pair);
+  };
+
+  const handleTimeframeChange = (timeframe: string) => {
+    setSelectedTimeframe(timeframe);
+    updateTimeframeInURL(timeframe);
   };
 
   const handleAnalyze = async () => {
@@ -226,7 +280,7 @@ function AppContent() {
                     selectedStrategies={selectedStrategies}
                     onBrokerChange={setSelectedBroker}
                     onPairChange={handlePairChange}
-                    onTimeframeChange={setSelectedTimeframe}
+                    onTimeframeChange={handleTimeframeChange}
                     onTradeTypeChange={setTradeType}
                     onIndicatorToggle={handleIndicatorToggle}
                     onStrategyToggle={handleStrategyToggle}

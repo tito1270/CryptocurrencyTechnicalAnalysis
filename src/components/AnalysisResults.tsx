@@ -76,6 +76,8 @@ const AnalysisResults: React.FC<AnalysisResultsProps> = ({ result }) => {
               <span className="text-sm text-gray-400">{result.pair}</span>
               <div className="w-1 h-1 bg-gray-500 rounded-full"></div>
               <span className="text-sm text-gray-400">{result.broker.toUpperCase()}</span>
+              <div className="w-1 h-1 bg-gray-500 rounded-full"></div>
+              <span className="text-sm text-gray-400">{result.timeframe}</span>
             </div>
             <div className="flex items-center space-x-2">
               <span className="text-lg font-bold text-emerald-400">${result.entryPrice.toFixed(6)}</span>
