@@ -296,13 +296,23 @@ const Footer: React.FC<FooterProps> = ({ onPageChange }) => {
           </div>
         </div>
 
-        {/* Disclaimer */}
+        {/* SEO Keywords & Disclaimer */}
         <div className="border-t border-gray-800 mt-8 pt-8">
+          <div className="bg-gray-800/50 rounded-lg p-4 mb-4">
+            <h5 className="text-sm font-semibold text-gray-300 mb-2">Keywords & Topics Covered:</h5>
+            <p className="text-xs text-gray-400 leading-relaxed">
+              <strong>Cryptocurrency Analysis:</strong> Bitcoin analysis, Ethereum trading, crypto technical indicators, trading signals, market analysis,
+              cryptocurrency scanner, DeFi analysis, meme coin trading, altcoin analysis, blockchain analysis, crypto news sentiment,
+              real-time crypto prices, multi-exchange trading, crypto portfolio tracking, cryptocurrency market data,
+              trading strategies, risk management, crypto volatility analysis, market trends, digital asset analysis.
+            </p>
+          </div>
           <div className="bg-yellow-900/20 border border-yellow-700/50 rounded-lg p-4">
             <p className="text-sm text-yellow-200">
-              <strong>Risk Disclaimer:</strong> Cryptocurrency trading involves substantial risk and may not be suitable for all investors. 
-              Past performance does not guarantee future results. CryptoAnalyzer Pro provides educational tools and analysis but does not 
-              provide investment advice. Always conduct your own research and consult with financial advisors before making investment decisions.
+              <strong>Risk Disclaimer:</strong> <strong>Cryptocurrency trading</strong> involves substantial risk and may not be suitable for all investors.
+              Past performance does not guarantee future results. <strong>CryptoAnalyzer Pro</strong> provides educational tools and <strong>market analysis</strong> but does not
+              provide investment advice. Always conduct your own research and consult with financial advisors before making <strong>cryptocurrency investment</strong> decisions.
+              Our <strong>Bitcoin analysis</strong>, <strong>Ethereum trading signals</strong>, and other crypto tools are for educational purposes only.
             </p>
           </div>
         </div>
