@@ -305,6 +305,7 @@ function AppContent() {
       <Navigation currentPage={currentPage} onPageChange={setCurrentPage} onRefresh={handleRefresh} />
       {renderCurrentPage()}
       <Footer onPageChange={setCurrentPage} />
+      <SEOValidator currentPage={currentPage} enabled={true} />
     </div>
   );
 }
