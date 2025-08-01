@@ -1,5 +1,5 @@
 import React, { useState, useMemo, useEffect } from 'react';
-import { Search, X, ChevronLeft, ChevronRight, Filter, ArrowRight } from 'lucide-react';
+import { Search, X, ChevronLeft, ChevronRight, Filter, ArrowRight, ExternalLink } from 'lucide-react';
 import { cryptoPairTypes, categorizeToken } from '../data/cryptoPairTypes';
 
 interface CryptoPairSearchProps {
