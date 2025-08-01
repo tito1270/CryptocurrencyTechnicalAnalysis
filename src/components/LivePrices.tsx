@@ -149,11 +149,11 @@ const LivePrices: React.FC<LivePricesProps> = ({ selectedPair, selectedBroker })
             {selectedBroker && ` You can change the exchange in the trading configuration above.`}
           </p>
           <div className="flex items-center space-x-2 text-xs">
-            <div className="px-2 py-1 bg-blue-500/20 border border-blue-500/30 rounded text-blue-400">
-              📊 Demo Mode: Using simulated market data with realistic price movements
+            <div className="px-2 py-1 bg-emerald-500/20 border border-emerald-500/30 rounded text-emerald-400">
+              🟢 LIVE PRICES: Real cryptocurrency market data from CoinGecko, CoinCap & Exchange APIs
             </div>
             <div className="px-2 py-1 bg-gray-700 rounded text-gray-400">
-              🔄 Updates every 60 seconds
+              🔄 Updates every 30 seconds
             </div>
           </div>
         </div>
