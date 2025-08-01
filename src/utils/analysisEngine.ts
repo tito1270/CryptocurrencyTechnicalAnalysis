@@ -218,60 +218,146 @@ const calculatePriceLevels = (currentPrice: number, sentiment: string, newsImpac
 
 const analyzeNewsImpact = (pair: string, indicators: TechnicalIndicator[], strategies: TradingStrategy[]) => {
   const [baseCurrency] = pair.split('/');
-  
-  // Find relevant news for this pair
-  const relevantNews = cryptoNews.filter(news => 
-    news.relevantPairs.some(newsPair => 
+  const scanTimestamp = new Date().toISOString();
+
+  // Find relevant news for this pair (include all news, not just pair-specific)
+  const relevantNews = cryptoNews.filter(news =>
+    news.relevantPairs.some(newsPair =>
       newsPair.includes(baseCurrency) || newsPair === pair
     )
   );
-  
-  if (relevantNews.length === 0) {
+
+  // Also include general market news that affects all cryptocurrencies
+  const generalMarketNews = cryptoNews.filter(news =>
+    news.title.toLowerCase().includes('fed') ||
+    news.title.toLowerCase().includes('sec') ||
+    news.title.toLowerCase().includes('regulation') ||
+    news.title.toLowerCase().includes('etf') ||
+    news.title.toLowerCase().includes('institutional') ||
+    news.impact === 'HIGH'
+  );
+
+  // Combine relevant and general market news (remove duplicates)
+  const allRelevantNews = [...relevantNews];
+  generalMarketNews.forEach(generalNews => {
+    if (!allRelevantNews.find(news => news.id === generalNews.id)) {
+      allRelevantNews.push(generalNews);
+    }
+  });
+
+  // Sort by timestamp (newest first)
+  allRelevantNews.sort((a, b) => b.timestamp - a.timestamp);
+
+  if (allRelevantNews.length === 0) {
     return {
       impact: 'LOW' as const,
-      analysis: `No significant recent news found for ${pair}. Technical analysis is based purely on price action and indicators.`,
+      analysis: `📊 COMPREHENSIVE NEWS SCAN (${scanTimestamp})\n\n❌ No significant recent news found specifically for ${pair}. Technical analysis is based purely on price action and selected indicators.\n\n📈 Total News Sources Analyzed: ${cryptoNews.length}\n🔍 Relevant News Found: 0\n📅 Scan Date/Time: ${new Date().toLocaleString()}`,
       upcomingEvents: []
     };
   }
-  
-  // Analyze sentiment from news
-  const positiveNews = relevantNews.filter(news => news.sentiment === 'POSITIVE');
-  const negativeNews = relevantNews.filter(news => news.sentiment === 'NEGATIVE');
-  const highImpactNews = relevantNews.filter(news => news.impact === 'HIGH');
-  
+
+  // Analyze sentiment from news with timestamps
+  const positiveNews = allRelevantNews.filter(news => news.sentiment === 'POSITIVE');
+  const negativeNews = allRelevantNews.filter(news => news.sentiment === 'NEGATIVE');
+  const neutralNews = allRelevantNews.filter(news => news.sentiment === 'NEUTRAL');
+  const highImpactNews = allRelevantNews.filter(news => news.impact === 'HIGH');
+  const mediumImpactNews = allRelevantNews.filter(news => news.impact === 'MEDIUM');
+  const lowImpactNews = allRelevantNews.filter(news => news.impact === 'LOW');
+
   let impact: 'HIGH' | 'MEDIUM' | 'LOW' = 'LOW';
-  if (highImpactNews.length > 0) impact = 'HIGH';
-  else if (relevantNews.length > 2) impact = 'MEDIUM';
-  
-  // Generate news analysis
-  let analysis = `News Analysis for ${pair}:\n\n`;
-  
+  if (highImpactNews.length >= 2) impact = 'HIGH';
+  else if (highImpactNews.length > 0 || mediumImpactNews.length >= 3) impact = 'MEDIUM';
+  else if (allRelevantNews.length >= 5) impact = 'MEDIUM';
+
+  // Generate comprehensive news analysis with timestamps
+  let analysis = `📊 COMPREHENSIVE NEWS SCAN REPORT\n`;
+  analysis += `🕐 Scan Date/Time: ${new Date().toLocaleString()}\n`;
+  analysis += `📈 Total News Sources Analyzed: ${cryptoNews.length}\n`;
+  analysis += `🔍 Relevant News for ${pair}: ${allRelevantNews.length}\n\n`;
+
+  analysis += `📊 SENTIMENT BREAKDOWN:\n`;
+  analysis += `🟢 Positive News: ${positiveNews.length} (${((positiveNews.length / allRelevantNews.length) * 100).toFixed(1)}%)\n`;
+  analysis += `🔴 Negative News: ${negativeNews.length} (${((negativeNews.length / allRelevantNews.length) * 100).toFixed(1)}%)\n`;
+  analysis += `🟡 Neutral News: ${neutralNews.length} (${((neutralNews.length / allRelevantNews.length) * 100).toFixed(1)}%)\n\n`;
+
+  analysis += `📈 IMPACT DISTRIBUTION:\n`;
+  analysis += `🚨 High Impact: ${highImpactNews.length}\n`;
+  analysis += `⚠️ Medium Impact: ${mediumImpactNews.length}\n`;
+  analysis += `ℹ️ Low Impact: ${lowImpactNews.length}\n\n`;
+
   if (positiveNews.length > negativeNews.length) {
-    analysis += `📈 BULLISH NEWS SENTIMENT: ${positiveNews.length} positive vs ${negativeNews.length} negative news items.\n\n`;
+    analysis += `📈 OVERALL BULLISH NEWS SENTIMENT: ${positiveNews.length} positive vs ${negativeNews.length} negative news items.\n\n`;
   } else if (negativeNews.length > positiveNews.length) {
-    analysis += `📉 BEARISH NEWS SENTIMENT: ${negativeNews.length} negative vs ${positiveNews.length} positive news items.\n\n`;
+    analysis += `📉 OVERALL BEARISH NEWS SENTIMENT: ${negativeNews.length} negative vs ${positiveNews.length} positive news items.\n\n`;
   } else {
-    analysis += `⚖️ NEUTRAL NEWS SENTIMENT: Balanced positive and negative news coverage.\n\n`;
+    analysis += `⚖️ BALANCED NEWS SENTIMENT: Neutral balance between positive and negative coverage.\n\n`;
   }
-  
-  // Add specific news items
-  relevantNews.slice(0, 3).forEach((news, index) => {
+
+  // Add most recent and impactful news items with timestamps
+  analysis += `🗞️ KEY NEWS ITEMS (Most Recent & High Impact):\n\n`;
+
+  const topNewsItems = allRelevantNews
+    .filter(news => news.impact === 'HIGH' || news.sentiment !== 'NEUTRAL')
+    .slice(0, 5);
+
+  topNewsItems.forEach((news, index) => {
     const emoji = news.sentiment === 'POSITIVE' ? '🟢' : news.sentiment === 'NEGATIVE' ? '🔴' : '🟡';
-    analysis += `${emoji} ${news.title}\n${news.summary}\nImpact: ${news.impact} | Source: ${news.source}\n\n`;
+    const timeAgo = Math.floor((Date.now() - news.timestamp) / (1000 * 60 * 60));
+    const publishedDate = new Date(news.publishedAt).toLocaleDateString();
+
+    analysis += `${emoji} [${news.impact} IMPACT] ${news.title}\n`;
+    analysis += `📝 ${news.summary}\n`;
+    analysis += `📰 Source: ${news.source}\n`;
+    analysis += `📅 Published: ${publishedDate} (${timeAgo}h ago)\n`;
+    analysis += `🔗 URL: ${news.url}\n`;
+    analysis += `💱 Pairs: ${news.relevantPairs.slice(0, 3).join(', ')}\n\n`;
   });
-  
-  // Look for upcoming events (simulated based on news patterns)
+
+  // Add remaining news count
+  if (allRelevantNews.length > 5) {
+    analysis += `📊 Additional ${allRelevantNews.length - 5} news items analyzed but not displayed.\n\n`;
+  }
+
+  // Look for upcoming events based on recent news patterns
   const upcomingEvents: string[] = [];
-  if (baseCurrency === 'BTC' && Math.random() > 0.7) {
-    upcomingEvents.push('Bitcoin ETF decision expected within 2 weeks');
+
+  // Check for ETF-related news
+  if (allRelevantNews.some(news => news.title.toLowerCase().includes('etf'))) {
+    upcomingEvents.push('🏛️ ETF decisions and institutional flows may continue impacting market');
   }
-  if (baseCurrency === 'ETH' && Math.random() > 0.8) {
-    upcomingEvents.push('Ethereum network upgrade scheduled next month');
+
+  // Check for regulatory news
+  if (allRelevantNews.some(news => news.title.toLowerCase().includes('sec') || news.title.toLowerCase().includes('regulation'))) {
+    upcomingEvents.push('⚖️ Regulatory developments may affect market sentiment in coming weeks');
   }
-  if (pair.includes('USDT') && Math.random() > 0.9) {
-    upcomingEvents.push('Federal Reserve interest rate decision next week');
+
+  // Check for technical upgrades
+  if (allRelevantNews.some(news => news.title.toLowerCase().includes('upgrade') || news.title.toLowerCase().includes('launch'))) {
+    upcomingEvents.push('🔧 Protocol upgrades and new launches may drive ecosystem growth');
   }
-  
+
+  // Check for institutional adoption
+  if (allRelevantNews.some(news => news.title.toLowerCase().includes('institutional') || news.title.toLowerCase().includes('adoption'))) {
+    upcomingEvents.push('🏢 Institutional adoption trends suggest continued corporate interest');
+  }
+
+  // Add Fed-related events if relevant
+  if (allRelevantNews.some(news => news.title.toLowerCase().includes('fed') || news.title.toLowerCase().includes('rate'))) {
+    upcomingEvents.push('🏦 Federal Reserve decisions may impact crypto markets via risk-on/risk-off sentiment');
+  }
+
+  analysis += `🔮 UPCOMING MARKET CATALYSTS:\n`;
+  if (upcomingEvents.length > 0) {
+    upcomingEvents.forEach(event => {
+      analysis += `• ${event}\n`;
+    });
+  } else {
+    analysis += `• No major upcoming catalysts identified from current news flow\n`;
+  }
+
+  analysis += `\n⏰ Next news scan will include all new sources and updates\n`;
+  analysis += `📊 This analysis included ${cryptoNews.length} total news sources from multiple exchanges and media outlets\n`;
+
   return {
     impact,
     analysis,
