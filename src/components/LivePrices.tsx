@@ -28,7 +28,7 @@ const LivePrices: React.FC<LivePricesProps> = ({ selectedPair, selectedBroker })
 
   useEffect(() => {
     refreshPrices();
-    const interval = setInterval(refreshPrices, 60000); // Update every 60 seconds
+    const interval = setInterval(refreshPrices, 30000); // Update every 30 seconds for real live data
     return () => clearInterval(interval);
   }, []);
 
