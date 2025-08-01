@@ -12,8 +12,9 @@ const PRICE_SOURCES = {
   coingecko: 'https://api.coingecko.com/api/v3',
 };
 
-// Core crypto mapping - reduced to most essential tokens to avoid timeouts
+// Comprehensive crypto mapping with live CoinGecko API support
 const CORE_CRYPTO_MAPPING: { [key: string]: string } = {
+  // Major cryptocurrencies
   'BTC': 'bitcoin',
   'ETH': 'ethereum',
   'BNB': 'binancecoin',
@@ -24,11 +25,10 @@ const CORE_CRYPTO_MAPPING: { [key: string]: string } = {
   'DOT': 'polkadot',
   'MATIC': 'matic-network',
   'AVAX': 'avalanche-2',
-  'SHIB': 'shiba-inu',
-  'LTC': 'litecoin',
   'ATOM': 'cosmos',
   'LINK': 'chainlink',
   'UNI': 'uniswap',
+  'LTC': 'litecoin',
   'BCH': 'bitcoin-cash',
   'XLM': 'stellar',
   'ALGO': 'algorand',
@@ -42,18 +42,140 @@ const CORE_CRYPTO_MAPPING: { [key: string]: string } = {
   'FTM': 'fantom',
   'HBAR': 'hedera-hashgraph',
   'ONE': 'harmony',
-  'SAND': 'the-sandbox',
-  'MANA': 'decentraland',
+
+  // Popular altcoins
+  'SHIB': 'shiba-inu',
+  'PEPE': 'pepe',
+  'FLOKI': 'floki',
+  'BONK': 'bonk',
+  'WIF': 'dogwifcoin',
+  'OP': 'optimism',
+  'ARB': 'arbitrum',
+  'SUI': 'sui',
+  'SEI': 'sei-network',
+  'TIA': 'celestia',
+  'JTO': 'jito-governance-token',
+  'PYTH': 'pyth-network',
+  'JUP': 'jupiter-exchange-solana',
+  'BLUR': 'blur',
+  'IMX': 'immutable-x',
+  'APT': 'aptos',
+  'GMT': 'stepn',
+  'STX': 'stacks',
+  'INJ': 'injective-protocol',
+  'ROSE': 'oasis-network',
+  'JASMY': 'jasmy',
+  'LUNC': 'terra-luna',
+  'USTC': 'terraclassicusd',
+  'FET': 'fetch-ai',
+  'AGIX': 'singularitynet',
+  'OCEAN': 'ocean-protocol',
+  'RNDR': 'render-token',
+  'TAO': 'bittensor',
+  'AI': 'sleepless-ai',
+  'WLD': 'worldcoin-wld',
+  'ARKM': 'arkham',
+  'LPT': 'livepeer',
+  'GRT': 'the-graph',
+
+  // DeFi tokens
   'AAVE': 'aave',
   'COMP': 'compound-governance-token',
   'MKR': 'maker',
   'SNX': 'havven',
   'CRV': 'curve-dao-token',
+  'UMA': 'uma',
+  'BAL': 'balancer',
   'SUSHI': 'sushi',
   'YFI': 'yearn-finance',
+  'CAKE': 'pancakeswap-token',
+  'ALPHA': 'alpha-finance',
+  'DODO': 'dodo',
+  'RUNE': 'thorchain',
+  'KLAY': 'klaytn',
+  'BAKE': 'bakerytoken',
+  'TWT': 'trust-wallet-token',
+  'SFP': 'safepal',
+  'LINA': 'linear',
+  'FOR': 'forta',
+  'AUTO': 'auto',
+  'BELT': 'belt',
+  'TKO': 'tokocrypto',
+  'PUNDIX': 'pundi-x-2',
+  'DF': 'dforce',
+  'FIRO': 'zcoin',
+  'CTSI': 'cartesi',
+  'DENT': 'dent',
+  'HOT': 'holo',
+  'WIN': 'wink',
+  'BTT': 'bittorrent',
+  'CELR': 'celer-network',
+  'OGN': 'origin-protocol',
+
+  // Gaming and NFT tokens
+  'SAND': 'the-sandbox',
+  'MANA': 'decentraland',
+  'ENJ': 'enjincoin',
+  'CHZ': 'chiliz',
+  'GALA': 'gala',
+  'AXS': 'axie-infinity',
+  'SLP': 'smooth-love-potion',
+  'ALICE': 'myneighboralice',
+  'TLM': 'alien-worlds',
+  'SKILL': 'cryptoblades',
+  'HERO': 'metahero',
+  'GHST': 'aavegotchi',
+  'YGG': 'yield-guild-games',
+  'NAKA': 'nakamoto-games',
+  'PYR': 'vulcan-forged',
+  'SUPER': 'superfarm',
+  'TVK': 'terra-virtua-kolect',
+  'ATA': 'automata',
+  'GTC': 'gitcoin',
+
+  // Layer 2 and scaling
+  'METIS': 'metis-token',
+  'BOBA': 'boba-network',
+  'LRC': 'loopring',
+  'DYDX': 'dydx',
+  'GMX': 'gmx',
+  'STRK': 'starknet',
+  'ZK': 'zkspace',
+  'ZRO': 'layerzero',
+  'MANTA': 'manta-network',
+  'BASE': 'base-protocol',
+  'MANTLE': 'mantle',
+
+  // Stablecoins
   'USDT': 'tether',
   'USDC': 'usd-coin',
-  'DAI': 'dai'
+  'BUSD': 'binance-usd',
+  'DAI': 'dai',
+  'TUSD': 'true-usd',
+  'USDP': 'paxos-standard',
+  'FRAX': 'frax',
+  'LUSD': 'liquity-usd',
+  'FDUSD': 'first-digital-usd',
+  'PYUSD': 'paypal-usd',
+
+  // Exchange tokens
+  'CRO': 'crypto-com-chain',
+  'LEO': 'leo-token',
+  'HT': 'huobi-token',
+  'OKB': 'okb',
+  'KCS': 'kucoin-shares',
+  'GT': 'gatetoken',
+  'MX': 'mx-token',
+  'NEXO': 'nexo',
+  'FTT': 'ftx-token',
+
+  // Additional popular tokens
+  'WAVES': 'waves',
+  'KAVA': 'kava',
+  'APE': 'apecoin',
+  'FLOW': 'flow',
+  'XTZ': 'tezos',
+  'WATCH': 'yieldwatch'
 };
 
 // Enhanced request function with better timeout handling
@@ -111,8 +233,8 @@ export const fetchCoinGeckoRealPrices = async (): Promise<PriceData[]> => {
 
     console.log('🦎 Fetching optimized data from CoinGecko...');
     
-    // Use even smaller batch of most important cryptocurrencies to avoid timeout
-    const essentialIds = Object.values(CORE_CRYPTO_MAPPING).slice(0, 15); // Only top 15 for reliability
+    // Use moderate batch size of top cryptocurrencies for live data
+    const essentialIds = Object.values(CORE_CRYPTO_MAPPING).slice(0, 50); // Top 50 for balance of coverage and reliability
     const idsString = essentialIds.join(',');
 
     const url = `${PRICE_SOURCES.coingecko}/simple/price?ids=${idsString}&vs_currencies=usd&include_24hr_change=true&include_24hr_vol=true&precision=2`;
