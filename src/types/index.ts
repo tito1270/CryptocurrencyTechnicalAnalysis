@@ -49,6 +49,13 @@ export interface PriceData {
   high24h: number;
   low24h: number;
   timestamp: number;
+  // Additional Binance data
+  quoteVolume?: number;
+  openPrice?: number;
+  prevClosePrice?: number;
+  weightedAvgPrice?: number;
+  priceChange?: number;
+  count?: number; // Number of trades
 }
 
 export interface AnalysisResult {
