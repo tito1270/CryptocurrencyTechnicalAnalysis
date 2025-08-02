@@ -144,13 +144,17 @@ const calculateOverallSentiment = (
   
   // Prevent division by zero when no indicators or strategies are selected
   const netScore = totalWeight > 0 ? (bullishScore - bearishScore) / totalWeight : 0;
-  const confidence = Math.min(95, Math.max(50, Math.abs(netScore) * 100));
+  
+  // Improved confidence calculation - more realistic ranges
+  const rawConfidence = Math.abs(netScore) * 80; // Scale down from 100
+  const confidence = Math.min(90, Math.max(55, rawConfidence)); // More realistic confidence range
   
   let sentiment: AnalysisResult['overallSentiment'];
-  if (netScore > 0.4) sentiment = 'STRONG_BULLISH';
-  else if (netScore > 0.1) sentiment = 'BULLISH';
-  else if (netScore < -0.4) sentiment = 'STRONG_BEARISH';
-  else if (netScore < -0.1) sentiment = 'BEARISH';
+  // Adjusted thresholds for more realistic sentiment distribution
+  if (netScore > 0.6) sentiment = 'STRONG_BULLISH';
+  else if (netScore > 0.2) sentiment = 'BULLISH';
+  else if (netScore < -0.6) sentiment = 'STRONG_BEARISH';
+  else if (netScore < -0.2) sentiment = 'BEARISH';
   else sentiment = 'NEUTRAL';
   
   return { sentiment, confidence };
@@ -299,12 +303,12 @@ const analyzeNewsImpact = (pair: string, indicators: TechnicalIndicator[], strat
   analysis += `⚠️ Medium Impact: ${mediumImpactNews.length}\n`;
   analysis += `ℹ️ Low Impact: ${lowImpactNews.length}\n\n`;
 
-  if (positiveNews.length > negativeNews.length) {
+  if (positiveNews.length > negativeNews.length + 2) {
     analysis += `📈 OVERALL BULLISH NEWS SENTIMENT: ${positiveNews.length} positive vs ${negativeNews.length} negative news items.\n\n`;
-  } else if (negativeNews.length > positiveNews.length) {
+  } else if (negativeNews.length > positiveNews.length + 1) {
     analysis += `📉 OVERALL BEARISH NEWS SENTIMENT: ${negativeNews.length} negative vs ${positiveNews.length} positive news items.\n\n`;
   } else {
-    analysis += `⚖️ BALANCED NEWS SENTIMENT: Neutral balance between positive and negative coverage.\n\n`;
+    analysis += `⚖️ MIXED NEWS SENTIMENT: Close balance between positive (${positiveNews.length}) and negative (${negativeNews.length}) coverage creating market uncertainty.\n\n`;
   }
 
   // Add most recent and impactful news items with timestamps
@@ -392,26 +396,44 @@ const generateRecommendation = (
   let action: 'STRONG_BUY' | 'BUY' | 'HOLD' | 'SELL' | 'STRONG_SELL';
   let explanation = '';
   
-  // Determine base action from sentiment and confidence
-  if (sentiment === 'STRONG_BULLISH' && confidence > 80) {
+  // More realistic thresholds - require higher confidence for strong actions
+  if (sentiment === 'STRONG_BULLISH' && confidence > 85) {
     action = 'STRONG_BUY';
-  } else if (sentiment === 'BULLISH' && confidence > 70) {
+  } else if (sentiment === 'BULLISH' && confidence > 65) {
     action = 'BUY';
-  } else if (sentiment === 'STRONG_BEARISH' && confidence > 80) {
+  } else if (sentiment === 'STRONG_BEARISH' && confidence > 85) {
     action = 'STRONG_SELL';
-  } else if (sentiment === 'BEARISH' && confidence > 70) {
+  } else if (sentiment === 'BEARISH' && confidence > 65) {
     action = 'SELL';
   } else {
     action = 'HOLD';
   }
   
-  // Adjust based on news impact
+  // Adjust based on news impact - more conservative approach
   if (newsAnalysis.impact === 'HIGH') {
-    if (newsAnalysis.analysis.includes('BULLISH') && (action === 'HOLD' || action === 'BUY')) {
-      action = action === 'BUY' ? 'STRONG_BUY' : 'BUY';
-    } else if (newsAnalysis.analysis.includes('BEARISH') && (action === 'HOLD' || action === 'SELL')) {
-      action = action === 'SELL' ? 'STRONG_SELL' : 'SELL';
+    if (newsAnalysis.analysis.includes('BULLISH') && action === 'HOLD') {
+      action = 'BUY';
+    } else if (newsAnalysis.analysis.includes('BEARISH') && action === 'HOLD') {
+      action = 'SELL';
     }
+    // Only upgrade to STRONG actions if already in that direction and very high confidence
+    else if (newsAnalysis.analysis.includes('BULLISH') && action === 'BUY' && confidence > 80) {
+      action = 'STRONG_BUY';
+    } else if (newsAnalysis.analysis.includes('BEARISH') && action === 'SELL' && confidence > 80) {
+      action = 'STRONG_SELL';
+    }
+  }
+  
+  // Additional reality check - if too many conflicting signals, default to HOLD
+  const buySignals = indicators.filter(i => i.signal === 'BUY').length + 
+                    strategies.filter(s => s.signal.includes('BUY')).length;
+  const sellSignals = indicators.filter(i => i.signal === 'SELL').length + 
+                     strategies.filter(s => s.signal.includes('SELL')).length;
+  const totalSignals = buySignals + sellSignals;
+  
+  // If signals are too close or confidence is low, recommend HOLD
+  if (totalSignals > 0 && Math.abs(buySignals - sellSignals) / totalSignals < 0.3 && confidence < 70) {
+    action = 'HOLD';
   }
   
   // Calculate recommended prices based on action
