@@ -358,12 +358,12 @@ const TradingControls: React.FC<TradingControlsProps> = ({
             </select>
             <button
               onClick={handleAdvancedPairSearch}
-              className="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg transition-colors font-medium flex items-center space-x-2"
+              className="px-4 py-2 bg-gradient-to-r from-emerald-600 to-blue-600 hover:from-emerald-700 hover:to-blue-700 text-white rounded-lg transition-all duration-200 font-medium flex items-center space-x-2 shadow-lg hover:shadow-xl transform hover:scale-105"
               title="Advanced Pair Search with filtering and URL updates"
               type="button"
             >
               <Search className="w-4 h-4" />
-              <span className="hidden sm:inline">Search</span>
+              <span className="hidden sm:inline">Search Pairs</span>
             </button>
             <button
               onClick={handleCopyLink}

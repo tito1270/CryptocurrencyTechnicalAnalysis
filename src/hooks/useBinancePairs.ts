@@ -43,7 +43,7 @@ const getTradingViewPriceData = async (symbol: string): Promise<number | null> =
 // Alternative price data sources
 const getAlternativePriceData = async (): Promise<PriceData[]> => {
   const fallbackPairs = [
-    { pair: 'BTC/USDT', price: 43250.50, change24h: 2.45 },
+    { pair: 'BTC/USDT', price: 113000.50, change24h: 2.45 }, // Updated to current BTC price
     { pair: 'ETH/USDT', price: 2650.75, change24h: 1.85 },
     { pair: 'BNB/USDT', price: 315.20, change24h: -0.95 },
     { pair: 'XRP/USDT', price: 0.6234, change24h: 3.12 },
