@@ -69,6 +69,21 @@ const AnalysisResults: React.FC<AnalysisResultsProps> = ({ result }) => {
 
   return (
     <div className="bg-gray-800 border border-gray-700 rounded-lg p-6 space-y-6">
+      {/* Success Banner */}
+      <div className="bg-emerald-900/30 border border-emerald-500/50 rounded-lg p-4 mb-6">
+        <div className="flex items-center space-x-3">
+          <div className="flex-shrink-0">
+            <div className="w-8 h-8 bg-emerald-500 rounded-full flex items-center justify-center">
+              <span className="text-white font-bold text-sm">✓</span>
+            </div>
+          </div>
+          <div>
+            <div className="text-emerald-400 font-semibold">🎉 Scan Complete!</div>
+            <div className="text-emerald-300 text-sm">Market analysis for {result.pair} is ready. Check the recommendations below.</div>
+          </div>
+        </div>
+      </div>
+
       <div className="flex items-center justify-between">
         <div>
           <h2 className="text-xl font-semibold text-white">Analysis Results</h2>

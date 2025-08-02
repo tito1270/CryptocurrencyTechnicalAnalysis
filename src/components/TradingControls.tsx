@@ -367,7 +367,7 @@ const TradingControls: React.FC<TradingControlsProps> = ({
         disabled={isAnalyzing || !selectedPair || selectedIndicators.length === 0}
         className={`w-full font-semibold py-4 px-6 rounded-lg transition-all duration-200 shadow-lg focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:ring-offset-2 focus:ring-offset-gray-800 ${
           isAnalyzing
-            ? 'bg-gradient-to-r from-yellow-600 to-orange-600 cursor-not-allowed'
+            ? 'bg-gradient-to-r from-yellow-600 to-orange-600 cursor-not-allowed text-white'
             : !selectedPair || selectedIndicators.length === 0
             ? 'bg-gray-600 cursor-not-allowed text-gray-400'
             : 'bg-gradient-to-r from-emerald-600 to-blue-600 hover:from-emerald-700 hover:to-blue-700 text-white transform hover:scale-105 animate-pulse hover:animate-none'
@@ -377,13 +377,13 @@ const TradingControls: React.FC<TradingControlsProps> = ({
         <div className="flex items-center justify-center space-x-2">
           {isAnalyzing ? (
             <>
-              <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white"></div>
-              <span>🔍 Analyzing {selectedPair}...</span>
+              <div className="animate-spin rounded-full h-5 w-5 border-2 border-white border-t-transparent"></div>
+              <span>🔍 SCANNING {selectedPair}...</span>
             </>
           ) : (
             <>
-              <span>🚀 Analyze Market & Get Recommendation</span>
-              <span className="text-sm opacity-75">({selectedTimeframe} Chart)</span>
+              <span>🚀 START MARKET SCAN</span>
+              <span className="text-sm opacity-75">({selectedTimeframe} Analysis)</span>
             </>
           )}
         </div>
@@ -403,7 +403,8 @@ const TradingControls: React.FC<TradingControlsProps> = ({
       )}
       
       <div className="text-xs text-gray-400 text-center mt-2">
-        Analysis includes technical indicators, trading strategies, news sentiment, and personalized buy/sell/hold recommendations with entry/exit points. Results will be displayed in the section to the right.
+        📊 Complete market scan includes technical indicators, trading strategies, news sentiment, and personalized buy/sell/hold recommendations with entry/exit points. 
+        <span className="text-emerald-400 font-medium">Scan results will appear in the panel to the right.</span>
       </div>
 
       {/* Advanced Crypto Pair Search Modal */}
