@@ -61,6 +61,34 @@ class LivePriceStreamer {
           op: "subscribe",
           args: [{ channel: "tickers", instType: "SPOT" }]
         }
+      },
+      {
+        name: 'huobi',
+        url: 'wss://api.huobi.pro/ws',
+        parser: this.parseHuobiWebSocket.bind(this),
+        subscription: {
+          sub: "market.overview"
+        }
+      },
+      {
+        name: 'kraken',
+        url: 'wss://ws.kraken.com',
+        parser: this.parseKrakenWebSocket.bind(this),
+        subscription: {
+          event: "subscribe",
+          pair: ["XBT/USD", "ETH/USD", "ADA/USD", "DOT/USD"],
+          subscription: { name: "ticker" }
+        }
+      },
+      {
+        name: 'bitfinex',
+        url: 'wss://api-pub.bitfinex.com/ws/2',
+        parser: this.parseBitfinexWebSocket.bind(this),
+        subscription: {
+          event: "subscribe",
+          channel: "ticker",
+          symbol: "tBTCUSD"
+        }
       }
     ];
 
@@ -186,6 +214,62 @@ class LivePriceStreamer {
       .filter((item: any) => item.pair.includes('/'));
   }
 
+  private parseHuobiWebSocket(data: any): PriceData[] {
+    if (!data.tick || !Array.isArray(data.tick)) return [];
+    
+    return data.tick
+      .filter((item: any) => item.symbol && item.close && parseFloat(item.close) > 0)
+      .map((item: any) => ({
+        broker: 'huobi',
+        pair: this.formatHuobiPair(item.symbol),
+        price: parseFloat(item.close),
+        change24h: parseFloat(item.chg || '0'),
+        volume: parseFloat(item.amount || '0'),
+        high24h: parseFloat(item.high || item.close),
+        low24h: parseFloat(item.low || item.close),
+        timestamp: Date.now()
+      }))
+      .filter((item: any) => item.pair.includes('/'));
+  }
+
+  private parseKrakenWebSocket(data: any): PriceData[] {
+    if (!Array.isArray(data) || data.length < 2) return [];
+    
+    const channelData = data[1];
+    if (!channelData || typeof channelData !== 'object') return [];
+    
+    const pair = data[3]; // Pair is typically at index 3
+    
+    return [{
+      broker: 'kraken',
+      pair: this.formatKrakenPair(pair),
+      price: parseFloat(channelData.c?.[0] || '0'),
+      change24h: parseFloat(channelData.p?.[1] || '0'),
+      volume: parseFloat(channelData.v?.[1] || '0'),
+      high24h: parseFloat(channelData.h?.[1] || channelData.c?.[0] || '0'),
+      low24h: parseFloat(channelData.l?.[1] || channelData.c?.[0] || '0'),
+      timestamp: Date.now()
+    }].filter(item => item.price > 0 && item.pair.includes('/'));
+  }
+
+  private parseBitfinexWebSocket(data: any): PriceData[] {
+    if (!Array.isArray(data) || data.length < 2) return [];
+    
+    const channelData = data[1];
+    if (!Array.isArray(channelData) || channelData.length < 10) return [];
+    
+    return [{
+      broker: 'bitfinex',
+      pair: 'BTC/USD', // Since we're subscribing to tBTCUSD
+      price: parseFloat(channelData[6] || '0'), // Last price
+      change24h: parseFloat(channelData[5] || '0'), // Daily change percent
+      volume: parseFloat(channelData[7] || '0'), // Volume
+      high24h: parseFloat(channelData[8] || channelData[6] || '0'),
+      low24h: parseFloat(channelData[9] || channelData[6] || '0'),
+      timestamp: Date.now()
+    }].filter(item => item.price > 0);
+  }
+
   private formatBinancePair(symbol: string): string {
     const stablecoins = ['USDT', 'USDC', 'BUSD', 'FDUSD', 'TUSD'];
     const majors = ['BTC', 'ETH', 'BNB'];
@@ -207,6 +291,32 @@ class LivePriceStreamer {
     }
     
     return symbol;
+  }
+
+  private formatHuobiPair(symbol: string): string {
+    const upperSymbol = symbol.toUpperCase();
+    const bases = ['USDT', 'USDC', 'BTC', 'ETH', 'HT'];
+    for (const base of bases) {
+      if (upperSymbol.endsWith(base)) {
+        const asset = upperSymbol.replace(base, '');
+        return `${asset}/${base}`;
+      }
+    }
+    return symbol.toUpperCase();
+  }
+
+  private formatKrakenPair(symbol: string): string {
+    const mapping: { [key: string]: string } = {
+      'XBT': 'BTC',
+      'XDG': 'DOGE'
+    };
+    
+    let formatted = symbol;
+    Object.entries(mapping).forEach(([kraken, standard]) => {
+      formatted = formatted.replace(kraken, standard);
+    });
+    
+    return formatted.replace('-', '/');
   }
 
   public subscribe(callback: LivePriceCallback): () => void {
