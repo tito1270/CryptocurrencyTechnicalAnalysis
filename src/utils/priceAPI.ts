@@ -273,3 +273,9 @@ export const getMarketStats = async (): Promise<{
     };
   }
 };
+
+// Export the fallback price function for compatibility
+export const getFallbackPrice = (pair: string): PriceData | null => {
+  const fallbackPrices = generateFallbackForExchange('binance');
+  return fallbackPrices.find(p => p.symbol === pair) || null;
+};
