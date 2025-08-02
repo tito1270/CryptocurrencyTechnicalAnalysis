@@ -91,7 +91,6 @@ const TermsOfService: React.FC = () => {
                   <li>• Use the service for any unlawful purpose or in violation of any applicable laws</li>
                   <li>• Attempt to gain unauthorized access to our systems or other users' accounts</li>
                   <li>• Interfere with or disrupt the service or servers connected to the service</li>
-                  <li>• Transmit any viruses, malware, or other harmful code</li>
                   <li>• Scrape, harvest, or collect user information without permission</li>
                   <li>• Use automated systems to access the service without authorization</li>
                 </ul>
@@ -165,11 +164,8 @@ const TermsOfService: React.FC = () => {
                 <li>• To infringe upon or violate our intellectual property rights or the intellectual property rights of others</li>
                 <li>• To harass, abuse, insult, harm, defame, slander, disparage, intimidate, or discriminate</li>
                 <li>• To submit false or misleading information</li>
-                <li>• To upload or transmit viruses or any other type of malicious code</li>
                 <li>• To collect or track the personal information of others</li>
-                <li>• To spam, phish, pharm, pretext, spider, crawl, or scrape</li>
                 <li>• For any obscene or immoral purpose</li>
-                <li>• To interfere with or circumvent the security features of the Service</li>
               </ul>
             </div>
           </section>

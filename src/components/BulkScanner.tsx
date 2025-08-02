@@ -935,7 +935,8 @@ const BulkScanner: React.FC<BulkScannerProps> = ({
                     </div>
                   </div>
                 </div>
-                  
+                
+                <div className="space-y-2">
                   {/* Candlestick Patterns */}
                   {result.candlestickPatterns && result.candlestickPatterns.length > 0 && (
                     <div className="flex justify-between">
