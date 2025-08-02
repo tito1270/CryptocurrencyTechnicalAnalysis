@@ -348,6 +348,17 @@ const BulkScanner: React.FC<BulkScannerProps> = ({
     }
   };
 
+  const getSentimentColor = (sentiment: string) => {
+    switch (sentiment) {
+      case 'STRONG_BULLISH': return 'text-emerald-400';
+      case 'BULLISH': return 'text-emerald-300';
+      case 'NEUTRAL': return 'text-gray-300';
+      case 'BEARISH': return 'text-red-300';
+      case 'STRONG_BEARISH': return 'text-red-400';
+      default: return 'text-gray-300';
+    }
+  };
+
   const exportScanResults = () => {
     const exportData = filteredResults.map(result => ({
       pair: result.pair,
