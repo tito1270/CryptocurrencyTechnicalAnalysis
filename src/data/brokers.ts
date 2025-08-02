@@ -110,5 +110,13 @@ export const brokers: Broker[] = [
     pairs: generateRealisticPairs('USDT', 'altcoin'), // Full altcoin selection
     supportsFutures: true,
     futuresPairs: generateFuturesPairs()
+  },
+  {
+    id: 'okx',
+    name: 'OKX',
+    logo: '⚫',
+    pairs: generateRealisticPairs('USDT', 'altcoin'), // Full altcoin selection  
+    supportsFutures: true,
+    futuresPairs: generateFuturesPairs()
   }
 ];
