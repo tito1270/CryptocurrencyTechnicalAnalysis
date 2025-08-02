@@ -337,6 +337,7 @@ function AppContent() {
                     onIndicatorToggle={handleIndicatorToggle}
                     onStrategyToggle={handleStrategyToggle}
                     onAnalyze={handleAnalyze}
+                    isAnalyzing={isAnalyzing}
                   />
 
                   <div id="crypto-news">
