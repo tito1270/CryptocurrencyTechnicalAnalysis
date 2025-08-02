@@ -362,13 +362,14 @@ const TradingControls: React.FC<TradingControlsProps> = ({
       {/* Analyze Button */}
       <button
         onClick={onAnalyze}
-        className="w-full bg-gradient-to-r from-emerald-600 to-blue-600 hover:from-emerald-700 hover:to-blue-700 text-white font-semibold py-3 px-6 rounded-lg transition-all duration-200 transform hover:scale-105 shadow-lg"
+        className="w-full bg-gradient-to-r from-emerald-600 to-blue-600 hover:from-emerald-700 hover:to-blue-700 text-white font-semibold py-3 px-6 rounded-lg transition-all duration-200 transform hover:scale-105 shadow-lg focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:ring-offset-2 focus:ring-offset-gray-800 animate-pulse hover:animate-none"
+        aria-label={`Analyze ${selectedPair} market data and get trading recommendations using ${selectedTimeframe} timeframe`}
       >
         🚀 Analyze Market & Get Recommendation ({selectedTimeframe} Chart)
       </button>
       
       <div className="text-xs text-gray-400 text-center mt-2">
-        Analysis includes technical indicators, trading strategies, news sentiment, and personalized buy/sell/hold recommendations with entry/exit points.
+        Analysis includes technical indicators, trading strategies, news sentiment, and personalized buy/sell/hold recommendations with entry/exit points. Results will be displayed in the section to the right.
       </div>
 
       {/* Advanced Crypto Pair Search Modal */}
