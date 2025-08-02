@@ -41,7 +41,7 @@ const BulkScanner: React.FC<BulkScannerProps> = ({
   selectedIndicators,
   selectedStrategies
 }) => {
-  const { pairs, priceData, loading: dataLoading, error: dataError, refreshPairs } = useBinancePairs();
+  const { pairs, priceData, loading: dataLoading, error: dataError, refreshPairs, dataSource } = useBinancePairs();
 
   // Scanning states
   const [isScanning, setIsScanning] = useState(false);
@@ -64,6 +64,9 @@ const BulkScanner: React.FC<BulkScannerProps> = ({
   // Auto-scan settings
   const [autoScanEnabled, setAutoScanEnabled] = useState(false);
   const [scanBatchSize, setScanBatchSize] = useState(10);
+  const [smartScanEnabled, setSmartScanEnabled] = useState(true);
+  const [scanOnlyGainers, setScanOnlyGainers] = useState(false);
+  const [minVolumeFilter, setMinVolumeFilter] = useState(1000000); // 1M minimum volume
 
   // Get unique quote currencies
   const quoteCurrencies = useMemo(() => {
@@ -192,6 +195,34 @@ const BulkScanner: React.FC<BulkScannerProps> = ({
     }
   };
 
+  // Smart filtering for better scan targets
+  const getSmartScanTargets = (data: typeof paginatedData) => {
+    if (!smartScanEnabled) {
+      return data.filter(price => !scannedPairs.has(price.pair));
+    }
+
+    let targets = data.filter(price => {
+      if (scannedPairs.has(price.pair)) return false;
+      
+      // Volume filter
+      if ((price.quoteVolume || price.volume) < minVolumeFilter) return false;
+      
+      // Only scan gainers if enabled
+      if (scanOnlyGainers && price.change24h <= 0) return false;
+      
+      return true;
+    });
+
+    // Sort by potential - high volume gainers first
+    targets.sort((a, b) => {
+      const aScore = (a.quoteVolume || a.volume) * (Math.max(0, a.change24h) + 1);
+      const bScore = (b.quoteVolume || b.volume) * (Math.max(0, b.change24h) + 1);
+      return bScore - aScore;
+    });
+
+    return targets;
+  };
+
   // Bulk scan current page
   const handleBulkScan = async () => {
     try {
@@ -201,7 +232,7 @@ const BulkScanner: React.FC<BulkScannerProps> = ({
       }
 
       if (selectedIndicators.length === 0) {
-        console.error('No indicators selected for bulk scan');
+        alert('Please select at least one technical indicator before scanning.');
         return;
       }
 
@@ -209,7 +240,15 @@ const BulkScanner: React.FC<BulkScannerProps> = ({
       setIsPaused(false);
       setCurrentScanIndex(0);
       
-      const pairsToScan = paginatedData.filter(price => !scannedPairs.has(price.pair));
+      const pairsToScan = getSmartScanTargets(paginatedData);
+      
+      if (pairsToScan.length === 0) {
+        alert('No pairs available for scanning. Try adjusting your filters.');
+        setIsScanning(false);
+        return;
+      }
+
+      console.log(`🚀 Starting bulk scan of ${pairsToScan.length} pairs with smart filtering`);
       
       for (let i = 0; i < pairsToScan.length; i++) {
         if (isPaused) {
@@ -237,6 +276,8 @@ const BulkScanner: React.FC<BulkScannerProps> = ({
       setIsScanning(false);
       setCurrentScanIndex(0);
       setScanProgress(0);
+      
+      console.log(`✅ Bulk scan completed. Analyzed ${pairsToScan.length} pairs.`);
     } catch (error) {
       console.error('Error in bulk scan:', error);
       setIsScanning(false);
@@ -372,7 +413,21 @@ const BulkScanner: React.FC<BulkScannerProps> = ({
         <div className="flex items-center justify-between mb-4">
           <div className="flex items-center space-x-2">
             <Activity className="w-6 h-6 text-purple-400" />
-            <h2 className="text-xl font-semibold text-white">Advanced Bulk Scanner</h2>
+            <div>
+              <h2 className="text-xl font-semibold text-white">Advanced Bulk Scanner</h2>
+              <div className="flex items-center space-x-2 mt-1">
+                <span className="text-xs text-gray-400">Data source:</span>
+                <span className={`text-xs px-2 py-1 rounded-full font-medium ${
+                  dataSource === 'binance' ? 'bg-emerald-500/20 text-emerald-400' :
+                  dataSource === 'alternative' ? 'bg-blue-500/20 text-blue-400' :
+                  'bg-yellow-500/20 text-yellow-400'
+                }`}>
+                  {dataSource === 'binance' ? '🟢 Binance Live' : 
+                   dataSource === 'alternative' ? '🔵 Multi-Source' : 
+                   '🟡 Offline Mode'}
+                </span>
+              </div>
+            </div>
           </div>
           
           <div className="flex items-center space-x-4">
@@ -479,16 +534,21 @@ const BulkScanner: React.FC<BulkScannerProps> = ({
               <div className="flex items-center space-x-2">
                 <div className="bg-gray-700 rounded-full px-3 py-1">
                   <span className="text-sm text-gray-300">
-                    {currentScanIndex} / {paginatedData.filter(p => !scannedPairs.has(p.pair)).length}
+                    {currentScanIndex} / {getSmartScanTargets(paginatedData).length}
                   </span>
                 </div>
                 <div className="w-32 bg-gray-700 rounded-full h-2">
                   <div 
-                    className="bg-blue-600 h-2 rounded-full transition-all duration-300"
+                    className="bg-gradient-to-r from-blue-600 to-purple-600 h-2 rounded-full transition-all duration-300"
                     style={{ width: `${scanProgress}%` }}
                   ></div>
                 </div>
                 <span className="text-sm text-gray-400">{scanProgress}%</span>
+                {smartScanEnabled && (
+                  <span className="text-xs text-blue-400 bg-blue-500/20 px-2 py-1 rounded">
+                    🧠 Smart
+                  </span>
+                )}
               </div>
             )}
           </div>
@@ -523,6 +583,23 @@ const BulkScanner: React.FC<BulkScannerProps> = ({
                 <option value={2000}>Very Slow (2s)</option>
               </select>
             </div>
+
+            <div className="flex items-center space-x-2">
+              <label className="text-sm text-gray-400">Smart scan:</label>
+              <button
+                onClick={() => setSmartScanEnabled(!smartScanEnabled)}
+                className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
+                  smartScanEnabled ? 'bg-blue-600' : 'bg-gray-600'
+                }`}
+                title="Enable smart filtering for better scan targets"
+              >
+                <span
+                  className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
+                    smartScanEnabled ? 'translate-x-6' : 'translate-x-1'
+                  }`}
+                />
+              </button>
+            </div>
           </div>
         </div>
       </div>
@@ -542,6 +619,49 @@ const BulkScanner: React.FC<BulkScannerProps> = ({
             />
           </div>
         </div>
+
+        {/* Smart Scan Settings */}
+        {smartScanEnabled && (
+          <div className="bg-blue-500/10 border border-blue-500/20 rounded-lg p-4 mb-4">
+            <h3 className="text-sm font-medium text-blue-400 mb-3">🧠 Smart Scan Settings</h3>
+            <div className="flex flex-wrap items-center gap-4">
+              <div className="flex items-center space-x-2">
+                <label className="text-sm text-gray-400">Only gainers:</label>
+                <button
+                  onClick={() => setScanOnlyGainers(!scanOnlyGainers)}
+                  className={`relative inline-flex h-5 w-9 items-center rounded-full transition-colors ${
+                    scanOnlyGainers ? 'bg-emerald-600' : 'bg-gray-600'
+                  }`}
+                >
+                  <span
+                    className={`inline-block h-3 w-3 transform rounded-full bg-white transition-transform ${
+                      scanOnlyGainers ? 'translate-x-5' : 'translate-x-1'
+                    }`}
+                  />
+                </button>
+              </div>
+
+              <div className="flex items-center space-x-2">
+                <label className="text-sm text-gray-400">Min volume:</label>
+                <select
+                  value={minVolumeFilter}
+                  onChange={(e) => setMinVolumeFilter(Number(e.target.value))}
+                  className="bg-gray-700 border border-gray-600 rounded px-2 py-1 text-white text-xs focus:outline-none focus:border-blue-500"
+                >
+                  <option value={100000}>100K</option>
+                  <option value={500000}>500K</option>
+                  <option value={1000000}>1M</option>
+                  <option value={5000000}>5M</option>
+                  <option value={10000000}>10M</option>
+                </select>
+              </div>
+
+              <div className="text-xs text-gray-400">
+                🎯 Smart scan prioritizes high-volume, trending pairs for better results
+              </div>
+            </div>
+          </div>
+        )}
 
         {/* Filter Controls */}
         <div className="flex flex-wrap items-center gap-4">
