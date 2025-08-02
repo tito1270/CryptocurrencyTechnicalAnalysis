@@ -50,6 +50,78 @@ export const cryptoNews: NewsItem[] = [
     relevantPairs: ['UNI/USDT', 'AAVE/USDT', 'COMP/USDT', 'SUSHI/USDT', 'CRV/USDT', 'MKR/USDT']
   },
   {
+    id: '25',
+    title: 'Federal Reserve Signals Aggressive Rate Hikes as Inflation Persists, Risk Assets Under Pressure',
+    summary: 'Fed Chairman Powell indicates more aggressive monetary tightening ahead as inflation remains elevated. Higher interest rates traditionally reduce appetite for risk assets including cryptocurrencies and tech stocks.',
+    sentiment: 'NEGATIVE',
+    impact: 'HIGH',
+    source: 'Federal Reserve',
+    url: 'https://www.federalreserve.gov/newsevents/pressreleases/monetary20240115a.htm',
+    publishedAt: '2024-01-15T16:00:00Z',
+    timestamp: Date.now() - 1800000, // 30 minutes ago
+    relevantPairs: ['BTC/USDT', 'ETH/USDT', 'BNB/USDT', 'SOL/USDT', 'ADA/USDT', 'AVAX/USDT']
+  },
+  {
+    id: '26',
+    title: 'Major Crypto Exchange Faces SEC Enforcement Action Over Unregistered Securities',
+    summary: 'Securities and Exchange Commission files enforcement action against major crypto exchange for allegedly offering unregistered securities. Action includes potential fines and operational restrictions.',
+    sentiment: 'NEGATIVE',
+    impact: 'HIGH',
+    source: 'Reuters',
+    url: 'https://www.reuters.com/business/finance/sec-files-enforcement-crypto-exchange-2024-01-15',
+    publishedAt: '2024-01-15T13:45:00Z',
+    timestamp: Date.now() - 5400000, // 1.5 hours ago
+    relevantPairs: ['BTC/USDT', 'ETH/USDT', 'BNB/USDT', 'XRP/USDT', 'ADA/USDT', 'DOT/USDT']
+  },
+  {
+    id: '27',
+    title: 'Bitcoin Mining Difficulty Reaches All-Time High as Energy Costs Surge Globally',
+    summary: 'Bitcoin mining difficulty adjustment reaches record levels while energy costs surge globally. Smaller mining operations report significant pressure on profitability and potential shutdowns.',
+    sentiment: 'NEGATIVE',
+    impact: 'MEDIUM',
+    source: 'CoinTelegraph',
+    url: 'https://cointelegraph.com/news/bitcoin-mining-difficulty-energy-costs',
+    publishedAt: '2024-01-15T11:30:00Z',
+    timestamp: Date.now() - 9000000, // 2.5 hours ago
+    relevantPairs: ['BTC/USDT', 'BTC/USD', 'BTC/ETH']
+  },
+  {
+    id: '28',
+    title: 'Whale Wallets Show Massive Outflows as Large Holders Reduce Crypto Positions',
+    summary: 'On-chain data reveals significant outflows from whale wallets across major cryptocurrencies. Large holders appear to be reducing positions amid regulatory uncertainty and macro headwinds.',
+    sentiment: 'NEGATIVE',
+    impact: 'HIGH',
+    source: 'Whale Alert',
+    url: 'https://whale-alert.io/analysis/massive-outflows-2024-01-15',
+    publishedAt: '2024-01-15T09:15:00Z',
+    timestamp: Date.now() - 12600000, // 3.5 hours ago
+    relevantPairs: ['BTC/USDT', 'ETH/USDT', 'BNB/USDT', 'SOL/USDT', 'ADA/USDT', 'MATIC/USDT']
+  },
+  {
+    id: '29',
+    title: 'Technical Analysis Shows Major Resistance Breakdown Across Crypto Markets',
+    summary: 'Multiple cryptocurrencies break below key technical support levels on high volume. Chart patterns suggest potential continuation of bearish trend with increased selling pressure.',
+    sentiment: 'NEGATIVE',
+    impact: 'MEDIUM',
+    source: 'TradingView',
+    url: 'https://www.tradingview.com/chart/BTCUSDT/crypto-market-breakdown-2024',
+    publishedAt: '2024-01-15T15:20:00Z',
+    timestamp: Date.now() - 2400000, // 40 minutes ago
+    relevantPairs: ['BTC/USDT', 'ETH/USDT', 'BNB/USDT', 'SOL/USDT', 'ADA/USDT', 'AVAX/USDT']
+  },
+  {
+    id: '30',
+    title: 'Stablecoin Reserves Drop to Lowest Levels in 18 Months Amid Market Uncertainty',
+    summary: 'USDT and USDC reserves reach 18-month lows as investors withdraw from crypto markets. Declining stablecoin supply often indicates reduced buying power and potential further price pressure.',
+    sentiment: 'NEGATIVE',
+    impact: 'MEDIUM',
+    source: 'DeFiLlama',
+    url: 'https://defillama.com/stablecoins/analysis-reserve-decline',
+    publishedAt: '2024-01-15T14:10:00Z',
+    timestamp: Date.now() - 4200000, // 70 minutes ago
+    relevantPairs: ['USDT/USD', 'USDC/USD', 'BTC/USDT', 'ETH/USDT', 'BNB/USDT']
+  },
+  {
     id: '5',
     title: 'Binance Announces New AI-Powered Trading Protocol for Launchpad',
     summary: 'Binance Launchpad reveals upcoming token sale for revolutionary AI-powered trading protocol. BNB holders get exclusive access to participate in the sale with staking rewards multipliers.',
