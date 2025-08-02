@@ -303,15 +303,15 @@ export const cryptoNews: NewsItem[] = [
   },
   {
     id: '20',
-    title: 'Kraken Exchange Launches Institutional Custody Service for 50+ Digital Assets',
-    summary: 'Kraken announces the launch of institutional-grade custody services supporting over 50 digital assets. The service targets institutional clients with enhanced security, insurance coverage, and regulatory compliance.',
+    title: 'Binance Announces Enhanced Security Features for Institutional Clients',
+    summary: 'Binance introduces new institutional-grade security features including multi-signature wallets, enhanced API security, and advanced custody solutions. The update targets institutional clients with improved compliance and risk management tools.',
     sentiment: 'POSITIVE',
     impact: 'LOW',
-    source: 'Kraken',
-    url: 'https://blog.kraken.com/institutional-custody-service-launch',
+    source: 'Binance',
+    url: 'https://www.binance.com/en/blog/institutional-security-upgrade',
     publishedAt: '2024-01-14T00:15:00Z',
     timestamp: Date.now() - 72000000, // 20 hours ago
-    relevantPairs: ['BTC/USD', 'ETH/USD', 'KNC/USDT']
+    relevantPairs: ['BTC/USDT', 'ETH/USDT', 'BNB/USDT']
   },
   {
     id: '21',
@@ -328,7 +328,7 @@ export const cryptoNews: NewsItem[] = [
   {
     id: '22',
     title: 'Aave Protocol Launches on Base Network with $10M Liquidity Incentives',
-    summary: 'Aave launches its lending protocol on Coinbase\'s Base network with $10 million in liquidity mining incentives. The deployment aims to capitalize on Base\'s growing ecosystem and lower transaction costs.',
+    summary: 'Aave launches its lending protocol on Base network with $10 million in liquidity mining incentives. The deployment aims to capitalize on Base\'s growing ecosystem and lower transaction costs.',
     sentiment: 'POSITIVE',
     impact: 'MEDIUM',
     source: 'Aave',
