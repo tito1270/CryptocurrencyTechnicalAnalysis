@@ -190,6 +190,12 @@ const BulkScanner: React.FC<BulkScannerProps> = ({
         return updated;
       });
 
+      // Show scanning notification
+      setNotification({
+        message: `🔍 Analyzing ${pair} on ${selectedBroker.toUpperCase()}...`,
+        type: 'info'
+      });
+
       const result = await performAnalysis(
         pair,
         selectedBroker,
@@ -198,6 +204,11 @@ const BulkScanner: React.FC<BulkScannerProps> = ({
         selectedIndicators,
         selectedStrategies
       );
+
+      // Validate the analysis result
+      if (!result || !result.pair) {
+        throw new Error('Analysis failed to produce valid results');
+      }
 
       const scanResult: ScanResult = {
         ...result,
@@ -218,28 +229,102 @@ const BulkScanner: React.FC<BulkScannerProps> = ({
       setLastScanTime(Date.now());
       setTotalScanned(prev => prev + 1);
       
-      // Show success notification
+      // Show success notification with key details
+      const recommendation = result.recommendation.replace('_', ' ');
+      const confidence = result.confidence;
       setNotification({
-        message: `✅ ${pair} scan completed successfully!`,
+        message: `✅ ${pair} analysis complete! ${recommendation} signal (${confidence}% confidence)`,
         type: 'success'
       });
       
       setTimeout(() => {
         setScanProgress(0);
         setNotification(null);
-      }, 3000);
+      }, 4000);
       
-          } catch (error) {
-        console.error('Individual scan error:', error);
-        setNotification({
-          message: `❌ Error scanning ${pair}. Please try again.`,
-          type: 'error'
-        });
-        setTimeout(() => setNotification(null), 3000);
-      } finally {
-        setIsScanning(false);
-        setCurrentlyScanning('');
+    } catch (error) {
+      console.error('Individual scan error:', error);
+      
+      // Determine error type and provide appropriate message
+      let errorMessage = `❌ Error scanning ${pair}`;
+      if (error instanceof Error) {
+        if (error.message.includes('network') || error.message.includes('timeout')) {
+          errorMessage += ': Network connection issue. Please check your internet and try again.';
+        } else if (error.message.includes('price') || error.message.includes('data')) {
+          errorMessage += ': Price data unavailable. Try again in a moment or select a different exchange.';
+        } else if (error.message.includes('indicator') || error.message.includes('strategy')) {
+          errorMessage += ': Configuration issue. Please check your selected indicators and strategies.';
+        } else {
+          errorMessage += ': Analysis failed. Please try again or try a different pair.';
+        }
       }
+      
+      setNotification({
+        message: errorMessage,
+        type: 'error'
+      });
+      
+      // Try to create a fallback result for display
+      try {
+        const fallbackResult: ScanResult = {
+          pair,
+          broker: selectedBroker,
+          timeframe: selectedTimeframe,
+          tradeType,
+          overallSentiment: 'NEUTRAL',
+          confidence: 20,
+          recommendation: 'HOLD',
+          recommendedEntryPrice: 1.0,
+          profitTarget: 1.03,
+          stopLoss: 0.98,
+          riskRewardRatio: 1.5,
+          newsImpact: 'LOW',
+          explanation: `⚠️ **ANALYSIS INCOMPLETE** for ${pair}\n\nScan encountered technical difficulties.\n\n**Fallback Status:**\n• Using conservative HOLD recommendation\n• Limited confidence due to data issues\n• Try individual scan again when connection is stable\n\n**Next Steps:**\n• Check your internet connection\n• Try scanning during lower traffic periods\n• Consider selecting a different exchange`,
+          newsAnalysis: 'News analysis unavailable due to technical issues',
+          upcomingEvents: [],
+          entryPrice: 1.0,
+          targetPrice: 1.03,
+          supportLevel: 0.97,
+          resistanceLevel: 1.03,
+          indicators: selectedIndicators.length > 0 ? technicalIndicators.filter(ind => selectedIndicators.includes(ind.id)).slice(0, 2) : [],
+          strategies: selectedStrategies.length > 0 ? tradingStrategies.filter(strat => selectedStrategies.includes(strat.id)).slice(0, 1) : [],
+          priceSource: 'FALLBACK',
+          priceTimestamp: Date.now(),
+          patternAnalysis: {
+            detectedPatterns: [],
+            overallSignal: 'HOLD',
+            trendAnalysis: { direction: 'NEUTRAL', strength: 'WEAK', confidence: 20 },
+            patternConfirmation: false,
+            conflictingSignals: false,
+            optionsRecommendations: []
+          },
+          candlestickPatterns: [],
+          trendAnalysis: { direction: 'NEUTRAL', strength: 'WEAK', confidence: 20 },
+          patternConfirmation: false,
+          optionsRecommendations: [],
+          scanTime: Date.now()
+        };
+        
+        setScanResults(prev => {
+          const existingIndex = prev.findIndex(r => r.pair === pair);
+          if (existingIndex >= 0) {
+            const updated = [...prev];
+            updated[existingIndex] = fallbackResult;
+            return updated;
+          }
+          return [fallbackResult, ...prev];
+        });
+        
+        console.log(`🔄 Added fallback result for individual scan: ${pair}`);
+      } catch (fallbackError) {
+        console.error('Failed to create fallback result:', fallbackError);
+      }
+      
+      setTimeout(() => setNotification(null), 5000);
+    } finally {
+      setIsScanning(false);
+      setCurrentlyScanning('');
+    }
   };
 
   const handleBulkScan = async () => {
@@ -249,12 +334,21 @@ const BulkScanner: React.FC<BulkScannerProps> = ({
     setScanProgress(0);
     
     const batchResults: ScanResult[] = [];
+    const failedPairs: string[] = [];
+    
+    // Show progress notification
+    setNotification({
+      message: `🚀 Starting bulk scan of ${currentBatchPairs.length} pairs...`,
+      type: 'info'
+    });
     
     for (let i = 0; i < currentBatchPairs.length; i++) {
       const pair = currentBatchPairs[i];
       setCurrentlyScanning(pair);
       
       try {
+        console.log(`📊 Scanning ${i + 1}/${currentBatchPairs.length}: ${pair}`);
+        
         const result = await performAnalysis(
           pair,
           selectedBroker,
@@ -264,31 +358,87 @@ const BulkScanner: React.FC<BulkScannerProps> = ({
           selectedStrategies
         );
 
-        const scanResult: ScanResult = {
-          ...result,
-          scanTime: Date.now()
-        };
+        // Validate the result
+        if (result && result.pair && result.confidence >= 0) {
+          const scanResult: ScanResult = {
+            ...result,
+            scanTime: Date.now()
+          };
 
-        batchResults.push(scanResult);
+          batchResults.push(scanResult);
+          console.log(`✅ Successfully scanned ${pair} - ${result.recommendation} (${result.confidence}%)`);
+        } else {
+          throw new Error('Invalid analysis result');
+        }
         
-        // Update progress
-        setScanProgress(((i + 1) / currentBatchPairs.length) * 100);
-        
-        // Small delay to prevent overwhelming the API
-        await new Promise(resolve => setTimeout(resolve, 100));
       } catch (error) {
-        console.error(`Error scanning ${pair}:`, error);
+        console.error(`❌ Error scanning ${pair}:`, error);
+        failedPairs.push(pair);
+        
+        // Create a basic fallback result for failed pairs
+        try {
+          const fallbackResult: ScanResult = {
+            pair,
+            broker: selectedBroker,
+            timeframe: selectedTimeframe,
+            tradeType,
+            overallSentiment: 'NEUTRAL',
+            confidence: 30,
+            recommendation: 'HOLD',
+            recommendedEntryPrice: 1.0,
+            profitTarget: 1.05,
+            stopLoss: 0.97,
+            riskRewardRatio: 1.5,
+            newsImpact: 'LOW',
+            explanation: `⚠️ **SCAN INCOMPLETE** for ${pair}\n\nUnable to complete full analysis due to data issues.\n\n**Status:** Using conservative HOLD recommendation.\n**Next Steps:** Try scanning this pair individually when market data is stable.`,
+            newsAnalysis: 'Limited analysis available',
+            upcomingEvents: [],
+            entryPrice: 1.0,
+            targetPrice: 1.05,
+            supportLevel: 0.95,
+            resistanceLevel: 1.05,
+            indicators: selectedIndicators.length > 0 ? technicalIndicators.filter(ind => selectedIndicators.includes(ind.id)).slice(0, 3) : [],
+            strategies: selectedStrategies.length > 0 ? tradingStrategies.filter(strat => selectedStrategies.includes(strat.id)).slice(0, 2) : [],
+            priceSource: 'FALLBACK',
+            priceTimestamp: Date.now(),
+            patternAnalysis: {
+              detectedPatterns: [],
+              overallSignal: 'HOLD',
+              trendAnalysis: { direction: 'NEUTRAL', strength: 'WEAK', confidence: 30 },
+              patternConfirmation: false,
+              conflictingSignals: false,
+              optionsRecommendations: []
+            },
+            candlestickPatterns: [],
+            trendAnalysis: { direction: 'NEUTRAL', strength: 'WEAK', confidence: 30 },
+            patternConfirmation: false,
+            optionsRecommendations: [],
+            scanTime: Date.now()
+          };
+          
+          batchResults.push(fallbackResult);
+          console.log(`🔄 Added fallback result for ${pair}`);
+        } catch (fallbackError) {
+          console.error(`❌ Failed to create fallback for ${pair}:`, fallbackError);
+        }
       }
+      
+      // Update progress
+      setScanProgress(((i + 1) / currentBatchPairs.length) * 100);
+      
+      // Small delay to prevent overwhelming the API and show progress
+      await new Promise(resolve => setTimeout(resolve, 150));
     }
 
+    // Update results
     setScanResults(prev => [...batchResults, ...prev.filter(r => !batchResults.find(br => br.pair === r.pair))]);
     setLastScanTime(Date.now());
     setTotalScanned(prev => prev + batchResults.length);
     
     // Add successful scans to history
     setScanHistory(prev => {
-      const newPairs = batchResults.map(r => r.pair);
-      const combined = [...newPairs, ...prev].slice(0, 20); // Keep last 20
+      const successfulPairs = batchResults.filter(r => r.confidence > 30).map(r => r.pair);
+      const combined = [...successfulPairs, ...prev].slice(0, 20); // Keep last 20
       return Array.from(new Set(combined)); // Remove duplicates
     });
     
@@ -296,12 +446,24 @@ const BulkScanner: React.FC<BulkScannerProps> = ({
     setCurrentlyScanning('');
     setScanProgress(0);
     
-    // Show bulk scan completion notification
-    setNotification({
-      message: `🎉 Bulk scan completed! ${batchResults.length} pairs analyzed successfully.`,
-      type: 'success'
-    });
-    setTimeout(() => setNotification(null), 4000);
+    // Show completion notification with results summary
+    const successfulScans = batchResults.filter(r => r.confidence > 30).length;
+    const buySignals = batchResults.filter(r => r.recommendation.includes('BUY')).length;
+    const sellSignals = batchResults.filter(r => r.recommendation.includes('SELL')).length;
+    
+    if (failedPairs.length === 0) {
+      setNotification({
+        message: `🎉 Bulk scan completed! ${successfulScans} pairs analyzed. Signals: ${buySignals} BUY, ${sellSignals} SELL`,
+        type: 'success'
+      });
+    } else {
+      setNotification({
+        message: `⚠️ Scan completed with some issues. ${successfulScans} successful, ${failedPairs.length} with limited data. Check results below.`,
+        type: 'info'
+      });
+    }
+    
+    setTimeout(() => setNotification(null), 6000);
   };
 
   const handleNextBatch = () => {
