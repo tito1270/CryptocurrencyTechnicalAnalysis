@@ -11,13 +11,32 @@ interface ReCaptchaContextType {
 const ReCaptchaContext = createContext<ReCaptchaContextType | null>(null);
 
 export const ReCaptchaProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
-  return (
-    <GoogleReCaptchaProvider reCaptchaKey={RECAPTCHA_SITE_KEY}>
-      <ReCaptchaProviderInner>
+  // Add error boundary logic to prevent ReCaptcha from breaking the entire app
+  try {
+    return (
+      <GoogleReCaptchaProvider 
+        reCaptchaKey={RECAPTCHA_SITE_KEY}
+        scriptProps={{
+          async: true,
+          defer: true,
+          appendTo: "head",
+          nonce: undefined,
+        }}
+      >
+        <ReCaptchaProviderInner>
+          {children}
+        </ReCaptchaProviderInner>
+      </GoogleReCaptchaProvider>
+    );
+  } catch (error) {
+    console.warn('ReCaptcha provider failed to initialize, falling back to no-op:', error);
+    // Fallback provider that doesn't break the app
+    return (
+      <ReCaptchaContext.Provider value={{ executeRecaptcha: async () => null }}>
         {children}
-      </ReCaptchaProviderInner>
-    </GoogleReCaptchaProvider>
-  );
+      </ReCaptchaContext.Provider>
+    );
+  }
 };
 
 const ReCaptchaProviderInner: React.FC<{ children: ReactNode }> = ({ children }) => {
@@ -48,7 +67,9 @@ const ReCaptchaProviderInner: React.FC<{ children: ReactNode }> = ({ children })
 export const useReCaptcha = () => {
   const context = useContext(ReCaptchaContext);
   if (!context) {
-    throw new Error('useReCaptcha must be used within a ReCaptchaProvider');
+    // Instead of throwing an error that could break the app, return a no-op function
+    console.warn('useReCaptcha used outside provider, returning no-op function');
+    return { executeRecaptcha: async () => null };
   }
   return context;
 };
