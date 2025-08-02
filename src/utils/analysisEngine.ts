@@ -19,93 +19,159 @@ export const performAnalysis = async (
 ): Promise<AnalysisResult> => {
   console.log(`🚀 Starting comprehensive analysis for ${pair} on ${broker}...`);
   
-  // Step 1: Get LIVE current price with metadata
-  const priceData = await getCurrentPrice(pair, broker);
-  const currentPrice = priceData.price;
-  
-  // Step 2: Generate OHLC data for pattern analysis (enhanced with current price)
-  const ohlcData = generateOHLCData(currentPrice, 50, timeframe); // More periods for better analysis
-  
-  // Step 3: PRIORITY - Candlestick Pattern Analysis (Higher Weight)
-  const patternAnalysis = performPatternAnalysis(ohlcData, timeframe, currentPrice);
-  console.log(`📊 Detected ${patternAnalysis.detectedPatterns.length} candlestick patterns`);
-  
-  // Step 4: Filter and analyze selected indicators
-  const activeIndicators = technicalIndicators.filter(ind => 
-    selectedIndicators.includes(ind.id)
-  );
-  
-  // Step 5: Filter and analyze selected strategies  
-  const activeStrategies = tradingStrategies.filter(strat => 
-    selectedStrategies.includes(strat.id)
-  );
-  
-  // Step 6: Comprehensive News Analysis with Real-time Relevance
-  const newsAnalysis = analyzeComprehensiveNewsImpact(pair, currentPrice, patternAnalysis);
-  
-  // Step 7: WEIGHTED SENTIMENT CALCULATION (Patterns get highest priority)
-  const { sentiment, confidence } = calculateWeightedSentiment(
-    patternAnalysis,
-    activeIndicators, 
-    activeStrategies,
-    newsAnalysis
-  );
-  
-  // Step 8: Strategic Price Level Calculations
-  const strategicLevels = calculateStrategicPriceLevels(
-    currentPrice, 
-    sentiment, 
-    patternAnalysis, 
-    newsAnalysis,
-    timeframe
-  );
-  
-  // Step 9: Generate Comprehensive Trading Recommendation
-  const recommendation = generateTradingRecommendation(
-    sentiment,
-    confidence,
-    patternAnalysis,
-    newsAnalysis,
-    activeIndicators,
-    activeStrategies,
-    strategicLevels,
-    currentPrice
-  );
+  try {
+    // Step 1: Get LIVE current price with enhanced error handling
+    const priceData = await getCurrentPrice(pair, broker);
+    const currentPrice = priceData.price;
+    
+    // Validate price data
+    if (!currentPrice || currentPrice <= 0) {
+      console.warn(`⚠️ Invalid price for ${pair}, using fallback price`);
+      const fallbackPrice = getFallbackPrice(pair);
+      if (fallbackPrice <= 0) {
+        throw new Error(`Unable to get valid price for ${pair}. Please try again.`);
+      }
+      priceData.price = fallbackPrice;
+      priceData.source = 'FALLBACK';
+    }
+    
+    // Step 2: Generate OHLC data for pattern analysis (enhanced with current price)
+    const ohlcData = generateOHLCData(priceData.price, 50, timeframe);
+    
+    // Step 3: PRIORITY - Candlestick Pattern Analysis (Higher Weight)
+    const patternAnalysis = performPatternAnalysis(ohlcData, timeframe, priceData.price);
+    console.log(`📊 Detected ${patternAnalysis.detectedPatterns.length} candlestick patterns`);
+    
+    // Step 4: Filter and analyze selected indicators with fallback
+    const activeIndicators = technicalIndicators.filter(ind => 
+      selectedIndicators.includes(ind.id)
+    );
+    
+    // Ensure we have at least some indicators for analysis
+    if (activeIndicators.length === 0 && selectedIndicators.length > 0) {
+      console.warn('⚠️ No matching indicators found, using default indicators');
+      // Add some default indicators
+      const defaultIndicators = technicalIndicators.slice(0, 3);
+      activeIndicators.push(...defaultIndicators);
+    }
+    
+    // Step 5: Filter and analyze selected strategies with fallback
+    const activeStrategies = tradingStrategies.filter(strat => 
+      selectedStrategies.includes(strat.id)
+    );
+    
+    // Ensure we have at least some strategies for analysis
+    if (activeStrategies.length === 0 && selectedStrategies.length > 0) {
+      console.warn('⚠️ No matching strategies found, using default strategies');
+      const defaultStrategies = tradingStrategies.slice(0, 2);
+      activeStrategies.push(...defaultStrategies);
+    }
+    
+    // Step 6: Comprehensive News Analysis with Real-time Relevance
+    const newsAnalysis = analyzeComprehensiveNewsImpact(pair, priceData.price, patternAnalysis);
+    
+    // Step 7: WEIGHTED SENTIMENT CALCULATION (Patterns get highest priority)
+    const { sentiment, confidence } = calculateWeightedSentiment(
+      patternAnalysis,
+      activeIndicators, 
+      activeStrategies,
+      newsAnalysis
+    );
+    
+    // Step 8: Strategic Price Level Calculations
+    const strategicLevels = calculateStrategicPriceLevels(
+      priceData.price, 
+      sentiment, 
+      patternAnalysis, 
+      newsAnalysis,
+      timeframe
+    );
+    
+    // Step 9: Generate Comprehensive Trading Recommendation
+    const recommendation = generateTradingRecommendation(
+      sentiment,
+      confidence,
+      patternAnalysis,
+      newsAnalysis,
+      activeIndicators,
+      activeStrategies,
+      strategicLevels,
+      priceData.price
+    );
 
-  console.log(`✅ Analysis complete: ${sentiment} sentiment with ${confidence}% confidence`);
-  console.log(`🎯 Recommendation: ${recommendation.action} at ${recommendation.entryPrice.toFixed(4)}`);
+    console.log(`✅ Analysis complete: ${sentiment} sentiment with ${confidence}% confidence`);
+    console.log(`🎯 Recommendation: ${recommendation.action} at ${recommendation.entryPrice.toFixed(4)}`);
 
-  return {
-    pair,
-    broker,
-    timeframe,
-    tradeType,
-    overallSentiment: sentiment,
-    confidence,
-    recommendation: recommendation.action,
-    recommendedEntryPrice: recommendation.entryPrice,
-    profitTarget: recommendation.profitTarget,
-    stopLoss: recommendation.stopLoss,
-    riskRewardRatio: recommendation.riskRewardRatio,
-    newsImpact: newsAnalysis.impact,
-    explanation: recommendation.explanation,
-    newsAnalysis: newsAnalysis.analysis,
-    upcomingEvents: newsAnalysis.upcomingEvents,
-    entryPrice: strategicLevels.entryPrice,
-    targetPrice: strategicLevels.targetPrice,
-    supportLevel: strategicLevels.supportLevel,
-    resistanceLevel: strategicLevels.resistanceLevel,
-    indicators: activeIndicators,
-    strategies: activeStrategies,
-    priceSource: priceData.source,
-    priceTimestamp: priceData.timestamp,
-    // Enhanced pattern analysis results
-    patternAnalysis,
-    candlestickPatterns: patternAnalysis.detectedPatterns,
-    trendAnalysis: patternAnalysis.trendAnalysis,
-    patternConfirmation: patternAnalysis.patternConfirmation,
-    optionsRecommendations: patternAnalysis.optionsRecommendations || []
-  };
+    return {
+      pair,
+      broker,
+      timeframe,
+      tradeType,
+      overallSentiment: sentiment,
+      confidence,
+      recommendation: recommendation.action,
+      recommendedEntryPrice: recommendation.entryPrice,
+      profitTarget: recommendation.profitTarget,
+      stopLoss: recommendation.stopLoss,
+      riskRewardRatio: recommendation.riskRewardRatio,
+      newsImpact: newsAnalysis.impact,
+      explanation: recommendation.explanation,
+      newsAnalysis: newsAnalysis.analysis,
+      upcomingEvents: newsAnalysis.upcomingEvents,
+      entryPrice: strategicLevels.entryPrice,
+      targetPrice: strategicLevels.targetPrice,
+      supportLevel: strategicLevels.supportLevel,
+      resistanceLevel: strategicLevels.resistanceLevel,
+      indicators: activeIndicators,
+      strategies: activeStrategies,
+      priceSource: priceData.source,
+      priceTimestamp: priceData.timestamp,
+      // Enhanced pattern analysis results
+      patternAnalysis,
+      candlestickPatterns: patternAnalysis.detectedPatterns,
+      trendAnalysis: patternAnalysis.trendAnalysis,
+      patternConfirmation: patternAnalysis.patternConfirmation,
+      optionsRecommendations: patternAnalysis.optionsRecommendations || []
+    };
+  } catch (error) {
+    console.error(`❌ Analysis failed for ${pair}:`, error);
+    
+    // Create a fallback analysis result instead of throwing
+    const fallbackPrice = getFallbackPrice(pair);
+    const basicOHLC = generateOHLCData(fallbackPrice, 20, timeframe);
+    const basicPattern = performPatternAnalysis(basicOHLC, timeframe, fallbackPrice);
+    
+    return {
+      pair,
+      broker,
+      timeframe,
+      tradeType,
+      overallSentiment: 'NEUTRAL',
+      confidence: 50,
+      recommendation: 'HOLD',
+      recommendedEntryPrice: fallbackPrice,
+      profitTarget: fallbackPrice * 1.05,
+      stopLoss: fallbackPrice * 0.97,
+      riskRewardRatio: 1.5,
+      newsImpact: 'LOW',
+      explanation: `⚠️ **LIMITED ANALYSIS** (Fallback Mode)\n\nAnalysis completed with limited data due to connection issues.\n\n**Current Status:**\n• Using fallback price data\n• Basic pattern analysis only\n• Conservative HOLD recommendation\n\n**Recommendation:** Monitor for better signal confirmation when market data is available.`,
+      newsAnalysis: 'Limited news analysis due to data availability',
+      upcomingEvents: [],
+      entryPrice: fallbackPrice,
+      targetPrice: fallbackPrice * 1.05,
+      supportLevel: fallbackPrice * 0.95,
+      resistanceLevel: fallbackPrice * 1.05,
+      indicators: technicalIndicators.slice(0, 3),
+      strategies: tradingStrategies.slice(0, 2),
+      priceSource: 'FALLBACK',
+      priceTimestamp: Date.now(),
+      patternAnalysis: basicPattern,
+      candlestickPatterns: basicPattern.detectedPatterns,
+      trendAnalysis: basicPattern.trendAnalysis,
+      patternConfirmation: false,
+      optionsRecommendations: []
+    };
+  }
 };
 
 // ENHANCED WEIGHTED SENTIMENT CALCULATION

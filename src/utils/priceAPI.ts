@@ -752,9 +752,53 @@ export const getPairPrice = async (broker: string, pair: string): Promise<number
   try {
     console.log(`🔍 Getting LIVE price for ${pair} from ${broker.toUpperCase()}...`);
     
-    // Try to get from live API first
-    const allPrices = await fetchRealTimePrices([broker]);
-    const pairData = allPrices.find(p => p.broker === broker && p.pair === pair);
+    // Normalize pair format for better matching
+    const normalizedPair = normalizePairFormat(pair);
+    console.log(`🔄 Normalized pair: ${pair} -> ${normalizedPair}`);
+    
+    // Try to get from live API first with multiple attempts
+    let allPrices: any[] = [];
+    let attempts = 0;
+    const maxAttempts = 3;
+    
+    while (attempts < maxAttempts && allPrices.length === 0) {
+      try {
+        attempts++;
+        console.log(`🔄 Attempt ${attempts}/${maxAttempts} for ${broker.toUpperCase()}`);
+        
+        allPrices = await fetchRealTimePrices([broker]);
+        
+        if (allPrices.length > 0) {
+          console.log(`✅ Got ${allPrices.length} prices from ${broker.toUpperCase()}`);
+          break;
+        }
+      } catch (attemptError) {
+        console.warn(`⚠️ Attempt ${attempts} failed:`, attemptError);
+        if (attempts < maxAttempts) {
+          await new Promise(resolve => setTimeout(resolve, 1000 * attempts)); // Progressive delay
+        }
+      }
+    }
+    
+    // Try to find exact match first
+    let pairData = allPrices.find(p => 
+      p.broker === broker && 
+      (p.pair === pair || p.pair === normalizedPair)
+    );
+    
+    // If not found, try fuzzy matching
+    if (!pairData && allPrices.length > 0) {
+      const [base, quote] = pair.split('/');
+      pairData = allPrices.find(p => 
+        p.broker === broker && 
+        p.pair.includes(base) && 
+        (quote ? p.pair.includes(quote) : true)
+      );
+      
+      if (pairData) {
+        console.log(`🎯 Found fuzzy match: ${pair} -> ${pairData.pair}`);
+      }
+    }
     
     if (pairData && pairData.price > 0) {
       console.log(`✅ LIVE price: ${pair} on ${broker.toUpperCase()} = $${pairData.price.toLocaleString()}`);
@@ -763,25 +807,156 @@ export const getPairPrice = async (broker: string, pair: string): Promise<number
     
     // Fallback to calculated price
     console.log(`⚠️ No live data for ${pair} on ${broker.toUpperCase()}, using calculated price`);
-    return getFallbackPrice(pair);
+    const fallbackPrice = getFallbackPrice(pair);
+    
+    if (fallbackPrice > 0) {
+      return fallbackPrice;
+    } else {
+      throw new Error(`No price data available for ${pair}`);
+    }
     
   } catch (error) {
     console.error(`❌ Error getting ${pair} from ${broker.toUpperCase()}:`, error);
-    return getFallbackPrice(pair);
+    
+    // Enhanced fallback with error handling
+    try {
+      const fallbackPrice = getFallbackPrice(pair);
+      if (fallbackPrice > 0) {
+        console.log(`🔄 Using fallback price for ${pair}: $${fallbackPrice}`);
+        return fallbackPrice;
+      }
+    } catch (fallbackError) {
+      console.error(`❌ Fallback price failed for ${pair}:`, fallbackError);
+    }
+    
+    // Last resort: return null to trigger higher-level error handling
+    return null;
   }
+};
+
+// Helper function to normalize pair format
+const normalizePairFormat = (pair: string): string => {
+  if (!pair.includes('/')) {
+    // Try to split common patterns
+    const commonQuotes = ['USDT', 'USDC', 'BTC', 'ETH', 'BNB', 'BUSD'];
+    for (const quote of commonQuotes) {
+      if (pair.toUpperCase().endsWith(quote)) {
+        const base = pair.slice(0, -quote.length);
+        return `${base}/${quote}`;
+      }
+    }
+  }
+  return pair.toUpperCase();
 };
 
 // Enhanced fallback price calculation
 export const getFallbackPrice = (pair: string): number => {
-  const [base] = pair.split('/');
+  const [base, quote] = pair.split('/');
   
+  // Comprehensive cryptocurrency price list (January 2025 estimates)
   const prices: { [key: string]: number } = {
+    // Major cryptocurrencies
     'BTC': 97500, 'ETH': 3480, 'BNB': 695, 'XRP': 2.48, 'ADA': 0.98, 'SOL': 238,
     'DOGE': 0.385, 'MATIC': 1.15, 'DOT': 8.95, 'AVAX': 42.5, 'SHIB': 0.0000285,
-    'LTC': 115, 'ATOM': 8.85, 'LINK': 22.5, 'UNI': 12.8, 'USDT': 1.000, 'USDC': 0.9998, 'DAI': 1.001
+    'LTC': 115, 'ATOM': 8.85, 'LINK': 22.5, 'UNI': 12.8,
+    
+    // Stablecoins
+    'USDT': 1.000, 'USDC': 0.9998, 'DAI': 1.001, 'BUSD': 1.002, 'TUSD': 1.000,
+    'USDD': 0.998, 'FRAX': 1.001, 'LUSD': 1.002, 'FDUSD': 1.000,
+    
+    // DeFi tokens
+    'AAVE': 285, 'MKR': 1650, 'COMP': 58, 'CRV': 0.88, 'BAL': 3.2,
+    'SUSHI': 1.45, 'YFI': 8500, 'SNX': 3.8, '1INCH': 0.52, 'LDO': 2.1,
+    
+    // Layer 1 & Layer 2
+    'NEAR': 5.8, 'ICP': 12.5, 'FTM': 0.85, 'ALGO': 0.38, 'FLOW': 0.95,
+    'ONE': 0.025, 'HBAR': 0.088, 'EGLD': 48, 'KLAY': 0.18, 'AR': 18.5,
+    
+    // Meme coins
+    'PEPE': 0.00002, 'FLOKI': 0.00025, 'BABYDOGE': 0.0000000035,
+    'SAFEMOON': 0.0005, 'BONK': 0.000032, 'WIF': 2.85,
+    
+    // Gaming & NFT
+    'AXS': 8.5, 'SAND': 0.58, 'MANA': 0.75, 'ENJ': 0.42, 'IMX': 1.85,
+    'GALA': 0.048, 'CHZ': 0.095, 'FLOW': 0.95, 'WAX': 0.065,
+    
+    // Exchange tokens
+    'CRO': 0.18, 'FTT': 2.8, 'LEO': 8.5, 'OKB': 52, 'GT': 8.2,
+    'KCS': 12.5, 'HT': 4.2, 'MX': 4.1,
+    
+    // AI & Tech tokens
+    'FET': 1.25, 'AGIX': 0.68, 'OCEAN': 0.58, 'GRT': 0.28, 'RNDR': 7.2,
+    'TAO': 450, 'ARKM': 2.1, 'WLD': 2.8,
+    
+    // Privacy coins
+    'XMR': 195, 'ZEC': 42, 'DASH': 35, 'XVG': 0.0085, 'BEAM': 0.065,
+    
+    // Traditional crypto
+    'BCH': 485, 'BSV': 78, 'ETC': 28, 'ZIL': 0.025, 'DENT': 0.0018,
+    'HOT': 0.0025, 'BTT': 0.00000095, 'TRX': 0.095, 'XTZ': 0.98,
+    
+    // Popular altcoins
+    'VET': 0.045, 'THETA': 1.85, 'TFUEL': 0.078, 'ANKR': 0.042,
+    'STORJ': 0.65, 'SC': 0.0065, 'RVN': 0.025, 'DGB': 0.012,
+    
+    // Newer projects
+    'APT': 12.5, 'SUI': 3.8, 'OP': 2.45, 'ARB': 0.85, 'BLUR': 0.45,
+    'ID': 0.52, 'RDNT': 0.28, 'MAGIC': 0.95, 'GMX': 48, 'JOE': 0.48,
+    
+    // Additional tokens
+    'CAKE': 2.8, 'PCS': 0.35, 'ALPHA': 0.18, 'XVS': 8.5, 'VAI': 1.0,
+    'BAKE': 0.28, 'SFP': 0.58, 'TLM': 0.018, 'WIN': 0.00012,
+    
+    // Cross-chain & interoperability
+    'ATOM': 8.85, 'DOT': 8.95, 'KSM': 32, 'RUNE': 5.2, 'THOR': 2.8,
+    'SCRT': 0.85, 'OSMO': 1.15, 'JUNO': 0.65,
+    
+    // Metaverse tokens
+    'MANA': 0.75, 'SAND': 0.58, 'ALICE': 1.45, 'TLM': 0.018,
+    'STARL': 0.000085, 'BLOK': 0.0025, 'UFO': 0.0000045,
+    
+    // Default fallback calculations
+    'DEFAULT_MAJOR': 100.0,    // For major unknown tokens
+    'DEFAULT_ALT': 1.0,        // For altcoins
+    'DEFAULT_MICRO': 0.001,    // For micro-cap tokens
+    'DEFAULT_STABLE': 1.0      // For unknown stablecoins
   };
   
-  return prices[base] || 1.00;
+  // Try to get exact price
+  if (prices[base]) {
+    let price = prices[base];
+    
+    // Adjust for quote currency if not USD-based
+    if (quote && quote !== 'USDT' && quote !== 'USDC' && prices[quote]) {
+      price = price / prices[quote];
+    }
+    
+    return price;
+  }
+  
+  // Intelligent fallback based on token patterns
+  const baseUpper = base.toUpperCase();
+  
+  // Stablecoin detection
+  if (baseUpper.includes('USD') || baseUpper.includes('DAI') || 
+      baseUpper.includes('STABLE') || baseUpper.endsWith('T')) {
+    return prices['DEFAULT_STABLE'];
+  }
+  
+  // Micro token detection (very long names, many numbers)
+  if (base.length > 8 || /\d{3,}/.test(base) || baseUpper.includes('MILLION') || 
+      baseUpper.includes('BILLION') || baseUpper.includes('BABY') || 
+      baseUpper.includes('MINI') || baseUpper.includes('MICRO')) {
+    return prices['DEFAULT_MICRO'];
+  }
+  
+  // Major token detection (short names, well-known patterns)
+  if (base.length <= 4 && base.length >= 2) {
+    return prices['DEFAULT_ALT'];
+  }
+  
+  // Default fallback
+  return prices['DEFAULT_ALT'];
 };
 
 // Legacy compatibility functions
