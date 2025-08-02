@@ -1,5 +1,12 @@
 import axios from 'axios';
 import { PriceData } from '../types';
+import { 
+  fetchOKXLivePrices, 
+  getOKXPairPrice, 
+  getOKXMarketStats, 
+  generateOKXFallbackPrices,
+  getOKXFallbackPrice
+} from './okxAPI';
 
 // Enhanced cache with better management for live streaming
 const priceCache = new Map<string, { data: any; timestamp: number }>();
@@ -125,52 +132,82 @@ const parseBinanceData = (data: any[]): PriceData[] => {
   }
 };
 
-// Main function to fetch all live prices (now only Binance)
+// Main function to fetch all live prices from multiple exchanges
 export const fetchRealTimePrices = async (selectedBrokers?: string[]): Promise<PriceData[]> => {
-  console.log('🚀 LIVE API: Fetching real-time prices from Binance...');
+  console.log('🚀 LIVE API: Fetching real-time prices from multiple exchanges...');
   
-  try {
-    const prices = await fetchBinanceLivePrices();
-    console.log(`✅ BINANCE: ${prices.length} live prices`);
-    return prices;
-  } catch (error) {
-    console.error(`❌ Binance failed:`, error);
-    
-    // Generate fallback prices for Binance
-    console.log(`🔄 Generating fallback prices for Binance`);
-    return generateFallbackForExchange('binance');
+  const brokers = selectedBrokers || ['binance', 'okx'];
+  const allPrices: PriceData[] = [];
+  
+  // Fetch from Binance
+  if (brokers.includes('binance')) {
+    try {
+      const binancePrices = await fetchBinanceLivePrices();
+      console.log(`✅ BINANCE: ${binancePrices.length} live prices`);
+      allPrices.push(...binancePrices);
+    } catch (error) {
+      console.error(`❌ Binance failed:`, error);
+      console.log(`🔄 Generating fallback prices for Binance`);
+      const fallbackPrices = generateFallbackForExchange('binance');
+      allPrices.push(...fallbackPrices);
+    }
   }
+  
+  // Fetch from OKX
+  if (brokers.includes('okx')) {
+    try {
+      const okxPrices = await fetchOKXLivePrices();
+      console.log(`✅ OKX: ${okxPrices.length} live prices`);
+      allPrices.push(...okxPrices);
+    } catch (error) {
+      console.error(`❌ OKX failed:`, error);
+      console.log(`🔄 Generating fallback prices for OKX`);
+      const fallbackPrices = generateOKXFallbackPrices();
+      allPrices.push(...fallbackPrices);
+    }
+  }
+  
+  return allPrices;
 };
 
 // Enhanced pair-specific price fetching with live APIs
 export const getPairPrice = async (broker: string, pair: string): Promise<PriceData | null> => {
   console.log(`🔍 Fetching live price for ${pair} from ${broker.toUpperCase()}...`);
   
-  if (broker !== 'binance') {
-    throw new Error(`Broker ${broker} is not supported. Only Binance is available.`);
+  const supportedBrokers = ['binance', 'okx'];
+  if (!supportedBrokers.includes(broker)) {
+    throw new Error(`Broker ${broker} is not supported. Available brokers: ${supportedBrokers.join(', ')}`);
   }
 
   try {
-    // Convert pair format for Binance API (e.g., BTC/USDT -> BTCUSDT)
-    const binanceSymbol = pair.replace('/', '').toUpperCase();
+    let priceData: PriceData | null = null;
     
-    console.log(`🟡 Fetching ${binanceSymbol} from Binance...`);
-    const url = `${BINANCE_API}/ticker/24hr?symbol=${binanceSymbol}`;
-    const data = await makeExchangeRequest(url);
-    
-    if (data && data.symbol) {
-      const priceData: PriceData = {
-        symbol: pair,
-        price: parseFloat(data.lastPrice),
-        change24h: parseFloat(data.priceChangePercent) || 0,
-        volume24h: parseFloat(data.volume) || 0,
-        high24h: parseFloat(data.highPrice) || 0,
-        low24h: parseFloat(data.lowPrice) || 0,
-        broker: 'binance',
-        timestamp: Date.now(),
-        source: 'LIVE_API'
-      };
+    if (broker === 'binance') {
+      // Convert pair format for Binance API (e.g., BTC/USDT -> BTCUSDT)
+      const binanceSymbol = pair.replace('/', '').toUpperCase();
       
+      console.log(`🟡 Fetching ${binanceSymbol} from Binance...`);
+      const url = `${BINANCE_API}/ticker/24hr?symbol=${binanceSymbol}`;
+      const data = await makeExchangeRequest(url);
+      
+      if (data && data.symbol) {
+        priceData = {
+          symbol: pair,
+          price: parseFloat(data.lastPrice),
+          change24h: parseFloat(data.priceChangePercent) || 0,
+          volume24h: parseFloat(data.volume) || 0,
+          high24h: parseFloat(data.highPrice) || 0,
+          low24h: parseFloat(data.lowPrice) || 0,
+          broker: 'binance',
+          timestamp: Date.now(),
+          source: 'LIVE_API'
+        };
+      }
+    } else if (broker === 'okx') {
+      priceData = await getOKXPairPrice(pair);
+    }
+    
+    if (priceData) {
       console.log(`✅ ${broker.toUpperCase()} ${pair}: $${priceData.price} (${priceData.change24h > 0 ? '+' : ''}${priceData.change24h.toFixed(2)}%)`);
       return priceData;
     }
@@ -180,14 +217,19 @@ export const getPairPrice = async (broker: string, pair: string): Promise<PriceD
   } catch (error: any) {
     console.error(`❌ ${broker.toUpperCase()} API failed for ${pair}:`, error.message);
     
-    // For Binance, try fallback price
+    // Try fallback price
+    let fallbackPrice: PriceData | null = null;
+    
     if (broker === 'binance') {
       const fallbackPrices = generateFallbackForExchange('binance');
-      const fallbackPrice = fallbackPrices.find(p => p.symbol === pair);
-      if (fallbackPrice) {
-        console.log(`🔄 Using fallback price for ${pair}: $${fallbackPrice.price}`);
-        return fallbackPrice;
-      }
+      fallbackPrice = fallbackPrices.find(p => p.symbol === pair) || null;
+    } else if (broker === 'okx') {
+      fallbackPrice = getOKXFallbackPrice(pair);
+    }
+    
+    if (fallbackPrice) {
+      console.log(`🔄 Using fallback price for ${pair}: $${fallbackPrice.price}`);
+      return fallbackPrice;
     }
     
     return null;
@@ -226,19 +268,20 @@ export const fetchBinancePrices = fetchBinanceLivePrices;
 
 // For components that need to check supported brokers
 export const getSupportedBrokers = (): string[] => {
-  return ['binance'];
+  return ['binance', 'okx'];
 };
 
 // For getting broker display names
 export const getBrokerDisplayName = (brokerId: string): string => {
   const brokerNames: { [key: string]: string } = {
-    'binance': 'Binance'
+    'binance': 'Binance',
+    'okx': 'OKX'
   };
   return brokerNames[brokerId] || brokerId;
 };
 
-// Market statistics aggregation (now only from Binance)
-export const getMarketStats = async (): Promise<{
+// Market statistics aggregation from multiple exchanges
+export const getMarketStats = async (selectedBrokers?: string[]): Promise<{
   totalMarketCap: number;
   totalVolume24h: number;
   activePairs: number;
@@ -246,12 +289,12 @@ export const getMarketStats = async (): Promise<{
   topLosers: PriceData[];
 }> => {
   try {
-    const prices = await fetchBinanceLivePrices();
+    const allPrices = await fetchRealTimePrices(selectedBrokers);
     
-    const totalVolume24h = prices.reduce((sum, price) => sum + price.volume24h, 0);
-    const activePairs = prices.length;
+    const totalVolume24h = allPrices.reduce((sum, price) => sum + price.volume24h, 0);
+    const activePairs = allPrices.length;
     
-    const sortedByChange = [...prices].sort((a, b) => b.change24h - a.change24h);
+    const sortedByChange = [...allPrices].sort((a, b) => b.change24h - a.change24h);
     const topGainers = sortedByChange.slice(0, 10);
     const topLosers = sortedByChange.slice(-10).reverse();
     

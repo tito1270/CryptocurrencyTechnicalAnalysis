@@ -1,5 +1,6 @@
 import { PriceData } from '../types';
 import { fetchRealTimePrices } from './priceAPI';
+import { OKX_WEBSOCKET_URL } from './okxAPI';
 import priceValidator from './priceValidator';
 
 interface PriceStreamConfig {
@@ -52,6 +53,18 @@ class LivePriceStreamer {
         name: 'binance',
         url: 'wss://stream.binance.com:9443/ws/!ticker@arr',
         parser: this.parseBinanceWebSocket.bind(this)
+      },
+      {
+        name: 'okx',
+        url: OKX_WEBSOCKET_URL,
+        parser: this.parseOKXWebSocket.bind(this),
+        subscription: {
+          op: 'subscribe',
+          args: [{
+            channel: 'tickers',
+            instType: 'SPOT'
+          }]
+        }
       }
     ];
 
@@ -175,6 +188,41 @@ class LivePriceStreamer {
         .filter(price => price.symbol.includes('/'));
     } catch (error) {
       console.error('❌ Error parsing Binance WebSocket data:', error);
+      return [];
+    }
+  }
+
+  private parseOKXWebSocket(data: any): PriceData[] {
+    try {
+      // OKX WebSocket response format: { arg: {...}, data: [...] }
+      if (!data.data || !Array.isArray(data.data)) return [];
+
+      return data.data
+        .filter(ticker => 
+          ticker.instId && 
+          ticker.last && 
+          parseFloat(ticker.last) > 0 &&
+          ticker.instId.includes('-') // Only spot pairs
+        )
+        .map(ticker => {
+          // Convert OKX instId format (BTC-USDT) to our standard format (BTC/USDT)
+          const symbol = ticker.instId.replace('-', '/');
+
+          return {
+            symbol: symbol,
+            price: parseFloat(ticker.last),
+            change24h: parseFloat(ticker.sodUtc8) || 0, // 24h change percentage
+            volume24h: parseFloat(ticker.vol24h) || 0,
+            high24h: parseFloat(ticker.high24h) || 0,
+            low24h: parseFloat(ticker.low24h) || 0,
+            broker: 'okx',
+            timestamp: parseInt(ticker.ts) || Date.now(),
+            source: 'WEBSOCKET' as const
+          };
+        })
+        .filter(price => price.symbol.includes('/'));
+    } catch (error) {
+      console.error('❌ Error parsing OKX WebSocket data:', error);
       return [];
     }
   }
