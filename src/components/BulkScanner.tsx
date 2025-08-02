@@ -167,11 +167,12 @@ const BulkScanner: React.FC<BulkScannerProps> = ({
 
   const totalPages = Math.ceil(filteredData.length / ITEMS_PER_PAGE);
 
-  // Scan individual pair
+  // Scan individual pair with enhanced error handling
   const scanPair = async (pair: string): Promise<void> => {
     if (scannedPairs.has(pair)) return;
     
     try {
+      console.log(`🔍 Starting scan for ${pair}...`);
       setScannedPairs(prev => new Set([...prev, pair]));
       
       const analysis = await performAnalysis({
@@ -183,15 +184,25 @@ const BulkScanner: React.FC<BulkScannerProps> = ({
         strategies: selectedStrategies
       });
       
-      setScanResults(prev => new Map([...prev, [pair, analysis]]));
+      if (analysis) {
+        setScanResults(prev => new Map([...prev, [pair, analysis]]));
+        console.log(`✅ Successfully analyzed ${pair}: ${analysis.recommendation}`);
+      } else {
+        throw new Error('Analysis returned null result');
+      }
     } catch (error) {
-      console.error(`Failed to scan ${pair}:`, error);
+      console.error(`❌ Failed to scan ${pair}:`, error);
       // Remove from scanned pairs if analysis failed
       setScannedPairs(prev => {
         const newSet = new Set(prev);
         newSet.delete(pair);
         return newSet;
       });
+      
+      // Show error notification for individual scans
+      if (!isScanning) {
+        console.warn(`Individual scan failed for ${pair}: ${error instanceof Error ? error.message : 'Unknown error'}`);
+      }
     }
   };
 

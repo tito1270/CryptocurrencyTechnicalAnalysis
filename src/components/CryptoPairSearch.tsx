@@ -30,49 +30,69 @@ const CryptoPairSearch: React.FC<CryptoPairSearchProps> = ({
   const [selectedIndex, setSelectedIndex] = useState(0);
 
   const filteredPairs = useMemo(() => {
-    let filtered = pairs || []; // Add null safety
+    try {
+      let filtered = pairs || []; // Add null safety
 
-    if (searchQuery.trim()) {
-      const query = searchQuery.toLowerCase();
-      filtered = filtered.filter(pair => {
-        const lowerPair = pair.toLowerCase();
-        const [base, quote] = pair.split('/');
-        return (
-          lowerPair.includes(query) ||
-          base.toLowerCase().includes(query) ||
-          quote.toLowerCase().includes(query) ||
-          lowerPair.startsWith(query) ||
-          base.toLowerCase().startsWith(query)
-        );
-      });
-      
-      // Sort by relevance - exact matches first, then starts with, then contains
-      filtered.sort((a, b) => {
-        const aLower = a.toLowerCase();
-        const bLower = b.toLowerCase();
-        const [aBase] = a.split('/');
-        const [bBase] = b.split('/');
+      if (searchQuery.trim()) {
+        const query = searchQuery.toLowerCase();
+        filtered = filtered.filter(pair => {
+          try {
+            const lowerPair = pair.toLowerCase();
+            const parts = pair.split('/');
+            const base = parts[0] || '';
+            const quote = parts[1] || '';
+            
+            return (
+              lowerPair.includes(query) ||
+              base.toLowerCase().includes(query) ||
+              quote.toLowerCase().includes(query) ||
+              lowerPair.startsWith(query) ||
+              base.toLowerCase().startsWith(query)
+            );
+          } catch (filterError) {
+            console.warn('Error filtering pair:', pair, filterError);
+            return false;
+          }
+        });
         
-        // Exact base match first
-        if (aBase.toLowerCase() === query && bBase.toLowerCase() !== query) return -1;
-        if (bBase.toLowerCase() === query && aBase.toLowerCase() !== query) return 1;
-        
-        // Starts with query
-        if (aLower.startsWith(query) && !bLower.startsWith(query)) return -1;
-        if (bLower.startsWith(query) && !aLower.startsWith(query)) return 1;
-        
-        // Base starts with query
-        if (aBase.toLowerCase().startsWith(query) && !bBase.toLowerCase().startsWith(query)) return -1;
-        if (bBase.toLowerCase().startsWith(query) && !aBase.toLowerCase().startsWith(query)) return 1;
-        
-        // Alphabetical
-        return a.localeCompare(b);
-      });
-    } else {
-      filtered = filtered.sort();
+        // Sort by relevance - exact matches first, then starts with, then contains
+        filtered.sort((a, b) => {
+          try {
+            const aLower = a.toLowerCase();
+            const bLower = b.toLowerCase();
+            const aParts = a.split('/');
+            const bParts = b.split('/');
+            const aBase = aParts[0] || '';
+            const bBase = bParts[0] || '';
+            
+            // Exact base match first
+            if (aBase.toLowerCase() === query && bBase.toLowerCase() !== query) return -1;
+            if (bBase.toLowerCase() === query && aBase.toLowerCase() !== query) return 1;
+            
+            // Starts with query
+            if (aLower.startsWith(query) && !bLower.startsWith(query)) return -1;
+            if (bLower.startsWith(query) && !aLower.startsWith(query)) return 1;
+            
+            // Base starts with query
+            if (aBase.toLowerCase().startsWith(query) && !bBase.toLowerCase().startsWith(query)) return -1;
+            if (bBase.toLowerCase().startsWith(query) && !aBase.toLowerCase().startsWith(query)) return 1;
+            
+            // Alphabetical
+            return a.localeCompare(b);
+          } catch (sortError) {
+            console.warn('Error sorting pairs:', sortError);
+            return 0;
+          }
+        });
+      } else {
+        filtered = filtered.sort();
+      }
+
+      return filtered;
+    } catch (error) {
+      console.error('Error in filteredPairs calculation:', error);
+      return pairs || [];
     }
-
-    return filtered;
   }, [pairs, searchQuery]);
 
   const totalPages = Math.ceil(filteredPairs.length / ITEMS_PER_PAGE);
