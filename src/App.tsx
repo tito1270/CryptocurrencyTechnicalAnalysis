@@ -196,6 +196,14 @@ function AppContent() {
         selectedStrategies
       );
       setAnalysisResult(result);
+      
+      // Scroll to results section after analysis is complete
+      setTimeout(() => {
+        const resultsSection = document.getElementById('analysis-results');
+        if (resultsSection) {
+          resultsSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }
+      }, 100);
     } catch (error) {
       console.error('Analysis error:', error);
     } finally {
@@ -337,7 +345,7 @@ function AppContent() {
                 </div>
 
                 {/* Right Column - Results and Data */}
-                <div className="lg:col-span-2 space-y-6">
+                <div id="analysis-results" className="lg:col-span-2 space-y-6">
                   {isAnalyzing && (
                     <div className="bg-gray-800 border border-gray-700 rounded-lg p-8 text-center">
                       <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-emerald-500 mb-4"></div>
@@ -354,9 +362,9 @@ function AppContent() {
 
                   {!analysisResult && !isAnalyzing && (
                     <div className="bg-gray-800 border border-gray-700 rounded-lg p-8 text-center">
-                      <div className="text-gray-400 text-lg mb-2">Ready for Market Analysis</div>
+                      <div className="text-gray-400 text-lg mb-2">📊 Ready for Market Analysis</div>
                       <div className="text-sm text-gray-500">
-                        Configure your settings and click "Analyze Market" to get started with your free cryptocurrency technical analysis
+                        Configure your settings in the left panel and click "🚀 Analyze Market & Get Recommendation" to get started with your free cryptocurrency technical analysis. Results will appear here.
                       </div>
                     </div>
                   )}
