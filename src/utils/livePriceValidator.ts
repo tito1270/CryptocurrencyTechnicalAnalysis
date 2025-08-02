@@ -1,4 +1,4 @@
-import { fetchRealTimePrices, getPairPrice, getFallbackPrice } from './priceAPI';
+import { fetchRealTimePrices, getPairPrice, getFallbackPrice, getFallbackPriceAsync } from './priceAPI';
 import { generateLivePrices, getRealTimePrice } from './priceSimulator';
 import { PriceData } from '../types';
 
@@ -146,29 +146,31 @@ export const validateLivePrices = async (): Promise<ValidationResult[]> => {
       });
     }
     
-    // Test 6: Validate fallback prices are current
-    console.log('🔄 Test 6: Fallback price validation');
+    // Test 6: Validate live fallback system works
+    console.log('🔄 Test 6: Live fallback system validation');
     const fallbackTests = ['BTC/USDT', 'ETH/USDT', 'DOGE/USDT'];
     for (const pair of fallbackTests) {
-      const fallbackPrice = getFallbackPrice(pair);
-      const [base] = pair.split('/');
-      
-      // Check if fallback price is in expected range based on current market
-      const expectedRanges: { [key: string]: [number, number] } = {
-        'BTC': [80000, 150000],
-        'ETH': [2000, 5000], 
-        'DOGE': [0.1, 0.5]
-      };
-      
-      const range = expectedRanges[base];
-      const isRealistic = range ? fallbackPrice >= range[0] && fallbackPrice <= range[1] : true;
-      
-      results.push({
-        success: isRealistic,
-        message: `${isRealistic ? '✅' : '⚠️'} Fallback ${pair}: $${fallbackPrice.toLocaleString()} ${isRealistic ? '(realistic)' : '(may be outdated)'}`,
-        timestamp: Date.now(),
-        details: { pair, fallbackPrice, expectedRange: range, isRealistic }
-      });
+      try {
+        const fallbackPrice = await getFallbackPriceAsync(pair);
+        const [base] = pair.split('/');
+        
+        // Check if live fallback price is valid (any positive number is valid since it's live)
+        const isValid = fallbackPrice > 0;
+        
+        results.push({
+          success: isValid,
+          message: `${isValid ? '✅' : '❌'} Live fallback ${pair}: $${fallbackPrice.toLocaleString()} ${isValid ? '(live data)' : '(invalid)'}`,
+          timestamp: Date.now(),
+          details: { pair, fallbackPrice, source: 'live_fallback', isValid }
+        });
+      } catch (error) {
+        results.push({
+          success: false,
+          message: `❌ Live fallback ${pair}: Failed to get live price - ${error instanceof Error ? error.message : 'unknown error'}`,
+          timestamp: Date.now(),
+          details: { pair, error: error instanceof Error ? error.message : 'unknown error' }
+        });
+      }
     }
     
   } catch (error) {

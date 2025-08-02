@@ -2,7 +2,7 @@ import { AnalysisResult, TechnicalIndicator, TradingStrategy } from '../types';
 import { technicalIndicators } from '../data/indicators';
 import { tradingStrategies } from '../data/strategies';
 import { cryptoNews } from '../data/news';
-import { getPairPrice, getFallbackPrice } from './priceAPI';
+import { getPairPrice, getFallbackPrice, getFallbackPriceAsync } from './priceAPI';
 import { generateOHLCData, performPatternAnalysis } from './candlestickPatterns';
 
 // NEW COMPREHENSIVE ANALYSIS ENGINE
@@ -26,13 +26,17 @@ export const performAnalysis = async (
 
   // Validate price data
   if (!currentPrice || currentPrice <= 0) {
-    console.warn(`⚠️ Invalid price for ${pair}, using Binance-based fallback price`);
-    const fallbackPrice = getFallbackPrice(pair);
-    if (fallbackPrice <= 0) {
-      throw new Error(`Unable to get valid price for ${pair}. Please try again.`);
+    console.warn(`⚠️ Invalid price for ${pair}, trying live fallback sources...`);
+    try {
+      const fallbackPrice = await getFallbackPriceAsync(pair);
+      if (fallbackPrice <= 0) {
+        throw new Error(`Unable to get valid price for ${pair}. Please try again.`);
+      }
+      priceData.price = fallbackPrice;
+      priceData.source = 'FALLBACK';
+    } catch (fallbackError) {
+      throw new Error(`Unable to get any live price for ${pair}. All sources failed: ${fallbackError.message}`);
     }
-    priceData.price = fallbackPrice;
-    priceData.source = 'FALLBACK';
   }
     
     // Step 2: Generate OHLC data for pattern analysis (enhanced with current price)
@@ -137,7 +141,15 @@ export const performAnalysis = async (
     console.error(`❌ Analysis failed for ${pair}:`, error);
     
     // Create a fallback analysis result instead of throwing
-    const fallbackPrice = getFallbackPrice(pair);
+    console.warn(`⚠️ Analysis failed for ${pair}, using basic fallback analysis...`);
+    let fallbackPrice: number;
+    try {
+      fallbackPrice = await getFallbackPriceAsync(pair);
+    } catch (fallbackError) {
+      console.error(`❌ Even fallback price failed for ${pair}: ${fallbackError.message}`);
+      throw new Error(`Complete analysis failure for ${pair}. No price data available from any source.`);
+    }
+    
     const basicOHLC = generateOHLCData(fallbackPrice, 20, timeframe);
     const basicPattern = performPatternAnalysis(basicOHLC, timeframe, fallbackPrice);
     
@@ -792,10 +804,16 @@ const getCurrentPrice = async (pair: string, broker: string): Promise<{price: nu
     console.error(`❌ Error fetching LIVE price:`, error);
   }
 
-  console.log(`🔄 Using fallback price for ${pair}`);
-  return {
-    price: getFallbackPrice(pair),
-    source: 'FALLBACK',
-    timestamp: Date.now()
-  };
+  console.log(`🔄 Using live fallback sources for ${pair}`);
+  try {
+    const liveFallbackPrice = await getFallbackPriceAsync(pair);
+    return {
+      price: liveFallbackPrice,
+      source: 'FALLBACK',
+      timestamp: Date.now()
+    };
+  } catch (fallbackError) {
+    console.error(`❌ All live sources failed for ${pair}: ${fallbackError.message}`);
+    throw new Error(`No live price data available for ${pair}`);
+  }
 };

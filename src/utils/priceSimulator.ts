@@ -1,6 +1,6 @@
 import { PriceData } from '../types';
 import { brokers } from '../data/brokers';
-import { fetchRealTimePrices, getPairPrice, getFallbackPrice } from './priceAPI';
+import { fetchRealTimePrices, getPairPrice, getFallbackPrice, getFallbackPriceAsync } from './priceAPI';
 import livePriceStreamer from './livePriceStreamer';
 
 // Enhanced live price generation with real API integration and streaming support
@@ -283,35 +283,40 @@ export const getRealTimePrice = async (broker: string, pair: string): Promise<nu
       console.log(`⚠️ Live API timeout for ${pair} on ${broker.toUpperCase()}, using current market price`);
     }
 
-    // Use current market calculation
-    const marketPrice = getFallbackPrice(pair);
-    const brokerAdjustments: { [key: string]: number } = {
-      'binance': 0,
-      'okx': 0.0005,
-      'coinbase': -0.0010,
-      'kraken': 0.0008,
-      'kucoin': 0.0010,
-      'huobi': 0.0005,
-      'gate': -0.0005,
-      'bitget': 0.0015,
-      'mexc': -0.0005,
-      'bybit': 0.0010,
-      'crypto_com': -0.0008,
-      'bingx': 0.0012,
-      'bitfinex': -0.0012,
-      'phemex': 0.0008,
-      'deribit': 0.0006
-    };
+    // Use live market sources only
+    try {
+      const liveMarketPrice = await getFallbackPriceAsync(pair);
+      const brokerAdjustments: { [key: string]: number } = {
+        'binance': 0,
+        'okx': 0.0005,
+        'coinbase': -0.0010,
+        'kraken': 0.0008,
+        'kucoin': 0.0010,
+        'huobi': 0.0005,
+        'gate': -0.0005,
+        'bitget': 0.0015,
+        'mexc': -0.0005,
+        'bybit': 0.0010,
+        'crypto_com': -0.0008,
+        'bingx': 0.0012,
+        'bitfinex': -0.0012,
+        'phemex': 0.0008,
+        'deribit': 0.0006
+      };
 
-    const adjustment = brokerAdjustments[broker] || 0;
-    const adjustedPrice = marketPrice * (1 + adjustment + (Math.random() - 0.5) * 0.001);
+      const adjustment = brokerAdjustments[broker] || 0;
+      const adjustedPrice = liveMarketPrice * (1 + adjustment + (Math.random() - 0.5) * 0.001);
 
-    console.log(`📊 Current market price: ${pair} on ${broker.toUpperCase()} = $${adjustedPrice.toLocaleString()}`);
-    return adjustedPrice;
+      console.log(`📊 Live market price: ${pair} on ${broker.toUpperCase()} = $${adjustedPrice.toLocaleString()}`);
+      return adjustedPrice;
+    } catch (liveError) {
+      console.error(`❌ All live sources failed for ${pair} on ${broker.toUpperCase()}: ${liveError}`);
+      throw new Error(`No live price data available for ${pair}`);
+    }
 
   } catch (error) {
     console.error(`❌ Error getting price for ${pair} on ${broker.toUpperCase()}:`, error);
-    return getFallbackPrice(pair);
+    throw new Error(`Failed to get live price for ${pair}: ${error instanceof Error ? error.message : 'unknown error'}`);
   }
 };
 
