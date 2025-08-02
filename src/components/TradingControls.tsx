@@ -154,23 +154,64 @@ const TradingControls: React.FC<TradingControlsProps> = ({
     <div className="bg-gray-800 border border-gray-700 rounded-lg p-6 space-y-6">
       <h2 className="text-xl font-semibold text-white mb-4">Trading Configuration</h2>
       
-      {/* Broker and Pair Selection */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+      {/* Enhanced Broker Selection */}
+      <div className="space-y-4">
         <div>
-          <label className="block text-sm font-medium text-gray-300 mb-2">Exchange</label>
-          <select
-            value={selectedBroker}
-            onChange={(e) => onBrokerChange(e.target.value)}
-            className="w-full bg-gray-700 border border-gray-600 rounded-lg px-3 py-2 text-white focus:ring-2 focus:ring-emerald-500 focus:border-transparent"
-          >
-            {brokers.map(broker => (
-              <option key={broker.id} value={broker.id}>
-                {broker.logo} {broker.name}
-              </option>
-            ))}
-          </select>
+          <label className="block text-sm font-medium text-gray-300 mb-3">
+            Choose Exchange
+            <span className="text-gray-400 text-xs ml-2">({brokers.length} exchanges available)</span>
+          </label>
+          <div className="relative">
+            <select
+              value={selectedBroker}
+              onChange={(e) => onBrokerChange(e.target.value)}
+              className="w-full bg-gradient-to-r from-gray-700 to-gray-600 border border-gray-500 rounded-lg px-4 py-3 text-white focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition-all duration-200 appearance-none cursor-pointer text-sm font-medium shadow-lg"
+            >
+              {brokers.map(broker => (
+                <option key={broker.id} value={broker.id} className="bg-gray-700 py-2">
+                  {broker.logo} {broker.name} ({broker.pairs.length} pairs)
+                </option>
+              ))}
+            </select>
+            <div className="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none">
+              <svg className="h-5 w-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+              </svg>
+            </div>
+          </div>
+          <div className="mt-2 text-xs text-gray-400">
+            Selected: <span className="text-emerald-400 font-medium">{currentBroker?.logo} {currentBroker?.name}</span> 
+            • {currentBroker?.pairs.length} trading pairs available
+          </div>
         </div>
         
+        {/* Popular Exchanges Quick Select */}
+        <div className="border-t border-gray-600 pt-4">
+          <label className="block text-sm font-medium text-gray-300 mb-2">Popular Exchanges</label>
+          <div className="flex flex-wrap gap-2">
+            {['binance', 'okx', 'coinbase', 'kucoin', 'bybit'].map(brokerId => {
+              const broker = brokers.find(b => b.id === brokerId);
+              if (!broker) return null;
+              return (
+                <button
+                  key={brokerId}
+                  onClick={() => onBrokerChange(brokerId)}
+                  className={`px-3 py-2 rounded-lg text-sm font-medium transition-all duration-200 ${
+                    selectedBroker === brokerId
+                      ? 'bg-emerald-600 text-white shadow-lg'
+                      : 'bg-gray-700 text-gray-300 hover:bg-gray-600 hover:text-white'
+                  }`}
+                >
+                  {broker.logo} {broker.name}
+                </button>
+              );
+            })}
+          </div>
+        </div>
+      </div>
+
+      {/* Pair Selection */}
+      <div className="grid grid-cols-1 gap-4">
         <div>
           <label className="block text-sm font-medium text-gray-300 mb-2">Trading Pair</label>
           <div className="flex space-x-2">
