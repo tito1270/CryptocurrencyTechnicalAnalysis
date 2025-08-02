@@ -13,6 +13,7 @@ import AnalysisResults from './components/AnalysisResults';
 import LivePrices from './components/LivePrices';
 import CryptoNews from './components/CryptoNews';
 import BulkScanner from './components/BulkScanner';
+import TradingViewWidget from './components/TradingViewWidget';
 import Sitemap from './components/Sitemap';
 import SEOHead from './components/SEOHead';
 import SEOValidator from './components/SEOValidator';
@@ -512,7 +513,16 @@ function AppContent() {
                   )}
 
                   {analysisResult && !isAnalyzing && !analysisError && (
-                    <AnalysisResults result={analysisResult} />
+                    <div className="space-y-6">
+                      <TradingViewWidget 
+                        pair={selectedPair} 
+                        height={300}
+                        onPriceUpdate={(price, change) => {
+                          console.log(`Price update for ${selectedPair}: $${price} (${change >= 0 ? '+' : ''}${change.toFixed(2)}%)`);
+                        }}
+                      />
+                      <AnalysisResults result={analysisResult} />
+                    </div>
                   )}
 
                   {analysisError && !isAnalyzing && (

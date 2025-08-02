@@ -27,17 +27,52 @@ const CryptoPairSearch: React.FC<CryptoPairSearchProps> = ({
 }) => {
   const [searchQuery, setSearchQuery] = useState('');
   const [currentPage, setCurrentPage] = useState(1);
+  const [selectedIndex, setSelectedIndex] = useState(0);
 
   const filteredPairs = useMemo(() => {
     let filtered = pairs || []; // Add null safety
 
     if (searchQuery.trim()) {
-      filtered = filtered.filter(pair =>
-        pair.toLowerCase().includes(searchQuery.toLowerCase())
-      );
+      const query = searchQuery.toLowerCase();
+      filtered = filtered.filter(pair => {
+        const lowerPair = pair.toLowerCase();
+        const [base, quote] = pair.split('/');
+        return (
+          lowerPair.includes(query) ||
+          base.toLowerCase().includes(query) ||
+          quote.toLowerCase().includes(query) ||
+          lowerPair.startsWith(query) ||
+          base.toLowerCase().startsWith(query)
+        );
+      });
+      
+      // Sort by relevance - exact matches first, then starts with, then contains
+      filtered.sort((a, b) => {
+        const aLower = a.toLowerCase();
+        const bLower = b.toLowerCase();
+        const [aBase] = a.split('/');
+        const [bBase] = b.split('/');
+        
+        // Exact base match first
+        if (aBase.toLowerCase() === query && bBase.toLowerCase() !== query) return -1;
+        if (bBase.toLowerCase() === query && aBase.toLowerCase() !== query) return 1;
+        
+        // Starts with query
+        if (aLower.startsWith(query) && !bLower.startsWith(query)) return -1;
+        if (bLower.startsWith(query) && !aLower.startsWith(query)) return 1;
+        
+        // Base starts with query
+        if (aBase.toLowerCase().startsWith(query) && !bBase.toLowerCase().startsWith(query)) return -1;
+        if (bBase.toLowerCase().startsWith(query) && !aBase.toLowerCase().startsWith(query)) return 1;
+        
+        // Alphabetical
+        return a.localeCompare(b);
+      });
+    } else {
+      filtered = filtered.sort();
     }
 
-    return filtered.sort();
+    return filtered;
   }, [pairs, searchQuery]);
 
   const totalPages = Math.ceil(filteredPairs.length / ITEMS_PER_PAGE);
@@ -92,13 +127,40 @@ const CryptoPairSearch: React.FC<CryptoPairSearchProps> = ({
   // Reset page when search changes
   React.useEffect(() => {
     setCurrentPage(1);
+    setSelectedIndex(0);
   }, [searchQuery]);
+
+  // Handle keyboard navigation
+  const handleKeyDown = (e: React.KeyboardEvent) => {
+    if (!currentPairs.length) return;
+    
+    switch (e.key) {
+      case 'ArrowDown':
+        e.preventDefault();
+        setSelectedIndex(prev => Math.min(prev + 1, currentPairs.length - 1));
+        break;
+      case 'ArrowUp':
+        e.preventDefault();
+        setSelectedIndex(prev => Math.max(prev - 1, 0));
+        break;
+      case 'Enter':
+        e.preventDefault();
+        if (currentPairs[selectedIndex]) {
+          handlePairSelect(currentPairs[selectedIndex]);
+        }
+        break;
+      case 'Escape':
+        e.preventDefault();
+        handleClose();
+        break;
+    }
+  };
 
   if (!isOpen) return null;
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
-      <div className="bg-gray-800 border border-gray-700 rounded-lg w-full max-w-4xl max-h-[90vh] flex flex-col">
+      <div className="bg-gray-800 border border-gray-700 rounded-lg w-full max-w-4xl max-h-[90vh] flex flex-col" onKeyDown={handleKeyDown}>
         {/* Header */}
         <div className="p-6 border-b border-gray-700">
           <div className="flex items-center justify-between mb-4">
@@ -141,13 +203,34 @@ const CryptoPairSearch: React.FC<CryptoPairSearchProps> = ({
             </span>
             <input
               type="text"
-              placeholder="Search crypto pairs..."
+              placeholder="Search crypto pairs (e.g., BTC, ETH, DOGE)..."
               value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full pl-10 pr-4 py-3 bg-gray-700 border border-gray-600 rounded-lg text-white placeholder-gray-400 focus:ring-2 focus:ring-emerald-500 focus:border-transparent"
+              onChange={(e) => {
+                try {
+                  setSearchQuery(e.target.value);
+                } catch (error) {
+                  console.error('Error updating search query:', error);
+                }
+              }}
+              onKeyPress={(e) => {
+                if (e.key === 'Enter' && filteredPairs.length > 0) {
+                  handlePairSelect(filteredPairs[0]);
+                }
+              }}
+              className="w-full pl-10 pr-12 py-3 bg-gray-700 border border-gray-600 rounded-lg text-white placeholder-gray-400 focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition-all"
               autoFocus
               disabled={loading}
             />
+            {searchQuery && (
+              <button
+                onClick={handleClearSearch}
+                className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-white transition-colors"
+                title="Clear search"
+                type="button"
+              >
+                ✕
+              </button>
+            )}
           </div>
         </div>
 
@@ -209,15 +292,19 @@ const CryptoPairSearch: React.FC<CryptoPairSearchProps> = ({
             )}
             
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 xl:grid-cols-5 gap-2">
-              {currentPairs.map(pair => {
+              {currentPairs.map((pair, index) => {
                 const [base, quote] = pair.split('/');
+                const isSelected = selectedPair === pair;
+                const isHighlighted = index === selectedIndex;
                 return (
                   <button
                     key={pair}
                     onClick={() => handlePairSelect(pair)}
                     className={`p-3 rounded-lg text-left transition-all duration-200 ${
-                      selectedPair === pair
-                        ? 'bg-emerald-600 text-white shadow-lg transform scale-105'
+                      isSelected
+                        ? 'bg-emerald-600 text-white shadow-lg transform scale-105 ring-2 ring-emerald-400'
+                        : isHighlighted
+                        ? 'bg-blue-600 text-white shadow-md ring-2 ring-blue-400'
                         : 'bg-gray-700 hover:bg-gray-600 text-gray-300 hover:shadow-md'
                     }`}
                     type="button"

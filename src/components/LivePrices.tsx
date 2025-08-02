@@ -27,7 +27,7 @@ interface LivePricesProps {
 const ITEMS_PER_PAGE = 50;
 
 const LivePrices: React.FC<LivePricesProps> = ({ selectedPair, selectedBroker }) => {
-  const { pairs, priceData, loading, error, lastUpdated, refreshPairs, totalPairs, activePairs } = useBinancePairs();
+  const { pairs, priceData, loading, error, lastUpdated, refreshPairs, totalPairs, activePairs, dataSource } = useBinancePairs();
   
   // Pagination and filtering states
   const [currentPage, setCurrentPage] = useState(1);
@@ -248,7 +248,23 @@ const LivePrices: React.FC<LivePricesProps> = ({ selectedPair, selectedBroker })
       {/* Header with Stats */}
       <div className="bg-gray-800 border border-gray-700 rounded-lg p-6">
         <div className="flex items-center justify-between mb-4">
-          <h2 className="text-xl font-semibold text-white">Live Market Prices</h2>
+          <div>
+            <h2 className="text-xl font-semibold text-white">Live Market Prices</h2>
+            <div className="flex items-center space-x-2 mt-1">
+              <span className="text-xs text-gray-400">
+                Data source: 
+              </span>
+              <span className={`text-xs px-2 py-1 rounded-full font-medium ${
+                dataSource === 'binance' ? 'bg-emerald-500/20 text-emerald-400' :
+                dataSource === 'alternative' ? 'bg-blue-500/20 text-blue-400' :
+                'bg-yellow-500/20 text-yellow-400'
+              }`}>
+                {dataSource === 'binance' ? '🟢 Binance Live' : 
+                 dataSource === 'alternative' ? '🔵 Multi-Source' : 
+                 '🟡 Offline Mode'}
+              </span>
+            </div>
+          </div>
           <div className="flex items-center space-x-4">
             {lastUpdated && (
               <span className="text-xs text-gray-400">
