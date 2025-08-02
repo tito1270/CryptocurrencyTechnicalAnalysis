@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { PriceData } from '../types';
+import { getFallbackPrice } from '../utils/priceAPI';
 
 const BINANCE_API = 'https://api.binance.com/api/v3';
 const COINGECKO_API = 'https://api.coingecko.com/api/v3';
@@ -283,43 +284,58 @@ export const useBinancePairs = (): UseBinancePairsReturn => {
         const url = `${BINANCE_API}/ticker/24hr`;
         const data = await makeRequestWithRetry(url);
         
-        const { pairs: fetchedPairs, priceData: fetchedPriceData } = parseBinanceTickerData(data);
-        
-        if (fetchedPairs.length > 0) {
-          setPairs(fetchedPairs);
-          setPriceData(fetchedPriceData);
-          setTotalPairs(data.length);
-          setActivePairs(fetchedPairs.length);
-          setLastUpdated(Date.now());
-          setDataSource('binance');
+        if (data && Array.isArray(data) && data.length > 0) {
+          const { pairs: fetchedPairs, priceData: fetchedPriceData } = parseBinanceTickerData(data);
           
-          console.log(`✅ Successfully loaded ${fetchedPairs.length} Binance trading pairs with live prices`);
-          return;
+          if (fetchedPairs.length > 0) {
+            setPairs(fetchedPairs);
+            setPriceData(fetchedPriceData);
+            setTotalPairs(data.length);
+            setActivePairs(fetchedPairs.length);
+            setLastUpdated(Date.now());
+            setDataSource('binance');
+            
+            console.log(`✅ Successfully loaded ${fetchedPairs.length} Binance trading pairs with live prices`);
+            return;
+          }
         }
+        
+        throw new Error('Invalid or empty Binance data received');
       } catch (binanceError) {
-        console.warn('Binance API failed, trying alternative sources...', binanceError);
+        console.warn('❌ Binance API failed, trying alternative sources...', binanceError);
       }
       
       // Fallback to alternative/simulated data
       console.log('🔄 Using alternative price data sources...');
-      const alternativeData = await getAlternativePriceData();
-      const alternativePairs = alternativeData.map(data => data.pair);
+      try {
+        const alternativeData = await getAlternativePriceData();
+        const alternativePairs = alternativeData.map(data => data.pair);
+        
+        if (alternativePairs.length > 0) {
+          setPairs(alternativePairs);
+          setPriceData(alternativeData);
+          setTotalPairs(alternativeData.length);
+          setActivePairs(alternativePairs.length);
+          setLastUpdated(Date.now());
+          setDataSource('alternative');
+          
+          console.log(`✅ Successfully loaded ${alternativePairs.length} trading pairs from alternative sources`);
+          return;
+        }
+        
+        throw new Error('Alternative sources returned no data');
+      } catch (altError) {
+        console.warn('❌ Alternative sources failed:', altError);
+      }
       
-      setPairs(alternativePairs);
-      setPriceData(alternativeData);
-      setTotalPairs(alternativeData.length);
-      setActivePairs(alternativePairs.length);
-      setLastUpdated(Date.now());
-      setDataSource('alternative');
-      
-      console.log(`✅ Successfully loaded ${alternativePairs.length} trading pairs from alternative sources`);
+      throw new Error('All data sources failed');
       
     } catch (err: any) {
       const errorMessage = err.name === 'AbortError' 
         ? 'Request timed out. Using offline data.'
         : err.message || 'Failed to load trading pairs. Using offline data.';
       
-      console.error('All data sources failed, using fallback:', err);
+      console.error('❌ All data sources failed, using fallback:', err);
       setError(errorMessage);
       setDataSource('offline');
       
@@ -329,11 +345,34 @@ export const useBinancePairs = (): UseBinancePairsReturn => {
         'SOL/USDT', 'DOGE/USDT', 'DOT/USDT', 'MATIC/USDT', 'AVAX/USDT',
         'ATOM/USDT', 'LINK/USDT', 'UNI/USDT', 'LTC/USDT', 'BCH/USDT',
         'NEAR/USDT', 'ALGO/USDT', 'VET/USDT', 'ICP/USDT', 'FIL/USDT',
-        'SAND/USDT', 'MANA/USDT', 'CRO/USDT', 'FTM/USDT', 'ONE/USDT'
+        'SAND/USDT', 'MANA/USDT', 'CRO/USDT', 'FTM/USDT', 'ONE/USDT',
+        'TRX/USDT', 'ETC/USDT', 'THETA/USDT', 'HBAR/USDT', 'XLM/USDT'
       ];
+      
+      // Generate fallback price data
+      const fallbackPriceData = fallbackPairs.map(pair => {
+        const [base] = pair.split('/');
+        const basePrice = getFallbackPrice(base) || 1;
+        const change = (Math.random() - 0.5) * 6;
+        
+        return {
+          broker: 'fallback',
+          pair,
+          price: basePrice,
+          change24h: change,
+          volume: Math.random() * 100000000,
+          high24h: basePrice * 1.03,
+          low24h: basePrice * 0.97,
+          timestamp: Date.now(),
+          quoteVolume: Math.random() * 50000000
+        };
+      });
+      
       setPairs(fallbackPairs);
-      setPriceData([]);
+      setPriceData(fallbackPriceData);
+      setTotalPairs(fallbackPairs.length);
       setActivePairs(fallbackPairs.length);
+      setLastUpdated(Date.now());
     } finally {
       setLoading(false);
     }

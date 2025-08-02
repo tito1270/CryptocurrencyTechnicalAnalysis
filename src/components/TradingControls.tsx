@@ -3,7 +3,7 @@ import { useState, useMemo } from 'react';
 import { brokers } from '../data/brokers';
 import { technicalIndicators } from '../data/indicators';
 import { tradingStrategies } from '../data/strategies';
-import { searchPairs } from '../utils/priceSimulator';
+import { searchPairs } from '../utils/priceAPI';
 import { Search, X, Link, Copy, Check } from 'lucide-react';
 import CryptoPairSearch from './CryptoPairSearch';
 
