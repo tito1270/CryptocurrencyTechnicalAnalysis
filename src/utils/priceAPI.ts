@@ -905,7 +905,15 @@ export const fetchRealTimePrices = async (selectedBrokers?: string[]): Promise<P
         return prices;
       } catch (error) {
         console.error(`❌ ${name.toUpperCase()} failed:`, error);
-        return generateFallbackForExchange(name);
+        
+        // Only generate fallback prices for Binance, other exchanges must use live APIs
+        if (name === 'binance') {
+          console.log(`🔄 Generating fallback prices for ${name.toUpperCase()}`);
+          return generateFallbackForExchange(name);
+        } else {
+          console.warn(`⚠️ ${name.toUpperCase()} failed - no fallback prices available (live API required)`);
+          return [];
+        }
       }
     })
   );
@@ -916,12 +924,20 @@ export const fetchRealTimePrices = async (selectedBrokers?: string[]): Promise<P
     } else {
       const exchangeName = exchangeFetchers[index].name;
       console.error(`❌ ${exchangeName.toUpperCase()} completely failed`);
-      allPrices.push(...generateFallbackForExchange(exchangeName));
+      
+      // Only generate fallback prices for Binance, other exchanges must use live APIs
+      if (exchangeName === 'binance') {
+        console.log(`🔄 Generating fallback prices for ${exchangeName.toUpperCase()}`);
+        allPrices.push(...generateFallbackForExchange(exchangeName));
+      } else {
+        console.warn(`⚠️ ${exchangeName.toUpperCase()} failed - no fallback prices will be generated (live API required)`);
+      }
     }
   });
   
   // All major exchanges now have live API implementations
-  // If any exchange fails, the fallback is already handled in the Promise.allSettled above
+  // Only Binance is allowed to use fallback/hardcoded prices when API fails
+  // All other exchanges must use live APIs exclusively
   
   const exchanges = [...new Set(allPrices.map(p => p.broker))];
   const pairs = [...new Set(allPrices.map(p => p.pair))];
@@ -1019,6 +1035,7 @@ const generateFallbackForExchange = (exchangeName: string): PriceData[] => {
   };
   
   // Exchange-specific spreads and characteristics
+  // Only Binance is allowed to use hardcoded/fallback prices
   const exchangeConfig: { [key: string]: { spread: number; volume_mult: number; pairs: string[] } } = {
     'binance': { 
       spread: 0, 
@@ -1210,28 +1227,34 @@ export const getPairPrice = async (broker: string, pair: string): Promise<number
       return pairData.price;
     }
     
-    // Fallback to calculated price
-    console.log(`⚠️ No live data for ${pair} on ${broker.toUpperCase()}, using calculated price`);
-    const fallbackPrice = getFallbackPrice(pair);
-    
-    if (fallbackPrice > 0) {
-      return fallbackPrice;
-    } else {
-      throw new Error(`No price data available for ${pair}`);
+    // Only allow fallback prices for Binance
+    if (broker === 'binance') {
+      console.log(`⚠️ No live data for ${pair} on ${broker.toUpperCase()}, using calculated price`);
+      const fallbackPrice = getFallbackPrice(pair);
+      
+      if (fallbackPrice > 0) {
+        return fallbackPrice;
+      }
     }
+    
+    throw new Error(`No live price data available for ${pair} on ${broker.toUpperCase()} - fallback prices not allowed for this exchange`);
     
   } catch (error) {
     console.error(`❌ Error getting ${pair} from ${broker.toUpperCase()}:`, error);
     
-    // Enhanced fallback with error handling
-    try {
-      const fallbackPrice = getFallbackPrice(pair);
-      if (fallbackPrice > 0) {
-        console.log(`🔄 Using fallback price for ${pair}: $${fallbackPrice}`);
-        return fallbackPrice;
+    // Enhanced fallback with error handling - only for Binance
+    if (broker === 'binance') {
+      try {
+        const fallbackPrice = getFallbackPrice(pair);
+        if (fallbackPrice > 0) {
+          console.log(`🔄 Using fallback price for ${pair}: $${fallbackPrice}`);
+          return fallbackPrice;
+        }
+      } catch (fallbackError) {
+        console.error(`❌ Fallback price failed for ${pair}:`, fallbackError);
       }
-    } catch (fallbackError) {
-      console.error(`❌ Fallback price failed for ${pair}:`, fallbackError);
+    } else {
+      console.warn(`⚠️ ${broker.toUpperCase()} error - no fallback prices allowed for this exchange`);
     }
     
     // Last resort: return null to trigger higher-level error handling

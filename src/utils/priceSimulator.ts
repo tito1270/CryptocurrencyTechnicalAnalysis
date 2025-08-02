@@ -55,11 +55,11 @@ export const generateLivePrices = async (selectedPairs?: string[]): Promise<Pric
       
       return realPrices;
     } else {
-      console.log('⚠️ Insufficient live data, generating enhanced fallback');
+      console.log('⚠️ Insufficient live data, generating fallback for Binance only');
       return generateEnhancedFallback(selectedPairs);
     }
   } catch (error) {
-    console.log(`⚠️ PriceSimulator: Live API timeout/error (${error instanceof Error ? error.message : 'unknown'}), using enhanced fallback`);
+    console.log(`⚠️ PriceSimulator: Live API timeout/error (${error instanceof Error ? error.message : 'unknown'}), using fallback for Binance only`);
     return generateEnhancedFallback(selectedPairs);
   }
 };
@@ -99,9 +99,9 @@ const fetchAllExchangesLive = async (selectedPairs?: string[]): Promise<PriceDat
   }
 };
 
-// Enhanced fallback with current market data
+// Fallback with current market data - Binance only
 const generateEnhancedFallback = (selectedPairs?: string[]): PriceData[] => {
-  console.log('🔄 Generating enhanced fallback with current market prices...');
+  console.log('🔄 Generating fallback prices for Binance only...');
   
   const prices: PriceData[] = [];
   
@@ -188,23 +188,10 @@ const generateEnhancedFallback = (selectedPairs?: string[]): PriceData[] => {
     'FDUSD': 1.000  // First Digital USD
   };
   
-  // Exchange configurations with realistic spreads
+  // Exchange configurations - only Binance allowed for fallback prices
   const exchangeConfigs = [
-    { id: 'binance', spread: 0, volume_mult: 1.0, quotes: ['USDT', 'USDC', 'BTC', 'ETH', 'BNB', 'FDUSD'] },
-    { id: 'okx', spread: 0.0005, volume_mult: 0.85, quotes: ['USDT', 'USDC', 'BTC', 'ETH'] },
-    { id: 'coinbase', spread: -0.0010, volume_mult: 0.7, quotes: ['USD', 'USDC', 'BTC', 'ETH'] },
-    { id: 'kraken', spread: 0.0008, volume_mult: 0.6, quotes: ['USD', 'USDT', 'BTC', 'ETH'] },
-    { id: 'kucoin', spread: 0.0010, volume_mult: 0.55, quotes: ['USDT', 'USDC', 'BTC', 'ETH'] },
-    { id: 'huobi', spread: 0.0005, volume_mult: 0.5, quotes: ['USDT', 'BTC', 'ETH'] },
-    { id: 'gate', spread: -0.0005, volume_mult: 0.4, quotes: ['USDT', 'BTC', 'ETH'] },
-    { id: 'bitget', spread: 0.0015, volume_mult: 0.45, quotes: ['USDT', 'BTC', 'ETH'] },
-    { id: 'mexc', spread: -0.0005, volume_mult: 0.35, quotes: ['USDT', 'BTC', 'ETH'] },
-    { id: 'bybit', spread: 0.0010, volume_mult: 0.55, quotes: ['USDT', 'BTC', 'ETH'] },
-    { id: 'crypto_com', spread: -0.0008, volume_mult: 0.4, quotes: ['USD', 'USDT', 'BTC'] },
-    { id: 'bingx', spread: 0.0012, volume_mult: 0.3, quotes: ['USDT', 'BTC'] },
-    { id: 'bitfinex', spread: -0.0012, volume_mult: 0.45, quotes: ['USD', 'USDT', 'BTC'] },
-    { id: 'phemex', spread: 0.0008, volume_mult: 0.35, quotes: ['USDT', 'BTC'] },
-    { id: 'deribit', spread: 0.0006, volume_mult: 0.25, quotes: ['USD'] }
+    { id: 'binance', spread: 0, volume_mult: 1.0, quotes: ['USDT', 'USDC', 'BTC', 'ETH', 'BNB', 'FDUSD'] }
+    // All other exchanges removed - they must use live APIs only
   ];
   
   // Generate prices for all exchanges
@@ -257,7 +244,7 @@ const generateEnhancedFallback = (selectedPairs?: string[]): PriceData[] => {
     });
   });
   
-  console.log(`📊 Enhanced fallback: ${prices.length} current market prices generated`);
+  console.log(`📊 Binance fallback only: ${prices.length} current market prices generated`);
   return prices;
 };
 
@@ -280,38 +267,31 @@ export const getRealTimePrice = async (broker: string, pair: string): Promise<nu
         return livePrice;
       }
     } catch (timeoutError) {
-      console.log(`⚠️ Live API timeout for ${pair} on ${broker.toUpperCase()}, using current market price`);
+      console.log(`⚠️ Live API timeout for ${pair} on ${broker.toUpperCase()}`);
     }
 
-    // Use current market calculation
-    const marketPrice = getFallbackPrice(pair);
-    const brokerAdjustments: { [key: string]: number } = {
-      'binance': 0,
-      'okx': 0.0005,
-      'coinbase': -0.0010,
-      'kraken': 0.0008,
-      'kucoin': 0.0010,
-      'huobi': 0.0005,
-      'gate': -0.0005,
-      'bitget': 0.0015,
-      'mexc': -0.0005,
-      'bybit': 0.0010,
-      'crypto_com': -0.0008,
-      'bingx': 0.0012,
-      'bitfinex': -0.0012,
-      'phemex': 0.0008,
-      'deribit': 0.0006
-    };
-
-    const adjustment = brokerAdjustments[broker] || 0;
-    const adjustedPrice = marketPrice * (1 + adjustment + (Math.random() - 0.5) * 0.001);
-
-    console.log(`📊 Current market price: ${pair} on ${broker.toUpperCase()} = $${adjustedPrice.toLocaleString()}`);
-    return adjustedPrice;
+    // Only allow fallback prices for Binance
+    if (broker === 'binance') {
+      console.log(`🔄 Using fallback price for ${pair} on ${broker.toUpperCase()}`);
+      const marketPrice = getFallbackPrice(pair);
+      const adjustedPrice = marketPrice * (1 + (Math.random() - 0.5) * 0.001);
+      console.log(`📊 Fallback price: ${pair} on ${broker.toUpperCase()} = $${adjustedPrice.toLocaleString()}`);
+      return adjustedPrice;
+    } else {
+      console.warn(`⚠️ ${broker.toUpperCase()} failed - no fallback prices allowed for this exchange`);
+      return null;
+    }
 
   } catch (error) {
     console.error(`❌ Error getting price for ${pair} on ${broker.toUpperCase()}:`, error);
-    return getFallbackPrice(pair);
+    
+    // Only allow fallback prices for Binance
+    if (broker === 'binance') {
+      return getFallbackPrice(pair);
+    } else {
+      console.warn(`⚠️ ${broker.toUpperCase()} error - no fallback prices allowed for this exchange`);
+      return null;
+    }
   }
 };
 
