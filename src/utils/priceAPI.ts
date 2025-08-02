@@ -467,6 +467,409 @@ const formatBinancePair = (symbol: string): string => {
   return symbol;
 };
 
+// Parser functions for each exchange following Binance pattern
+const parseHuobiData = (data: any[]): PriceData[] => {
+  return data.map(ticker => {
+    const symbol = ticker.symbol || '';
+    const pair = formatHuobiPair(symbol);
+    
+    return {
+      pair,
+      price: parseFloat(ticker.close || ticker.price || '0'),
+      change24h: parseFloat(ticker.priceChangePercent || ticker.change || '0'),
+      volume24h: parseFloat(ticker.amount || ticker.volume || '0'),
+      broker: 'huobi',
+      timestamp: Date.now()
+    };
+  }).filter(item => item.price > 0);
+};
+
+const parseKrakenData = (data: any): PriceData[] => {
+  return Object.entries(data).map(([symbol, ticker]: [string, any]) => {
+    const pair = formatKrakenPair(symbol);
+    
+    return {
+      pair,
+      price: parseFloat(ticker.c?.[0] || ticker.price || '0'),
+      change24h: parseFloat(ticker.p?.[1] || '0'),
+      volume24h: parseFloat(ticker.v?.[1] || ticker.volume || '0'),
+      broker: 'kraken',
+      timestamp: Date.now()
+    };
+  }).filter(item => item.price > 0);
+};
+
+const parseCryptoComData = (data: any[]): PriceData[] => {
+  return data.map(ticker => {
+    const symbol = ticker.instrument_name || ticker.symbol || '';
+    const pair = formatCryptoComPair(symbol);
+    
+    return {
+      pair,
+      price: parseFloat(ticker.last_price || ticker.price || '0'),
+      change24h: parseFloat(ticker.price_change_24h || ticker.change || '0'),
+      volume24h: parseFloat(ticker.volume_24h || ticker.volume || '0'),
+      broker: 'crypto_com',
+      timestamp: Date.now()
+    };
+  }).filter(item => item.price > 0);
+};
+
+const parseBingXData = (data: any[]): PriceData[] => {
+  return data.map(ticker => {
+    const symbol = ticker.symbol || '';
+    const pair = formatBingXPair(symbol);
+    
+    return {
+      pair,
+      price: parseFloat(ticker.lastPrice || ticker.price || '0'),
+      change24h: parseFloat(ticker.priceChangePercent || ticker.change || '0'),
+      volume24h: parseFloat(ticker.volume || '0'),
+      broker: 'bingx',
+      timestamp: Date.now()
+    };
+  }).filter(item => item.price > 0);
+};
+
+const parseBitfinexData = (data: any[]): PriceData[] => {
+  return data.map(ticker => {
+    const symbol = ticker[0] || '';
+    const pair = formatBitfinexPair(symbol);
+    
+    return {
+      pair,
+      price: parseFloat(ticker[7] || '0'), // Last price
+      change24h: parseFloat(ticker[6] || '0'), // Daily change percent
+      volume24h: parseFloat(ticker[8] || '0'), // Volume
+      broker: 'bitfinex',
+      timestamp: Date.now()
+    };
+  }).filter(item => item.price > 0);
+};
+
+const parsePhemexData = (data: any[]): PriceData[] => {
+  return data.filter(product => product.type === 'Spot').map(ticker => {
+    const symbol = ticker.symbol || '';
+    const pair = formatPhemexPair(symbol);
+    
+    return {
+      pair,
+      price: parseFloat(ticker.lastPrice || ticker.priceEp ? ticker.priceEp / 100000000 : '0'),
+      change24h: parseFloat(ticker.changePercent || '0'),
+      volume24h: parseFloat(ticker.volumeEv ? ticker.volumeEv / 100000000 : ticker.volume || '0'),
+      broker: 'phemex',
+      timestamp: Date.now()
+    };
+  }).filter(item => item.price > 0);
+};
+
+const parseDeribitData = (data: any[]): PriceData[] => {
+  return data.map(ticker => {
+    const symbol = ticker.instrument_name || '';
+    const pair = formatDeribitPair(symbol);
+    
+    return {
+      pair,
+      price: parseFloat(ticker.last_price || ticker.mark_price || '0'),
+      change24h: parseFloat(ticker.price_change || '0'),
+      volume24h: parseFloat(ticker.volume_24h || '0'),
+      broker: 'deribit',
+      timestamp: Date.now()
+    };
+  }).filter(item => item.price > 0);
+};
+
+// Helper functions to format pairs for each exchange
+const formatHuobiPair = (symbol: string): string => {
+  // Huobi format: btcusdt -> BTC/USDT
+  const upperSymbol = symbol.toUpperCase();
+  const bases = ['USDT', 'USDC', 'BTC', 'ETH', 'HT'];
+  for (const base of bases) {
+    if (upperSymbol.endsWith(base)) {
+      const asset = upperSymbol.replace(base, '');
+      return `${asset}/${base}`;
+    }
+  }
+  return symbol.toUpperCase();
+};
+
+const formatKrakenPair = (symbol: string): string => {
+  // Kraken format: XXBTZUSD -> BTC/USD
+  const mapping: { [key: string]: string } = {
+    'XXBT': 'BTC',
+    'XETH': 'ETH',
+    'XXRP': 'XRP',
+    'XLTC': 'LTC',
+    'ZUSD': 'USD',
+    'ZEUR': 'EUR',
+    'ZGBP': 'GBP',
+    'ZJPY': 'JPY'
+  };
+  
+  let formatted = symbol;
+  Object.entries(mapping).forEach(([kraken, standard]) => {
+    formatted = formatted.replace(kraken, standard);
+  });
+  
+  // Try to split into base/quote
+  const commonQuotes = ['USD', 'EUR', 'GBP', 'JPY', 'BTC', 'ETH'];
+  for (const quote of commonQuotes) {
+    if (formatted.endsWith(quote)) {
+      const base = formatted.replace(quote, '');
+      return `${base}/${quote}`;
+    }
+  }
+  
+  return formatted;
+};
+
+const formatCryptoComPair = (symbol: string): string => {
+  // Crypto.com format: BTC_USD -> BTC/USD
+  return symbol.replace('_', '/');
+};
+
+const formatBingXPair = (symbol: string): string => {
+  // BingX uses similar format to Binance
+  return formatBinancePair(symbol);
+};
+
+const formatBitfinexPair = (symbol: string): string => {
+  // Bitfinex format: tBTCUSD -> BTC/USD
+  const cleanSymbol = symbol.replace(/^t/, '');
+  const bases = ['USD', 'EUR', 'GBP', 'JPY', 'BTC', 'ETH', 'USDT', 'USDC'];
+  for (const base of bases) {
+    if (cleanSymbol.endsWith(base)) {
+      const asset = cleanSymbol.replace(base, '');
+      return `${asset}/${base}`;
+    }
+  }
+  return cleanSymbol;
+};
+
+const formatPhemexPair = (symbol: string): string => {
+  // Phemex format: BTCUSD -> BTC/USD
+  const bases = ['USD', 'USDT', 'BTC', 'ETH'];
+  for (const base of bases) {
+    if (symbol.endsWith(base)) {
+      const asset = symbol.replace(base, '');
+      return `${asset}/${base}`;
+    }
+  }
+  return symbol;
+};
+
+const formatDeribitPair = (symbol: string): string => {
+  // Deribit format: BTC-PERPETUAL -> BTC/USD (for spot-like representation)
+  if (symbol.includes('-')) {
+    const base = symbol.split('-')[0];
+    return `${base}/USD`;
+  }
+  return symbol;
+};
+
+// Huobi (HTX) live prices
+export const fetchHuobiLivePrices = async (): Promise<PriceData[]> => {
+  try {
+    const cacheKey = 'huobi_live';
+    const cached = priceCache.get(cacheKey);
+    
+    if (cached && Date.now() - cached.timestamp < CACHE_DURATION) {
+      return parseHuobiData(cached.data);
+    }
+
+    console.log('🔴 Fetching live data from Huobi (HTX)...');
+    const url = `${EXCHANGE_APIS.huobi}/tickers`;
+    const response = await makeExchangeRequest(url);
+    
+    if (response?.data && Array.isArray(response.data)) {
+      priceCache.set(cacheKey, { data: response.data, timestamp: Date.now() });
+      const parsed = parseHuobiData(response.data);
+      console.log(`✅ Huobi LIVE: ${parsed.length} prices`);
+      return parsed;
+    }
+    
+    throw new Error('Invalid Huobi data format');
+    
+  } catch (error: any) {
+    console.error(`❌ Huobi API failed: ${error.message}`);
+    return [];
+  }
+};
+
+// Kraken live prices
+export const fetchKrakenLivePrices = async (): Promise<PriceData[]> => {
+  try {
+    const cacheKey = 'kraken_live';
+    const cached = priceCache.get(cacheKey);
+    
+    if (cached && Date.now() - cached.timestamp < CACHE_DURATION) {
+      return parseKrakenData(cached.data);
+    }
+
+    console.log('🟣 Fetching live data from Kraken...');
+    const url = `${EXCHANGE_APIS.kraken}/Ticker`;
+    const response = await makeExchangeRequest(url);
+    
+    if (response?.result) {
+      priceCache.set(cacheKey, { data: response.result, timestamp: Date.now() });
+      const parsed = parseKrakenData(response.result);
+      console.log(`✅ Kraken LIVE: ${parsed.length} prices`);
+      return parsed;
+    }
+    
+    throw new Error('Invalid Kraken data format');
+    
+  } catch (error: any) {
+    console.error(`❌ Kraken API failed: ${error.message}`);
+    return [];
+  }
+};
+
+// Crypto.com live prices
+export const fetchCryptoComLivePrices = async (): Promise<PriceData[]> => {
+  try {
+    const cacheKey = 'crypto_com_live';
+    const cached = priceCache.get(cacheKey);
+    
+    if (cached && Date.now() - cached.timestamp < CACHE_DURATION) {
+      return parseCryptoComData(cached.data);
+    }
+
+    console.log('🔵 Fetching live data from Crypto.com...');
+    const url = `${EXCHANGE_APIS.crypto_com}/public/get-ticker`;
+    const response = await makeExchangeRequest(url);
+    
+    if (response?.result?.data && Array.isArray(response.result.data)) {
+      priceCache.set(cacheKey, { data: response.result.data, timestamp: Date.now() });
+      const parsed = parseCryptoComData(response.result.data);
+      console.log(`✅ Crypto.com LIVE: ${parsed.length} prices`);
+      return parsed;
+    }
+    
+    throw new Error('Invalid Crypto.com data format');
+    
+  } catch (error: any) {
+    console.error(`❌ Crypto.com API failed: ${error.message}`);
+    return [];
+  }
+};
+
+// BingX live prices
+export const fetchBingXLivePrices = async (): Promise<PriceData[]> => {
+  try {
+    const cacheKey = 'bingx_live';
+    const cached = priceCache.get(cacheKey);
+    
+    if (cached && Date.now() - cached.timestamp < CACHE_DURATION) {
+      return parseBingXData(cached.data);
+    }
+
+    console.log('⚪ Fetching live data from BingX...');
+    const url = `${EXCHANGE_APIS.bingx}/spot/v1/ticker/24hr`;
+    const response = await makeExchangeRequest(url);
+    
+    if (response?.data && Array.isArray(response.data)) {
+      priceCache.set(cacheKey, { data: response.data, timestamp: Date.now() });
+      const parsed = parseBingXData(response.data);
+      console.log(`✅ BingX LIVE: ${parsed.length} prices`);
+      return parsed;
+    }
+    
+    throw new Error('Invalid BingX data format');
+    
+  } catch (error: any) {
+    console.error(`❌ BingX API failed: ${error.message}`);
+    return [];
+  }
+};
+
+// Bitfinex live prices
+export const fetchBitfinexLivePrices = async (): Promise<PriceData[]> => {
+  try {
+    const cacheKey = 'bitfinex_live';
+    const cached = priceCache.get(cacheKey);
+    
+    if (cached && Date.now() - cached.timestamp < CACHE_DURATION) {
+      return parseBitfinexData(cached.data);
+    }
+
+    console.log('🟢 Fetching live data from Bitfinex...');
+    const url = `${EXCHANGE_APIS.bitfinex}/tickers?symbols=ALL`;
+    const data = await makeExchangeRequest(url);
+    
+    if (data && Array.isArray(data)) {
+      priceCache.set(cacheKey, { data, timestamp: Date.now() });
+      const parsed = parseBitfinexData(data);
+      console.log(`✅ Bitfinex LIVE: ${parsed.length} prices`);
+      return parsed;
+    }
+    
+    throw new Error('Invalid Bitfinex data format');
+    
+  } catch (error: any) {
+    console.error(`❌ Bitfinex API failed: ${error.message}`);
+    return [];
+  }
+};
+
+// Phemex live prices
+export const fetchPhemexLivePrices = async (): Promise<PriceData[]> => {
+  try {
+    const cacheKey = 'phemex_live';
+    const cached = priceCache.get(cacheKey);
+    
+    if (cached && Date.now() - cached.timestamp < CACHE_DURATION) {
+      return parsePhemexData(cached.data);
+    }
+
+    console.log('🟨 Fetching live data from Phemex...');
+    const url = `${EXCHANGE_APIS.phemex}/public/products`;
+    const response = await makeExchangeRequest(url);
+    
+    if (response?.data?.products && Array.isArray(response.data.products)) {
+      priceCache.set(cacheKey, { data: response.data.products, timestamp: Date.now() });
+      const parsed = parsePhemexData(response.data.products);
+      console.log(`✅ Phemex LIVE: ${parsed.length} prices`);
+      return parsed;
+    }
+    
+    throw new Error('Invalid Phemex data format');
+    
+  } catch (error: any) {
+    console.error(`❌ Phemex API failed: ${error.message}`);
+    return [];
+  }
+};
+
+// Deribit live prices
+export const fetchDeribitLivePrices = async (): Promise<PriceData[]> => {
+  try {
+    const cacheKey = 'deribit_live';
+    const cached = priceCache.get(cacheKey);
+    
+    if (cached && Date.now() - cached.timestamp < CACHE_DURATION) {
+      return parseDeribitData(cached.data);
+    }
+
+    console.log('⚫ Fetching live data from Deribit...');
+    const url = `https://www.deribit.com/api/v2/public/get_book_summary_by_currency?currency=BTC&kind=spot`;
+    const response = await makeExchangeRequest(url);
+    
+    if (response?.result && Array.isArray(response.result)) {
+      priceCache.set(cacheKey, { data: response.result, timestamp: Date.now() });
+      const parsed = parseDeribitData(response.result);
+      console.log(`✅ Deribit LIVE: ${parsed.length} prices`);
+      return parsed;
+    }
+    
+    throw new Error('Invalid Deribit data format');
+    
+  } catch (error: any) {
+    console.error(`❌ Deribit API failed: ${error.message}`);
+    return [];
+  }
+};
+
 // Main function to fetch all live prices
 export const fetchRealTimePrices = async (selectedBrokers?: string[]): Promise<PriceData[]> => {
   console.log('🚀 LIVE API: Fetching real-time prices from all exchanges...');
@@ -479,7 +882,14 @@ export const fetchRealTimePrices = async (selectedBrokers?: string[]): Promise<P
     { name: 'bybit', fetcher: fetchBybitLivePrices },
     { name: 'gate', fetcher: fetchGateLivePrices },
     { name: 'mexc', fetcher: fetchMEXCLivePrices },
-    { name: 'bitget', fetcher: fetchBitgetLivePrices }
+    { name: 'bitget', fetcher: fetchBitgetLivePrices },
+    { name: 'huobi', fetcher: fetchHuobiLivePrices },
+    { name: 'kraken', fetcher: fetchKrakenLivePrices },
+    { name: 'crypto_com', fetcher: fetchCryptoComLivePrices },
+    { name: 'bingx', fetcher: fetchBingXLivePrices },
+    { name: 'bitfinex', fetcher: fetchBitfinexLivePrices },
+    { name: 'phemex', fetcher: fetchPhemexLivePrices },
+    { name: 'deribit', fetcher: fetchDeribitLivePrices }
   ];
   
   const allPrices: PriceData[] = [];
@@ -510,13 +920,8 @@ export const fetchRealTimePrices = async (selectedBrokers?: string[]): Promise<P
     }
   });
   
-  // Add remaining exchanges with fallback data (those without live APIs)
-  const remainingExchanges = ['huobi', 'crypto_com', 'bingx', 'bitfinex', 'phemex', 'deribit', 'kraken'];
-  remainingExchanges.forEach(exchange => {
-    if (!selectedBrokers || selectedBrokers.includes(exchange)) {
-      allPrices.push(...generateFallbackForExchange(exchange));
-    }
-  });
+  // All major exchanges now have live API implementations
+  // If any exchange fails, the fallback is already handled in the Promise.allSettled above
   
   const exchanges = [...new Set(allPrices.map(p => p.broker))];
   const pairs = [...new Set(allPrices.map(p => p.pair))];
@@ -968,3 +1373,10 @@ export const fetchBybitPrices = fetchBybitLivePrices;
 export const fetchGatePrices = fetchGateLivePrices;
 export const fetchMEXCPrices = fetchMEXCLivePrices;
 export const fetchBitgetPrices = fetchBitgetLivePrices;
+export const fetchHuobiPrices = fetchHuobiLivePrices;
+export const fetchKrakenPrices = fetchKrakenLivePrices;
+export const fetchCryptoComPrices = fetchCryptoComLivePrices;
+export const fetchBingXPrices = fetchBingXLivePrices;
+export const fetchBitfinexPrices = fetchBitfinexLivePrices;
+export const fetchPhemexPrices = fetchPhemexLivePrices;
+export const fetchDeribitPrices = fetchDeribitLivePrices;
