@@ -12,8 +12,8 @@
   ],
   "rewrites": [
     {
-      "source": "/api/kucoin/(.*)",
-      "destination": "https://api.kucoin.com/$1"
+      "source": "/api/binance/(.*)",
+      "destination": "https://api.binance.com/$1"
     }
   ],
   "functions": {

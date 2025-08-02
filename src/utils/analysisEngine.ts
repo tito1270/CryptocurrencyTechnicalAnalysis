@@ -36,7 +36,7 @@ export const performAnalysis = async (
         priceData.price = fallbackPrice;
         priceData.source = 'FALLBACK';
       } else {
-        throw new Error(`Invalid price for ${pair} on ${priceData.broker}. Live API required for this exchange.`);
+        throw new Error(`Broker ${priceData.broker} is not supported. Only Binance is available.`);
       }
     }
     
@@ -178,8 +178,8 @@ export const performAnalysis = async (
         optionsRecommendations: []
       };
     } else {
-      // For non-Binance exchanges, throw the error instead of using fallback
-      throw new Error(`Analysis failed for ${pair} on ${broker}. Live API data required for this exchange.`);
+          // Only Binance is supported
+    throw new Error(`Analysis failed for ${pair} on ${broker}. Only Binance is supported.`);
     }
   }
 };
@@ -811,6 +811,6 @@ const getCurrentPrice = async (pair: string, broker: string): Promise<{price: nu
       timestamp: Date.now()
     };
   } else {
-    throw new Error(`No live price available for ${pair} on ${broker}. Live API required for this exchange.`);
+    throw new Error(`Broker ${broker} is not supported. Only Binance is available.`);
   }
 };

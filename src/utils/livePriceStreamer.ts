@@ -52,43 +52,6 @@ class LivePriceStreamer {
         name: 'binance',
         url: 'wss://stream.binance.com:9443/ws/!ticker@arr',
         parser: this.parseBinanceWebSocket.bind(this)
-      },
-      {
-        name: 'okx',
-        url: 'wss://ws.okx.com:8443/ws/v5/public',
-        parser: this.parseOKXWebSocket.bind(this),
-        subscription: {
-          op: "subscribe",
-          args: [{ channel: "tickers", instType: "SPOT" }]
-        }
-      },
-      {
-        name: 'huobi',
-        url: 'wss://api.huobi.pro/ws',
-        parser: this.parseHuobiWebSocket.bind(this),
-        subscription: {
-          sub: "market.overview"
-        }
-      },
-      {
-        name: 'kraken',
-        url: 'wss://ws.kraken.com',
-        parser: this.parseKrakenWebSocket.bind(this),
-        subscription: {
-          event: "subscribe",
-          pair: ["XBT/USD", "ETH/USD", "ADA/USD", "DOT/USD"],
-          subscription: { name: "ticker" }
-        }
-      },
-      {
-        name: 'bitfinex',
-        url: 'wss://api-pub.bitfinex.com/ws/2',
-        parser: this.parseBitfinexWebSocket.bind(this),
-        subscription: {
-          event: "subscribe",
-          channel: "ticker",
-          symbol: "tBTCUSD"
-        }
       }
     ];
 
@@ -113,255 +76,150 @@ class LivePriceStreamer {
     parser: (data: any) => PriceData[], 
     subscription?: any
   ): void {
-    try {
-      const wsData = this.webSockets.get(exchangeName);
-      if (!wsData) return;
+    const wsData = this.webSockets.get(exchangeName);
+    if (!wsData) return;
 
-      console.log(`🔌 Connecting to ${exchangeName.toUpperCase()} WebSocket...`);
-      
-      const socket = new WebSocket(url);
-      wsData.socket = socket;
-      
-      socket.onopen = () => {
-        console.log(`✅ ${exchangeName.toUpperCase()} WebSocket connected`);
-        wsData.isConnected = true;
-        wsData.reconnectAttempts = 0;
-        wsData.lastHeartbeat = Date.now();
+    console.log(`🔌 Connecting to ${exchangeName.toUpperCase()} WebSocket...`);
+
+    const socket = new WebSocket(url);
+
+    socket.onopen = () => {
+      console.log(`✅ ${exchangeName.toUpperCase()} WebSocket connected`);
+      wsData.isConnected = true;
+      wsData.reconnectAttempts = 0;
+      wsData.lastHeartbeat = Date.now();
+
+      // Send subscription message if needed
+      if (subscription) {
+        socket.send(JSON.stringify(subscription));
+        console.log(`📡 Sent subscription to ${exchangeName.toUpperCase()}`);
+      }
+    };
+
+    socket.onmessage = (event) => {
+      try {
+        const data = JSON.parse(event.data);
+        const prices = parser(data);
         
-        if (subscription) {
-          socket.send(JSON.stringify(subscription));
+        if (prices.length > 0) {
+          this.priceUpdateQueue.push(...prices);
+          wsData.lastHeartbeat = Date.now();
         }
-      };
-      
-      socket.onmessage = (event) => {
-        try {
-          const data = JSON.parse(event.data);
-          const prices = parser(data);
-          
-          if (prices.length > 0) {
-            this.priceUpdateQueue.push(...prices);
-            wsData.lastHeartbeat = Date.now();
-          }
-        } catch (error) {
-          console.warn(`⚠️ ${exchangeName.toUpperCase()} WebSocket parsing error:`, error);
-        }
-      };
-      
-      socket.onerror = (error) => {
-        console.error(`❌ ${exchangeName.toUpperCase()} WebSocket error:`, error);
-        wsData.isConnected = false;
-      };
-      
-      socket.onclose = () => {
-        console.log(`🔌 ${exchangeName.toUpperCase()} WebSocket disconnected`);
-        wsData.isConnected = false;
-        wsData.socket = null;
+      } catch (error) {
+        console.warn(`⚠️ ${exchangeName.toUpperCase()} WebSocket parsing error:`, error);
+      }
+    };
+
+    socket.onerror = (error) => {
+      console.error(`❌ ${exchangeName.toUpperCase()} WebSocket error:`, error);
+      wsData.isConnected = false;
+    };
+
+    socket.onclose = () => {
+      console.log(`🔌 ${exchangeName.toUpperCase()} WebSocket disconnected`);
+      wsData.isConnected = false;
+
+      // Attempt reconnection
+      if (wsData.reconnectAttempts < this.config.maxRetries) {
+        wsData.reconnectAttempts++;
+        const delay = Math.min(1000 * Math.pow(2, wsData.reconnectAttempts), 30000);
         
-        // Attempt reconnection
-        if (wsData.reconnectAttempts < this.config.maxRetries) {
-          wsData.reconnectAttempts++;
-          const delay = Math.min(1000 * Math.pow(2, wsData.reconnectAttempts), 30000);
-          
-          setTimeout(() => {
-            this.connectWebSocket(exchangeName, url, parser, subscription);
-          }, delay);
-        }
-      };
-      
-    } catch (error) {
-      console.error(`❌ Failed to connect ${exchangeName.toUpperCase()} WebSocket:`, error);
-    }
+        setTimeout(() => {
+          console.log(`🔄 Reconnecting ${exchangeName.toUpperCase()} WebSocket (attempt ${wsData.reconnectAttempts})...`);
+          this.connectWebSocket(exchangeName, url, parser, subscription);
+        }, delay);
+      }
+    };
+
+    wsData.socket = socket;
   }
 
   private parseBinanceWebSocket(data: any): PriceData[] {
-    if (!Array.isArray(data)) return [];
-    
-    return data
-      .filter(item => item.s && item.c && parseFloat(item.c) > 0)
-      .map(item => {
-        const symbol = item.s;
-        const pair = this.formatBinancePair(symbol);
-        
-        return {
-          broker: 'binance',
-          pair,
-          price: parseFloat(item.c),
-          change24h: parseFloat(item.P || '0'),
-          volume: parseFloat(item.q || '0'),
-          high24h: parseFloat(item.h || item.c),
-          low24h: parseFloat(item.l || item.c),
-          timestamp: Date.now()
-        };
-      })
-      .filter(item => item.pair.includes('/'));
-  }
+    try {
+      if (!Array.isArray(data)) return [];
 
-  private parseOKXWebSocket(data: any): PriceData[] {
-    if (!data.data || !Array.isArray(data.data)) return [];
-    
-    return data.data
-      .filter((item: any) => item.instId && item.last && parseFloat(item.last) > 0)
-      .map((item: any) => ({
-        broker: 'okx',
-        pair: item.instId.replace('-', '/'),
-        price: parseFloat(item.last),
-        change24h: parseFloat(item.sodUtc8 || '0') * 100,
-        volume: parseFloat(item.volCcy24h || '0'),
-        high24h: parseFloat(item.high24h || item.last),
-        low24h: parseFloat(item.low24h || item.last),
-        timestamp: Date.now()
-      }))
-      .filter((item: any) => item.pair.includes('/'));
-  }
+      return data
+        .filter(ticker => ticker.s && ticker.c && parseFloat(ticker.c) > 0)
+        .map(ticker => {
+          // Convert Binance symbol format to standard pair format
+          const symbol = ticker.s;
+          let pair = '';
 
-  private parseHuobiWebSocket(data: any): PriceData[] {
-    if (!data.tick || !Array.isArray(data.tick)) return [];
-    
-    return data.tick
-      .filter((item: any) => item.symbol && item.close && parseFloat(item.close) > 0)
-      .map((item: any) => ({
-        broker: 'huobi',
-        pair: this.formatHuobiPair(item.symbol),
-        price: parseFloat(item.close),
-        change24h: parseFloat(item.chg || '0'),
-        volume: parseFloat(item.amount || '0'),
-        high24h: parseFloat(item.high || item.close),
-        low24h: parseFloat(item.low || item.close),
-        timestamp: Date.now()
-      }))
-      .filter((item: any) => item.pair.includes('/'));
-  }
+          // Handle common quote currencies
+          if (symbol.endsWith('USDT')) {
+            pair = `${symbol.slice(0, -4)}/USDT`;
+          } else if (symbol.endsWith('USDC')) {
+            pair = `${symbol.slice(0, -4)}/USDC`;
+          } else if (symbol.endsWith('BTC')) {
+            pair = `${symbol.slice(0, -3)}/BTC`;
+          } else if (symbol.endsWith('ETH')) {
+            pair = `${symbol.slice(0, -3)}/ETH`;
+          } else if (symbol.endsWith('BNB')) {
+            pair = `${symbol.slice(0, -3)}/BNB`;
+          } else {
+            pair = symbol;
+          }
 
-  private parseKrakenWebSocket(data: any): PriceData[] {
-    if (!Array.isArray(data) || data.length < 2) return [];
-    
-    const channelData = data[1];
-    if (!channelData || typeof channelData !== 'object') return [];
-    
-    const pair = data[3]; // Pair is typically at index 3
-    
-    return [{
-      broker: 'kraken',
-      pair: this.formatKrakenPair(pair),
-      price: parseFloat(channelData.c?.[0] || '0'),
-      change24h: parseFloat(channelData.p?.[1] || '0'),
-      volume: parseFloat(channelData.v?.[1] || '0'),
-      high24h: parseFloat(channelData.h?.[1] || channelData.c?.[0] || '0'),
-      low24h: parseFloat(channelData.l?.[1] || channelData.c?.[0] || '0'),
-      timestamp: Date.now()
-    }].filter(item => item.price > 0 && item.pair.includes('/'));
-  }
-
-  private parseBitfinexWebSocket(data: any): PriceData[] {
-    if (!Array.isArray(data) || data.length < 2) return [];
-    
-    const channelData = data[1];
-    if (!Array.isArray(channelData) || channelData.length < 10) return [];
-    
-    return [{
-      broker: 'bitfinex',
-      pair: 'BTC/USD', // Since we're subscribing to tBTCUSD
-      price: parseFloat(channelData[6] || '0'), // Last price
-      change24h: parseFloat(channelData[5] || '0'), // Daily change percent
-      volume: parseFloat(channelData[7] || '0'), // Volume
-      high24h: parseFloat(channelData[8] || channelData[6] || '0'),
-      low24h: parseFloat(channelData[9] || channelData[6] || '0'),
-      timestamp: Date.now()
-    }].filter(item => item.price > 0);
-  }
-
-  private formatBinancePair(symbol: string): string {
-    const stablecoins = ['USDT', 'USDC', 'BUSD', 'FDUSD', 'TUSD'];
-    const majors = ['BTC', 'ETH', 'BNB'];
-    
-    // Try stablecoins first
-    for (const stable of stablecoins) {
-      if (symbol.endsWith(stable)) {
-        const base = symbol.slice(0, -stable.length);
-        return `${base}/${stable}`;
-      }
+          return {
+            symbol: pair,
+            price: parseFloat(ticker.c),
+            change24h: parseFloat(ticker.P) || 0,
+            volume24h: parseFloat(ticker.v) || 0,
+            high24h: parseFloat(ticker.h) || 0,
+            low24h: parseFloat(ticker.l) || 0,
+            broker: 'binance',
+            timestamp: Date.now(),
+            source: 'WEBSOCKET' as const
+          };
+        })
+        .filter(price => price.symbol.includes('/'));
+    } catch (error) {
+      console.error('❌ Error parsing Binance WebSocket data:', error);
+      return [];
     }
-    
-    // Try major cryptos
-    for (const major of majors) {
-      if (symbol.endsWith(major)) {
-        const base = symbol.slice(0, -major.length);
-        return `${base}/${major}`;
-      }
-    }
-    
-    return symbol;
   }
 
-  private formatHuobiPair(symbol: string): string {
-    const upperSymbol = symbol.toUpperCase();
-    const bases = ['USDT', 'USDC', 'BTC', 'ETH', 'HT'];
-    for (const base of bases) {
-      if (upperSymbol.endsWith(base)) {
-        const asset = upperSymbol.replace(base, '');
-        return `${asset}/${base}`;
-      }
-    }
-    return symbol.toUpperCase();
-  }
-
-  private formatKrakenPair(symbol: string): string {
-    const mapping: { [key: string]: string } = {
-      'XBT': 'BTC',
-      'XDG': 'DOGE'
-    };
-    
-    let formatted = symbol;
-    Object.entries(mapping).forEach(([kraken, standard]) => {
-      formatted = formatted.replace(kraken, standard);
-    });
-    
-    return formatted.replace('-', '/');
-  }
-
-  public subscribe(callback: LivePriceCallback): () => void {
+  public subscribe(callback: LivePriceCallback): void {
     this.callbacks.push(callback);
-    
-    // Return unsubscribe function
-    return () => {
-      const index = this.callbacks.indexOf(callback);
-      if (index > -1) {
-        this.callbacks.splice(index, 1);
-      }
-    };
   }
 
-  public async start(): Promise<void> {
-    if (this.isRunning) return;
-    
-    console.log('🚀 Starting Live Price Streamer...');
+  public unsubscribe(callback: LivePriceCallback): void {
+    const index = this.callbacks.indexOf(callback);
+    if (index > -1) {
+      this.callbacks.splice(index, 1);
+    }
+  }
+
+  public start(): void {
+    if (this.isRunning) {
+      console.log('🚀 Live price streamer already running');
+      return;
+    }
+
+    console.log('🚀 Starting live price streamer...');
     this.isRunning = true;
     this.retryCount = 0;
-    
-    // Initial price fetch
-    await this.fetchAndBroadcastPrices();
-    
+
     // Set up continuous polling (as backup to WebSockets)
     this.pollInterval = setInterval(() => {
-      this.fetchAndBroadcastPrices();
+      this.fetchAndBroadcast();
       this.processWebSocketQueue();
       this.monitorWebSocketHealth();
     }, this.config.updateInterval);
-    
-    console.log(`✅ Live Price Streamer started (${this.config.updateInterval}ms intervals)`);
+
+    // Initial fetch
+    this.fetchAndBroadcast();
   }
 
   public stop(): void {
-    if (!this.isRunning) return;
-    
-    console.log('🛑 Stopping Live Price Streamer...');
+    console.log('🛑 Stopping live price streamer...');
     this.isRunning = false;
-    
+
     if (this.pollInterval) {
       clearInterval(this.pollInterval);
       this.pollInterval = null;
     }
-    
+
     // Close all WebSocket connections
     this.webSockets.forEach((wsData, exchangeName) => {
       if (wsData.socket) {
@@ -369,53 +227,46 @@ class LivePriceStreamer {
         console.log(`🔌 Closed ${exchangeName.toUpperCase()} WebSocket`);
       }
     });
-    
-    console.log('✅ Live Price Streamer stopped');
+
+    this.callbacks = [];
+    this.lastPrices = [];
+    this.priceUpdateQueue = [];
   }
 
-  private async fetchAndBroadcastPrices(): Promise<void> {
+  private async fetchAndBroadcast(): Promise<void> {
     try {
-      console.log('🔄 Fetching latest prices from all exchanges...');
+      console.log('📡 Fetching live prices...');
+
+      const prices = await fetchRealTimePrices();
       
-      const timeoutPromise = new Promise<PriceData[]>((_, reject) =>
-        setTimeout(() => reject(new Error('API timeout')), this.config.timeoutMs)
-      );
-      
-      const pricesPromise = fetchRealTimePrices();
-      const newPrices = await Promise.race([pricesPromise, timeoutPromise]);
-      
-      if (newPrices && newPrices.length > 0) {
-        // Validate and sanitize prices
-        const sanitizedPrices = priceValidator.sanitizePrices(newPrices);
-        const validation = priceValidator.validatePrices(sanitizedPrices);
+      if (prices.length === 0) {
+        this.retryCount++;
+        console.warn(`⚠️ No prices received (retry ${this.retryCount}/${this.config.maxRetries})`);
         
-        this.lastPrices = sanitizedPrices;
-        this.broadcastPrices(sanitizedPrices);
-        this.retryCount = 0;
-        
-        console.log(`✅ Successfully fetched ${newPrices.length} live prices (${sanitizedPrices.length} after validation)`);
-        
-        // Log validation results
-        if (validation.arbitrageOpportunities.length > 0) {
-          console.log(`💰 Found ${validation.arbitrageOpportunities.length} arbitrage opportunities`);
-        }
-        if (!validation.isValid) {
-          console.warn(`⚠️ Price validation issues: ${validation.anomalies.length} anomalies detected`);
+        if (this.retryCount >= this.config.maxRetries) {
+          console.error('❌ Max retries reached, using last known prices');
+          this.broadcastPrices(this.lastPrices);
+          return;
         }
       } else {
-        throw new Error('No prices received');
+        this.retryCount = 0;
+        this.lastPrices = prices;
       }
-      
+
+      // Validate prices before broadcasting
+      const validatedPrices = priceValidator.validatePrices(prices);
+      console.log(`✅ Broadcasting ${validatedPrices.length} validated prices`);
+
+      this.broadcastPrices(validatedPrices);
+
     } catch (error) {
       console.error('❌ Error fetching live prices:', error);
       this.retryCount++;
       
-      if (this.retryCount <= this.config.maxRetries) {
-        console.log(`🔄 Retry ${this.retryCount}/${this.config.maxRetries} in 3 seconds...`);
-        setTimeout(() => this.fetchAndBroadcastPrices(), 3000);
-      } else if (this.lastPrices.length > 0) {
-        // Use last known prices if we can't fetch new ones
-        console.log('📊 Using last known prices as fallback');
+      if (this.retryCount < this.config.maxRetries) {
+        console.log(`🔄 Retrying in ${this.config.updateInterval}ms...`);
+      } else {
+        console.log('🔄 Using last known prices due to repeated failures');
         this.broadcastPrices(this.lastPrices);
       }
     }
@@ -423,40 +274,40 @@ class LivePriceStreamer {
 
   private processWebSocketQueue(): void {
     if (this.priceUpdateQueue.length === 0) return;
-    
+
     // Merge WebSocket updates with last known prices
-    const updates = this.priceUpdateQueue.splice(0);
-    const updatedPrices = [...this.lastPrices];
+    const updates = [...this.priceUpdateQueue];
+    this.priceUpdateQueue = [];
+
+    // Group by symbol for deduplication
+    const latestPrices = new Map<string, PriceData>();
     
-    updates.forEach(update => {
-      const existingIndex = updatedPrices.findIndex(
-        p => p.broker === update.broker && p.pair === update.pair
-      );
-      
-      if (existingIndex > -1) {
-        updatedPrices[existingIndex] = update;
-      } else {
-        updatedPrices.push(update);
-      }
+    // Start with last known prices
+    this.lastPrices.forEach(price => {
+      latestPrices.set(price.symbol, price);
     });
+
+    // Apply WebSocket updates (they're more recent)
+    updates.forEach(update => {
+      latestPrices.set(update.symbol, update);
+    });
+
+    const mergedPrices = Array.from(latestPrices.values());
     
-    this.lastPrices = updatedPrices;
-    this.broadcastPrices(updatedPrices);
-    
-    console.log(`🔄 Processed ${updates.length} WebSocket price updates`);
+    if (updates.length > 0) {
+      console.log(`🔄 Processed ${updates.length} WebSocket price updates`);
+      this.broadcastPrices(mergedPrices);
+    }
   }
 
   private monitorWebSocketHealth(): void {
     const now = Date.now();
-    const heartbeatTimeout = 60000; // 1 minute
-    
+    const healthTimeout = 60000; // 1 minute
+
     this.webSockets.forEach((wsData, exchangeName) => {
-      if (wsData.isConnected && (now - wsData.lastHeartbeat) > heartbeatTimeout) {
+      if (wsData.isConnected && now - wsData.lastHeartbeat > healthTimeout) {
         console.warn(`💔 ${exchangeName.toUpperCase()} WebSocket heartbeat timeout, reconnecting...`);
-        
-        if (wsData.socket) {
-          wsData.socket.close();
-        }
+        wsData.socket?.close();
       }
     });
   }
@@ -472,7 +323,21 @@ class LivePriceStreamer {
   }
 
   public getLastPrices(): PriceData[] {
-    return this.lastPrices;
+    return [...this.lastPrices];
+  }
+
+  public getStreamStatus(): {
+    isRunning: boolean;
+    lastUpdate: number;
+    priceCount: number;
+    retryCount: number;
+  } {
+    return {
+      isRunning: this.isRunning,
+      lastUpdate: this.lastPrices.length > 0 ? Math.max(...this.lastPrices.map(p => p.timestamp)) : 0,
+      priceCount: this.lastPrices.length,
+      retryCount: this.retryCount
+    };
   }
 
   public getWebSocketStatus(): { [key: string]: boolean } {
@@ -483,14 +348,15 @@ class LivePriceStreamer {
     return status;
   }
 
-  public isStreamingLive(): boolean {
-    return this.isRunning && (
-      Array.from(this.webSockets.values()).some(ws => ws.isConnected) ||
-      this.retryCount < this.config.maxRetries
-    );
+  public isHealthy(): boolean {
+    return this.isRunning && 
+           (this.lastPrices.length > 0 || 
+            Array.from(this.webSockets.values()).some(ws => ws.isConnected)) ||
+           this.retryCount < this.config.maxRetries;
   }
 }
 
-// Export singleton instance
-export const livePriceStreamer = new LivePriceStreamer();
+// Global instance
+const livePriceStreamer = new LivePriceStreamer();
+
 export default livePriceStreamer;

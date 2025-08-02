@@ -18,7 +18,7 @@ export const validateLivePrices = async (): Promise<ValidationResult[]> => {
     // Test 1: Fetch real-time prices from API
     console.log('📊 Test 1: Real-time API prices');
     const startTime = Date.now();
-    const apiPrices = await fetchRealTimePrices(['binance', 'coinbase', 'okx']);
+    const apiPrices = await fetchRealTimePrices(['binance']);
     const fetchDuration = Date.now() - startTime;
     
     if (apiPrices.length > 0) {
@@ -93,7 +93,7 @@ export const validateLivePrices = async (): Promise<ValidationResult[]> => {
     // Test 4: Test specific broker price fetching
     console.log('🏢 Test 4: Broker-specific price fetching');
     const testPairs = ['BTC/USDT', 'ETH/USDT', 'BNB/USDT'];
-    const testBrokers = ['binance', 'coinbase', 'okx'];
+    const testBrokers = ['binance'];
     
     for (const broker of testBrokers) {
       for (const pair of testPairs) {
