@@ -1,5 +1,4 @@
 import React, { useState, useMemo } from 'react';
-import { Search, X, ChevronLeft, ChevronRight } from 'lucide-react';
 
 interface CryptoPairSearchProps {
   pairs: string[];
@@ -7,6 +6,10 @@ interface CryptoPairSearchProps {
   onPairSelect: (pair: string) => void;
   isOpen: boolean;
   onClose: () => void;
+  loading?: boolean;
+  error?: string | null;
+  lastUpdated?: number | null;
+  onRefresh?: () => void;
 }
 
 const ITEMS_PER_PAGE = 50;
@@ -16,7 +19,11 @@ const CryptoPairSearch: React.FC<CryptoPairSearchProps> = ({
   selectedPair,
   onPairSelect,
   isOpen,
-  onClose
+  onClose,
+  loading = false,
+  error = null,
+  lastUpdated = null,
+  onRefresh
 }) => {
   const [searchQuery, setSearchQuery] = useState('');
   const [currentPage, setCurrentPage] = useState(1);
@@ -51,17 +58,40 @@ const CryptoPairSearch: React.FC<CryptoPairSearchProps> = ({
         {/* Header */}
         <div className="p-6 border-b border-gray-700">
           <div className="flex items-center justify-between mb-4">
-            <h2 className="text-xl font-semibold text-white">Select Trading Pair</h2>
-            <button
-              onClick={onClose}
-              className="p-2 hover:bg-gray-700 rounded-lg transition-colors"
-            >
-              <X className="w-5 h-5 text-gray-400" />
-            </button>
+            <div>
+              <h2 className="text-xl font-semibold text-white">Select Trading Pair</h2>
+              {lastUpdated && (
+                <p className="text-sm text-gray-400 mt-1">
+                  Last updated: {new Date(lastUpdated).toLocaleTimeString()}
+                </p>
+              )}
+            </div>
+            <div className="flex items-center space-x-2">
+              {onRefresh && (
+                <button
+                  onClick={onRefresh}
+                  disabled={loading}
+                  className="p-2 hover:bg-gray-700 rounded-lg transition-colors disabled:opacity-50"
+                  title="Refresh pairs"
+                >
+                  <span className={`text-gray-400 ${loading ? 'animate-spin' : ''}`}>
+                    ↻
+                  </span>
+                </button>
+              )}
+              <button
+                onClick={onClose}
+                className="p-2 hover:bg-gray-700 rounded-lg transition-colors"
+              >
+                <span className="text-gray-400 text-lg">×</span>
+              </button>
+            </div>
           </div>
 
           <div className="relative">
-            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
+            <span className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400">
+              🔍
+            </span>
             <input
               type="text"
               placeholder="Search crypto pairs..."
@@ -69,38 +99,80 @@ const CryptoPairSearch: React.FC<CryptoPairSearchProps> = ({
               onChange={(e) => setSearchQuery(e.target.value)}
               className="w-full pl-10 pr-4 py-3 bg-gray-700 border border-gray-600 rounded-lg text-white placeholder-gray-400 focus:ring-2 focus:ring-emerald-500 focus:border-transparent"
               autoFocus
+              disabled={loading}
             />
           </div>
         </div>
 
-        {/* Pairs List */}
-        <div className="flex-1 overflow-auto p-6">
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-2">
-            {currentPairs.map(pair => (
-              <button
-                key={pair}
-                onClick={() => handlePairSelect(pair)}
-                className={`p-3 rounded-lg text-left transition-colors ${
-                  selectedPair === pair
-                    ? 'bg-emerald-600 text-white'
-                    : 'bg-gray-700 hover:bg-gray-600 text-gray-300'
-                }`}
-              >
-                <span className="font-medium">{pair}</span>
-              </button>
-            ))}
-          </div>
-
-          {filteredPairs.length === 0 && (
-            <div className="text-center py-12 text-gray-400">
-              <Search className="w-12 h-12 mx-auto mb-4 opacity-50" />
-              <p>No trading pairs found</p>
+        {/* Loading State */}
+        {loading && (
+          <div className="flex-1 flex items-center justify-center p-12">
+            <div className="text-center">
+              <div className="inline-block animate-spin rounded-full h-8 w-8 border-4 border-emerald-500 border-t-transparent mb-4"></div>
+              <p className="text-gray-400">Loading active trading pairs...</p>
+              <p className="text-sm text-gray-500 mt-2">Fetching live data from Binance</p>
             </div>
-          )}
-        </div>
+          </div>
+        )}
+
+        {/* Error State */}
+        {error && !loading && (
+          <div className="flex-1 flex items-center justify-center p-12">
+            <div className="text-center">
+              <div className="text-red-400 text-4xl mb-4">⚠️</div>
+              <p className="text-red-400 font-medium mb-2">Failed to Load Trading Pairs</p>
+              <p className="text-sm text-gray-400 mb-4">{error}</p>
+              {onRefresh && (
+                <button
+                  onClick={onRefresh}
+                  className="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-lg transition-colors"
+                >
+                  Try Again
+                </button>
+              )}
+            </div>
+          </div>
+        )}
+
+        {/* Pairs List */}
+        {!loading && !error && (
+          <div className="flex-1 overflow-auto p-6">
+            {pairs.length > 0 && (
+              <div className="mb-4 text-center">
+                <p className="text-sm text-gray-400">
+                  Showing {filteredPairs.length} of {pairs.length} active trading pairs
+                </p>
+              </div>
+            )}
+            
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-2">
+              {currentPairs.map(pair => (
+                <button
+                  key={pair}
+                  onClick={() => handlePairSelect(pair)}
+                  className={`p-3 rounded-lg text-left transition-colors ${
+                    selectedPair === pair
+                      ? 'bg-emerald-600 text-white'
+                      : 'bg-gray-700 hover:bg-gray-600 text-gray-300'
+                  }`}
+                >
+                  <span className="font-medium">{pair}</span>
+                </button>
+              ))}
+            </div>
+
+            {filteredPairs.length === 0 && pairs.length > 0 && (
+              <div className="text-center py-12 text-gray-400">
+                <div className="text-4xl mb-4">🔍</div>
+                <p>No trading pairs found</p>
+                <p className="text-sm text-gray-500 mt-2">Try adjusting your search terms</p>
+              </div>
+            )}
+          </div>
+        )}
 
         {/* Pagination */}
-        {totalPages > 1 && (
+        {!loading && !error && totalPages > 1 && (
           <div className="p-6 border-t border-gray-700">
             <div className="flex items-center justify-between">
               <div className="text-sm text-gray-400">
@@ -117,7 +189,7 @@ const CryptoPairSearch: React.FC<CryptoPairSearchProps> = ({
                       : 'bg-gray-700 hover:bg-gray-600 text-gray-300'
                   }`}
                 >
-                  <ChevronLeft className="w-4 h-4" />
+                  <span>←</span>
                   <span>Previous</span>
                 </button>
                 
@@ -131,7 +203,7 @@ const CryptoPairSearch: React.FC<CryptoPairSearchProps> = ({
                   }`}
                 >
                   <span>Next</span>
-                  <ChevronRight className="w-4 h-4" />
+                  <span>→</span>
                 </button>
               </div>
             </div>

@@ -18,8 +18,7 @@ import SEOHead from './components/SEOHead';
 import SEOValidator from './components/SEOValidator';
 import { AnalysisResult } from './types';
 import { performAnalysis } from './utils/analysisEngine';
-import { brokers, supportsDynamicPairs, getFallbackPairs } from './data/brokers';
-import { useBinancePairs } from './hooks/useBinancePairs';
+import { brokers } from './data/brokers';
 
 // URL parameter hook for trading parameters
 const useTradingParametersFromURL = () => {
@@ -128,40 +127,6 @@ function AppContent() {
   const [selectedTimeframe, setSelectedTimeframe] = useState(getTimeframeFromURL());
   const [tradeType, setTradeType] = useState<'SPOT' | 'FUTURES'>(getTradeTypeFromURL());
 
-  // Dynamic Binance pairs hook - only load when Binance is selected
-  const { 
-    pairs: binancePairs, 
-    priceData: binancePriceData,
-    loading: binancePairsLoading, 
-    error: binancePairsError,
-    lastUpdated: binanceLastUpdated,
-    refreshPairs: refreshBinancePairs
-  } = useBinancePairs();
-
-  // Get the appropriate pairs list based on selected broker
-  const getActivePairs = (brokerId: string, tradeType: 'SPOT' | 'FUTURES'): string[] => {
-    if (brokerId === 'binance' && supportsDynamicPairs(brokerId)) {
-      // For Binance, use dynamic pairs if available, otherwise fallback
-      if (binancePairsLoading) {
-        return getFallbackPairs(brokerId, tradeType);
-      }
-      if (binancePairsError || binancePairs.length === 0) {
-        console.warn('Using fallback pairs due to error:', binancePairsError);
-        return getFallbackPairs(brokerId, tradeType);
-      }
-      // For futures, we still use the static list since we haven't implemented dynamic futures pairs yet
-      if (tradeType === 'FUTURES') {
-        return getFallbackPairs(brokerId, tradeType);
-      }
-      return binancePairs;
-    }
-    
-    // For other brokers, use static pairs
-    return getFallbackPairs(brokerId, tradeType);
-  };
-
-  const activePairs = getActivePairs(selectedBroker, tradeType);
-
   // Update parameters when URL changes
   useEffect(() => {
     const pairFromURL = getPairFromURL();
@@ -208,14 +173,19 @@ function AppContent() {
       console.warn('Failed to save broker preference:', e);
     }
 
-    // Get available pairs for the new broker
-    const availablePairs = getActivePairs(brokerId, tradeType);
-    
-    // If current pair is not available in the new broker, reset to first available pair
-    if (!availablePairs.includes(selectedPair)) {
-      const newPair = availablePairs.length > 0 ? availablePairs[0] : 'BTC/USDT';
-      setSelectedPair(newPair);
-      updatePairInURL(newPair);
+    // Validate if current pair is available in the new broker for the current trade type
+    const newBroker = brokers.find(b => b.id === brokerId);
+    if (newBroker) {
+      const availablePairs = tradeType === 'FUTURES' 
+        ? (newBroker.futuresPairs || [])
+        : newBroker.pairs;
+      
+      // If current pair is not available in the new broker, reset to first available pair
+      if (!availablePairs.includes(selectedPair)) {
+        const newPair = availablePairs.length > 0 ? availablePairs[0] : 'BTC/USDT';
+        setSelectedPair(newPair);
+        updatePairInURL(newPair);
+      }
     }
   };
 
@@ -232,14 +202,19 @@ function AppContent() {
   const handleTradeTypeChange = (newTradeType: 'SPOT' | 'FUTURES') => {
     setTradeType(newTradeType);
     
-    // Get available pairs for the new trade type
-    const availablePairs = getActivePairs(selectedBroker, newTradeType);
-    
-    // If current pair is not available in the new trade type, reset to first available pair
-    if (!availablePairs.includes(selectedPair)) {
-      const newPair = availablePairs.length > 0 ? availablePairs[0] : 'BTC/USDT';
-      setSelectedPair(newPair);
-      updatePairInURL(newPair);
+    // Validate if current pair is available in the new trade type
+    const currentBroker = brokers.find(b => b.id === selectedBroker);
+    if (currentBroker) {
+      const availablePairs = newTradeType === 'FUTURES' 
+        ? (currentBroker.futuresPairs || [])
+        : currentBroker.pairs;
+      
+      // If current pair is not available in the new trade type, reset to first available pair
+      if (!availablePairs.includes(selectedPair)) {
+        const newPair = availablePairs.length > 0 ? availablePairs[0] : 'BTC/USDT';
+        setSelectedPair(newPair);
+        updatePairInURL(newPair);
+      }
     }
   };
 
@@ -310,14 +285,7 @@ function AppContent() {
       'golden_cross', 'breakout', 'momentum', 'support_resistance'
     ]);
 
-    // Refresh Binance pairs if applicable
-    if (selectedBroker === 'binance') {
-      refreshBinancePairs();
-    }
-
     // Clear URL parameters
-    const navigate = useNavigate();
-    const location = useLocation();
     if (navigate && location) {
       const params = new URLSearchParams(location.search);
       params.delete('pair');
@@ -366,9 +334,9 @@ function AppContent() {
         };
       default:
         return {
-          title: `Free Crypto Analysis - CryptoAnalyzer Pro | ${activePairs.length}+ Trading Pairs`,
-          description: `Professional cryptocurrency technical analysis platform. Analyze Bitcoin, Ethereum & ${activePairs.length}+ crypto pairs with 25+ indicators across 15+ exchanges. Live prices updated every 30 seconds.`,
-          keywords: ['cryptocurrency analysis', 'bitcoin analysis', 'ethereum trading', 'crypto scanner', 'free crypto tools', 'technical indicators', 'trading signals', 'blockchain analysis', 'live crypto prices']
+          title: 'Free Crypto Analysis - CryptoAnalyzer Pro | Bitcoin & Ethereum',
+          description: 'Professional cryptocurrency technical analysis platform. Analyze Bitcoin, Ethereum & 1000+ crypto pairs with 25+ indicators across 15+ exchanges. Free forever.',
+          keywords: ['cryptocurrency analysis', 'bitcoin analysis', 'ethereum trading', 'crypto scanner', 'free crypto tools', 'technical indicators', 'trading signals', 'blockchain analysis']
         };
     }
   };
@@ -397,42 +365,6 @@ function AppContent() {
               <Homepage />
             </div>
 
-            {/* Dynamic Pairs Status Banner */}
-            {selectedBroker === 'binance' && (
-              <div className="mb-8 bg-gradient-to-r from-emerald-900/20 to-blue-900/20 border border-emerald-500/30 rounded-lg p-4">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center space-x-3">
-                    <span className="text-2xl">🟡</span>
-                    <div>
-                      <h3 className="text-emerald-400 font-semibold">
-                        Live Binance Integration Active
-                      </h3>
-                      <p className="text-sm text-gray-300">
-                        {binancePairsLoading ? (
-                          <>Loading {activePairs.length}+ trading pairs with live prices...</>
-                        ) : binancePairsError ? (
-                          <>Using fallback data - {activePairs.length} pairs available</>
-                        ) : (
-                          <>
-                            {activePairs.length} active trading pairs loaded • 
-                            Last updated: {binanceLastUpdated ? new Date(binanceLastUpdated).toLocaleTimeString() : 'Never'}
-                          </>
-                        )}
-                      </p>
-                    </div>
-                  </div>
-                  {!binancePairsLoading && (
-                    <button
-                      onClick={refreshBinancePairs}
-                      className="px-3 py-1 bg-emerald-600 hover:bg-emerald-700 text-white text-sm rounded-lg transition-colors"
-                    >
-                      Refresh
-                    </button>
-                  )}
-                </div>
-              </div>
-            )}
-
             {/* Trading Analysis Section */}
             <div id="scan-section" className="border-t border-gray-700 pt-12 scroll-mt-20">
               <div className="text-center mb-8">
@@ -440,8 +372,8 @@ function AppContent() {
                   Start Your Free Cryptocurrency Analysis
                 </h2>
                 <p className="text-lg text-gray-300 max-w-3xl mx-auto">
-                  Select from {activePairs.length}+ cryptocurrency pairs, choose your preferred exchange, and configure technical indicators
-                  to receive professional-grade market analysis with live price updates. No registration required.
+                  Select your cryptocurrency pair, choose your preferred exchange, and configure technical indicators
+                  to receive professional-grade market analysis instantly. No registration required.
                 </p>
               </div>
 
@@ -463,14 +395,6 @@ function AppContent() {
                     onStrategyToggle={handleStrategyToggle}
                     onAnalyze={handleAnalyze}
                     isAnalyzing={isAnalyzing}
-                    // Pass dynamic pairs data to TradingControls
-                    dynamicPairs={selectedBroker === 'binance' ? {
-                      pairs: activePairs,
-                      loading: binancePairsLoading,
-                      error: binancePairsError,
-                      lastUpdated: binanceLastUpdated,
-                      onRefresh: refreshBinancePairs
-                    } : undefined}
                   />
 
                   <div id="crypto-news">
@@ -484,13 +408,12 @@ function AppContent() {
                     <div className="bg-gradient-to-br from-gray-800 to-gray-900 border border-emerald-500/30 rounded-lg p-8 text-center shadow-lg">
                       <div className="inline-block animate-spin rounded-full h-12 w-12 border-4 border-emerald-500 border-t-transparent mb-6"></div>
                       <div className="text-white font-bold text-xl mb-2">🔍 Scanning {selectedPair}</div>
-                      <div className="text-emerald-400 font-medium mb-4">Analyzing Live Market Data...</div>
+                      <div className="text-emerald-400 font-medium mb-4">Analyzing Market Data...</div>
                       <div className="text-sm text-gray-400 mb-4">
                         • Processing {selectedIndicators.length} technical indicators<br/>
                         • Applying {selectedStrategies.length} trading strategies<br/>
                         • Fetching live price data from {selectedBroker.toUpperCase()}<br/>
-                        • Analyzing news sentiment and market patterns<br/>
-                        • Using real-time data from {activePairs.length}+ active pairs
+                        • Analyzing news sentiment and market patterns
                       </div>
                       <div className="w-full bg-gray-700 rounded-full h-2 mb-2">
                         <div className="bg-gradient-to-r from-emerald-500 to-blue-500 h-2 rounded-full animate-pulse" style={{width: '75%'}}></div>
@@ -527,8 +450,7 @@ function AppContent() {
                     <div className="bg-gray-800 border border-gray-700 rounded-lg p-8 text-center">
                       <div className="text-gray-400 text-lg mb-2">📊 Ready for Market Analysis</div>
                       <div className="text-sm text-gray-500">
-                        Configure your settings in the left panel and click "🚀 START MARKET SCAN" to get started with your free cryptocurrency technical analysis. 
-                        Results with live price data will appear here.
+                        Configure your settings in the left panel and click "🚀 Analyze Market & Get Recommendation" to get started with your free cryptocurrency technical analysis. Results will appear here.
                       </div>
                     </div>
                   )}
@@ -546,8 +468,8 @@ function AppContent() {
                     Advanced Bulk Market Scanner
                   </h2>
                   <p className="text-lg text-gray-300 max-w-4xl mx-auto">
-                    Scan multiple cryptocurrency pairs simultaneously from our database of {activePairs.length}+ active pairs. 
-                    Get comprehensive technical analysis with live price updates and news integration.
+                    Scan multiple cryptocurrency pairs simultaneously with advanced filtering options. Get comprehensive
+                    technical analysis with news integration for hundreds of pairs in organized batches of 100.
                   </p>
                 </div>
 
@@ -557,7 +479,6 @@ function AppContent() {
                   tradeType={tradeType}
                   selectedIndicators={selectedIndicators}
                   selectedStrategies={selectedStrategies}
-                  availablePairs={activePairs}
                 />
               </div>
             </div>

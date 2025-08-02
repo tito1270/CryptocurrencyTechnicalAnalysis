@@ -7,6 +7,14 @@ import { searchPairs } from '../utils/priceSimulator';
 import { Search, X, Link, Copy, Check } from 'lucide-react';
 import CryptoPairSearch from './CryptoPairSearch';
 
+interface DynamicPairsData {
+  pairs: string[];
+  loading: boolean;
+  error: string | null;
+  lastUpdated: number | null;
+  onRefresh: () => void;
+}
+
 interface TradingControlsProps {
   selectedBroker: string;
   selectedPair: string;
@@ -22,6 +30,7 @@ interface TradingControlsProps {
   onStrategyToggle: (strategyId: string) => void;
   onAnalyze: () => void;
   isAnalyzing?: boolean;
+  dynamicPairs?: DynamicPairsData;
 }
 
 const timeframes = ['1m', '5m', '15m', '30m', '1h', '4h', '1d', '1w'];
@@ -40,7 +49,8 @@ const TradingControls: React.FC<TradingControlsProps> = ({
   onIndicatorToggle,
   onStrategyToggle,
   onAnalyze,
-  isAnalyzing = false
+  isAnalyzing = false,
+  dynamicPairs
 }) => {
   const currentBroker = brokers.find(b => b.id === selectedBroker);
   const [showAdvancedPairSearch, setShowAdvancedPairSearch] = useState(false);
@@ -59,12 +69,24 @@ const TradingControls: React.FC<TradingControlsProps> = ({
   const { limitedPairs, totalPages, hasNextPage, hasPrevPage } = useMemo(() => {
     if (!currentBroker) return { limitedPairs: [], totalPages: 0, hasNextPage: false, hasPrevPage: false };
 
-    // Get pairs based on trade type
+    // Get pairs based on trade type and dynamic data availability
     let availablePairs: string[] = [];
-    if (tradeType === 'FUTURES') {
-      availablePairs = currentBroker.futuresPairs || [];
+    
+    // Use dynamic pairs if available for Binance
+    if (selectedBroker === 'binance' && dynamicPairs && !dynamicPairs.loading && !dynamicPairs.error) {
+      if (tradeType === 'FUTURES') {
+        // For futures, still use static pairs since we haven't implemented dynamic futures pairs yet
+        availablePairs = currentBroker.futuresPairs || [];
+      } else {
+        availablePairs = dynamicPairs.pairs;
+      }
     } else {
-      availablePairs = currentBroker.pairs;
+      // Use static pairs for other brokers or when dynamic loading fails
+      if (tradeType === 'FUTURES') {
+        availablePairs = currentBroker.futuresPairs || [];
+      } else {
+        availablePairs = currentBroker.pairs;
+      }
     }
 
     const totalPairs = availablePairs.length;
@@ -91,7 +113,7 @@ const TradingControls: React.FC<TradingControlsProps> = ({
       hasNextPage: currentDropdownPage < totalPagesCount - 1,
       hasPrevPage: currentDropdownPage > 0
     };
-  }, [currentBroker, selectedPair, currentDropdownPage, tradeType]);
+  }, [currentBroker, selectedPair, currentDropdownPage, tradeType, selectedBroker, dynamicPairs]);
 
   const fallbackCopyTextToClipboard = (text: string) => {
     const textArea = document.createElement("textarea");
@@ -447,11 +469,22 @@ const TradingControls: React.FC<TradingControlsProps> = ({
 
       {/* Advanced Crypto Pair Search Modal */}
       <CryptoPairSearch
-        pairs={tradeType === 'FUTURES' ? (currentBroker?.futuresPairs || []) : (currentBroker?.pairs || [])}
+        pairs={(() => {
+          // Use dynamic pairs for Binance SPOT trading when available
+          if (selectedBroker === 'binance' && dynamicPairs && !dynamicPairs.loading && !dynamicPairs.error && tradeType === 'SPOT') {
+            return dynamicPairs.pairs;
+          }
+          // Otherwise use static pairs
+          return tradeType === 'FUTURES' ? (currentBroker?.futuresPairs || []) : (currentBroker?.pairs || []);
+        })()}
         selectedPair={selectedPair}
         onPairSelect={onPairChange}
         isOpen={showAdvancedPairSearch}
         onClose={() => setShowAdvancedPairSearch(false)}
+        loading={selectedBroker === 'binance' && dynamicPairs ? dynamicPairs.loading : false}
+        error={selectedBroker === 'binance' && dynamicPairs ? dynamicPairs.error : null}
+        lastUpdated={selectedBroker === 'binance' && dynamicPairs ? dynamicPairs.lastUpdated : null}
+        onRefresh={selectedBroker === 'binance' && dynamicPairs ? dynamicPairs.onRefresh : undefined}
       />
     </div>
   );
