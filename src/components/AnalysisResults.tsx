@@ -1,6 +1,7 @@
 import React from 'react';
 import { AnalysisResult } from '../types';
 import { TrendingUp, TrendingDown, Target, Shield, AlertTriangle, DollarSign, Newspaper, Calendar, TrendingUp as BullIcon, TrendingDown as BearIcon } from 'lucide-react';
+import CandlestickPatternAnalysis from './CandlestickPatternAnalysis';
 
 interface AnalysisResultsProps {
   result: AnalysisResult;
@@ -268,6 +269,17 @@ const AnalysisResults: React.FC<AnalysisResultsProps> = ({ result }) => {
           ))}
         </div>
       </div>
+
+      {/* Candlestick Pattern Analysis Section */}
+      {result.patternAnalysis && (
+        <div className="mt-6">
+          <CandlestickPatternAnalysis
+            patternAnalysis={result.patternAnalysis}
+            currentPrice={result.recommendedEntryPrice}
+            pair={result.pair}
+          />
+        </div>
+      )}
     </div>
   );
 };

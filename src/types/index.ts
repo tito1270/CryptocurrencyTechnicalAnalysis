@@ -73,6 +73,17 @@ export interface AnalysisResult {
   strategies: TradingStrategy[];
   priceSource: 'LIVE_API' | 'FALLBACK';
   priceTimestamp: number;
+  // New pattern analysis fields
+  patternAnalysis?: PatternAnalysisResult;
+  candlestickPatterns: CandlestickPattern[];
+  trendAnalysis: TrendAnalysis;
+  patternConfirmation: boolean;
+  optionsRecommendations: {
+    strategy: string;
+    reasoning: string;
+    expiration: string;
+    strikes: string[];
+  }[];
 }
 
 export interface NewsItem {
@@ -86,4 +97,58 @@ export interface NewsItem {
   publishedAt: string;
   timestamp: number;
   relevantPairs: string[];
+}
+
+// Candlestick and Pattern Analysis Types
+export interface OHLCData {
+  timestamp: number;
+  open: number;
+  high: number;
+  low: number;
+  close: number;
+  volume: number;
+}
+
+export interface CandlestickPattern {
+  id: string;
+  name: string;
+  type: 'BULLISH' | 'BEARISH' | 'NEUTRAL' | 'REVERSAL' | 'CONTINUATION';
+  reliability: 'HIGH' | 'MEDIUM' | 'LOW';
+  signal: 'STRONG_BUY' | 'BUY' | 'NEUTRAL' | 'SELL' | 'STRONG_SELL';
+  confidence: number;
+  description: string;
+  implications: string;
+  timeframe: string;
+  detectedAt: number;
+  candlesRequired: number;
+  optionsStrategy?: string[];
+}
+
+export interface TrendAnalysis {
+  direction: 'UPTREND' | 'DOWNTREND' | 'SIDEWAYS' | 'REVERSAL';
+  strength: 'STRONG' | 'MODERATE' | 'WEAK';
+  duration: number; // in periods
+  confidence: number;
+  supportLevel: number;
+  resistanceLevel: number;
+  trendLine: {
+    slope: number;
+    intercept: number;
+    r2: number; // correlation coefficient
+  };
+}
+
+export interface PatternAnalysisResult {
+  detectedPatterns: CandlestickPattern[];
+  trendAnalysis: TrendAnalysis;
+  overallSignal: 'STRONG_BUY' | 'BUY' | 'NEUTRAL' | 'SELL' | 'STRONG_SELL';
+  patternConfirmation: boolean;
+  conflictingSignals: boolean;
+  optionsRecommendations: {
+    strategy: string;
+    reasoning: string;
+    expiration: string;
+    strikes: string[];
+  }[];
+  advancedOptionsAnalysis?: any; // Will be typed from optionsAnalysis.ts
 }
