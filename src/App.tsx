@@ -111,6 +111,7 @@ function AppContent() {
   ]);
   const [analysisResult, setAnalysisResult] = useState<AnalysisResult | null>(null);
   const [isAnalyzing, setIsAnalyzing] = useState(false);
+  const [analysisError, setAnalysisError] = useState<string | null>(null);
   
   const { 
     getPairFromURL, 
@@ -185,8 +186,14 @@ function AppContent() {
 
   const handleAnalyze = async () => {
     setIsAnalyzing(true);
+    setAnalysisError(null); // Clear any previous errors
 
     try {
+      // Validate inputs before proceeding
+      if (!selectedPair || selectedIndicators.length === 0) {
+        throw new Error('Please select a trading pair and at least one technical indicator.');
+      }
+
       const result = await performAnalysis(
         selectedPair,
         selectedBroker,
@@ -195,6 +202,11 @@ function AppContent() {
         selectedIndicators,
         selectedStrategies
       );
+      
+      if (!result) {
+        throw new Error('Analysis failed to produce results. Please try again.');
+      }
+
       setAnalysisResult(result);
       
       // Scroll to results section after analysis is complete
@@ -206,6 +218,16 @@ function AppContent() {
       }, 100);
     } catch (error) {
       console.error('Analysis error:', error);
+      const errorMessage = error instanceof Error ? error.message : 'Analysis failed. Please check your internet connection and try again.';
+      setAnalysisError(errorMessage);
+      
+      // Scroll to show the error message
+      setTimeout(() => {
+        const resultsSection = document.getElementById('analysis-results');
+        if (resultsSection) {
+          resultsSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }
+      }, 100);
     } finally {
       setIsAnalyzing(false);
     }
@@ -215,6 +237,7 @@ function AppContent() {
     // Clear analysis result to reset scanned data
     setAnalysisResult(null);
     setIsAnalyzing(false);
+    setAnalysisError(null);
 
     // Reset to default values
     setSelectedPair('BTC/USDT');
@@ -348,20 +371,48 @@ function AppContent() {
                 {/* Right Column - Results and Data */}
                 <div id="analysis-results" className="lg:col-span-2 space-y-6">
                   {isAnalyzing && (
-                    <div className="bg-gray-800 border border-gray-700 rounded-lg p-8 text-center">
-                      <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-emerald-500 mb-4"></div>
-                      <div className="text-white font-medium">Analyzing Market Data...</div>
-                      <div className="text-sm text-gray-400 mt-2">
-                        Processing {selectedIndicators.length} indicators and {selectedStrategies.length} strategies
+                    <div className="bg-gradient-to-br from-gray-800 to-gray-900 border border-emerald-500/30 rounded-lg p-8 text-center shadow-lg">
+                      <div className="inline-block animate-spin rounded-full h-12 w-12 border-4 border-emerald-500 border-t-transparent mb-6"></div>
+                      <div className="text-white font-bold text-xl mb-2">🔍 Scanning {selectedPair}</div>
+                      <div className="text-emerald-400 font-medium mb-4">Analyzing Market Data...</div>
+                      <div className="text-sm text-gray-400 mb-4">
+                        • Processing {selectedIndicators.length} technical indicators<br/>
+                        • Applying {selectedStrategies.length} trading strategies<br/>
+                        • Fetching live price data from {selectedBroker.toUpperCase()}<br/>
+                        • Analyzing news sentiment and market patterns
+                      </div>
+                      <div className="w-full bg-gray-700 rounded-full h-2 mb-2">
+                        <div className="bg-gradient-to-r from-emerald-500 to-blue-500 h-2 rounded-full animate-pulse" style={{width: '75%'}}></div>
+                      </div>
+                      <div className="text-xs text-gray-500">
+                        This usually takes 5-15 seconds...
                       </div>
                     </div>
                   )}
 
-                  {analysisResult && !isAnalyzing && (
+                  {analysisResult && !isAnalyzing && !analysisError && (
                     <AnalysisResults result={analysisResult} />
                   )}
 
-                  {!analysisResult && !isAnalyzing && (
+                  {analysisError && !isAnalyzing && (
+                    <div className="bg-red-900/20 border border-red-700 rounded-lg p-8 text-center">
+                      <div className="text-red-400 text-lg mb-2">❌ Analysis Failed</div>
+                      <div className="text-sm text-red-300 mb-4">
+                        {analysisError}
+                      </div>
+                      <button
+                        onClick={() => {
+                          setAnalysisError(null);
+                          handleAnalyze();
+                        }}
+                        className="bg-red-600 hover:bg-red-700 text-white px-6 py-2 rounded-lg transition-colors font-medium"
+                      >
+                        🔄 Try Again
+                      </button>
+                    </div>
+                  )}
+
+                  {!analysisResult && !isAnalyzing && !analysisError && (
                     <div className="bg-gray-800 border border-gray-700 rounded-lg p-8 text-center">
                       <div className="text-gray-400 text-lg mb-2">📊 Ready for Market Analysis</div>
                       <div className="text-sm text-gray-500">
