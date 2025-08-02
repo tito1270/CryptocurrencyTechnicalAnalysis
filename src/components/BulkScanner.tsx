@@ -591,6 +591,29 @@ const BulkScanner: React.FC<BulkScannerProps> = ({
                       {result.newsImpact}
                     </span>
                   </div>
+                  
+                  {/* Candlestick Patterns */}
+                  {result.candlestickPatterns && result.candlestickPatterns.length > 0 && (
+                    <div className="flex justify-between">
+                      <span className="text-gray-400">Patterns:</span>
+                      <span className="text-purple-400 font-mono text-xs">
+                        {result.candlestickPatterns.length} detected
+                      </span>
+                    </div>
+                  )}
+                  
+                  {/* Trend Analysis */}
+                  {result.trendAnalysis && (
+                    <div className="flex justify-between">
+                      <span className="text-gray-400">Trend:</span>
+                      <span className={`font-mono text-xs ${
+                        result.trendAnalysis.direction === 'UPTREND' ? 'text-green-400' : 
+                        result.trendAnalysis.direction === 'DOWNTREND' ? 'text-red-400' : 'text-gray-400'
+                      }`}>
+                        {result.trendAnalysis.direction} ({result.trendAnalysis.strength})
+                      </span>
+                    </div>
+                  )}
                 </div>
 
                 <div className="pt-2 border-t border-gray-600">
@@ -599,6 +622,17 @@ const BulkScanner: React.FC<BulkScannerProps> = ({
                     {result.explanation.split('\n').find(line => line.includes('Key Reasoning:'))?.split('Key Reasoning:')[1]?.split('\n')[1] || 
                      result.explanation.split('\n')[0]}
                   </div>
+                  
+                  {/* Pattern Summary */}
+                  {result.candlestickPatterns && result.candlestickPatterns.length > 0 && (
+                    <div className="mt-2">
+                      <div className="text-xs text-gray-400 mb-1">Top Patterns:</div>
+                      <div className="text-xs text-gray-300">
+                        {result.candlestickPatterns.slice(0, 2).map(pattern => pattern.name).join(', ')}
+                        {result.candlestickPatterns.length > 2 && ` +${result.candlestickPatterns.length - 2} more`}
+                      </div>
+                    </div>
+                  )}
                 </div>
               </div>
             ))}

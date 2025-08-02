@@ -41,11 +41,12 @@ export const performAnalysis = async (
     activeIndicators, 
     activeStrategies,
     currentPrice,
-    priceLevels
+    priceLevels,
+    patternAnalysis
   );
 
   // Generate OHLC data for pattern analysis (simulated from current price)
-  const ohlcData = generateOHLCData(currentPrice, 30);
+  const ohlcData = generateOHLCData(currentPrice, 30, timeframe);
   
   // Perform candlestick pattern analysis with current price
   const patternAnalysis = performPatternAnalysis(ohlcData, timeframe, currentPrice);
@@ -385,7 +386,8 @@ const generateRecommendation = (
   indicators: TechnicalIndicator[],
   strategies: TradingStrategy[],
   currentPrice: number,
-  priceLevels: any
+  priceLevels: any,
+  patternAnalysis?: any
 ) => {
   let action: 'STRONG_BUY' | 'BUY' | 'HOLD' | 'SELL' | 'STRONG_SELL';
   let explanation = '';
@@ -457,7 +459,21 @@ const generateRecommendation = (
   explanation += `**Technical Analysis Summary:**\n`;
   explanation += `• Overall Sentiment: ${sentiment.replace('_', ' ')}\n`;
   explanation += `• Active Indicators: ${indicators.length} (${indicators.filter(i => i.signal === 'BUY').length} bullish, ${indicators.filter(i => i.signal === 'SELL').length} bearish)\n`;
-  explanation += `• Active Strategies: ${strategies.length} (${strategies.filter(s => s.signal.includes('BUY')).length} bullish, ${strategies.filter(s => s.signal.includes('SELL')).length} bearish)\n\n`;
+  explanation += `• Active Strategies: ${strategies.length} (${strategies.filter(s => s.signal.includes('BUY')).length} bullish, ${strategies.filter(s => s.signal.includes('SELL')).length} bearish)\n`;
+  
+  // Add pattern analysis information
+  if (patternAnalysis) {
+    explanation += `• Candlestick Patterns: ${patternAnalysis.detectedPatterns.length} detected\n`;
+    explanation += `• Trend Direction: ${patternAnalysis.trendAnalysis.direction} (${patternAnalysis.trendAnalysis.strength})\n`;
+    explanation += `• Pattern Signal: ${patternAnalysis.overallSignal.replace('_', ' ')}\n`;
+    if (patternAnalysis.patternConfirmation) {
+      explanation += `• ✅ Pattern confirmation with trend analysis\n`;
+    }
+    if (patternAnalysis.conflictingSignals) {
+      explanation += `• ⚠️ Mixed pattern signals detected\n`;
+    }
+  }
+  explanation += `\n`;
   
   explanation += `**News Impact Analysis:**\n`;
   explanation += `• News Impact Level: ${newsAnalysis.impact}\n`;
@@ -471,6 +487,13 @@ const generateRecommendation = (
     if (newsAnalysis.impact === 'HIGH' && newsAnalysis.analysis.includes('BULLISH')) {
       explanation += `• 📰 Positive news sentiment providing additional upward catalyst\n`;
     }
+    // Add bullish pattern information
+    if (patternAnalysis && patternAnalysis.detectedPatterns.length > 0) {
+      const bullishPatterns = patternAnalysis.detectedPatterns.filter(p => p.type === 'BULLISH' || p.signal.includes('BUY'));
+      if (bullishPatterns.length > 0) {
+        explanation += `• 🕯️ Bullish candlestick patterns detected: ${bullishPatterns.slice(0, 2).map(p => p.name).join(', ')}\n`;
+      }
+    }
     explanation += `• 💰 Favorable risk-reward ratio of ${riskRewardRatio}:1\n`;
   } else if (action.includes('SELL')) {
     explanation += `• 📉 Multiple bearish signals detected across technical indicators\n`;
@@ -478,11 +501,25 @@ const generateRecommendation = (
     if (newsAnalysis.impact === 'HIGH' && newsAnalysis.analysis.includes('BEARISH')) {
       explanation += `• 📰 Negative news sentiment creating downward pressure\n`;
     }
+    // Add bearish pattern information
+    if (patternAnalysis && patternAnalysis.detectedPatterns.length > 0) {
+      const bearishPatterns = patternAnalysis.detectedPatterns.filter(p => p.type === 'BEARISH' || p.signal.includes('SELL'));
+      if (bearishPatterns.length > 0) {
+        explanation += `• 🕯️ Bearish candlestick patterns detected: ${bearishPatterns.slice(0, 2).map(p => p.name).join(', ')}\n`;
+      }
+    }
     explanation += `• 🛡️ Risk-reward ratio of ${riskRewardRatio}:1 favors short position\n`;
   } else {
     explanation += `• ⚖️ Mixed signals from technical indicators\n`;
     explanation += `• 🔄 Market consolidation phase detected\n`;
     explanation += `• ⏳ Waiting for clearer directional signals\n`;
+    // Add neutral/consolidation pattern information
+    if (patternAnalysis && patternAnalysis.detectedPatterns.length > 0) {
+      const neutralPatterns = patternAnalysis.detectedPatterns.filter(p => p.type === 'NEUTRAL' || p.type === 'CONTINUATION');
+      if (neutralPatterns.length > 0) {
+        explanation += `• 🕯️ Consolidation patterns detected: ${neutralPatterns.slice(0, 2).map(p => p.name).join(', ')}\n`;
+      }
+    }
     if (newsAnalysis.upcomingEvents && newsAnalysis.upcomingEvents.length > 0) {
       explanation += `• 📅 Upcoming events may provide trading opportunities:\n`;
       newsAnalysis.upcomingEvents.forEach(event => {

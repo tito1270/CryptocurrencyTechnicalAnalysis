@@ -53,7 +53,7 @@ const useTradingParametersFromURL = () => {
   
   const getTimeframeFromURL = () => {
     const params = new URLSearchParams(location.search);
-    return params.get('timeframe') || '1h';
+    return params.get('timeframe') || '1d';
   };
   
   const getBrokerFromURL = () => {

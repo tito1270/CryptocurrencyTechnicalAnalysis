@@ -150,7 +150,7 @@ const isPinBar = (candle: OHLCData): { isPinBar: boolean; direction: 'BULLISH' |
 // Main pattern detection function
 export const detectCandlestickPatterns = (
   ohlcData: OHLCData[],
-  timeframe: string = '1h'
+  timeframe: string = '1d'
 ): CandlestickPattern[] => {
   if (ohlcData.length < 2) return [];
   
@@ -475,13 +475,41 @@ export const analyzeTrend = (ohlcData: OHLCData[]): TrendAnalysis => {
 // Generate OHLC data from current price (for demo/testing purposes)
 export const generateOHLCData = (
   currentPrice: number,
-  periods: number = 20
+  periods: number = 20,
+  timeframe: string = '1d'
 ): OHLCData[] => {
   const data: OHLCData[] = [];
   let price = currentPrice * 0.95; // Start slightly lower
   
+  // Convert timeframe to milliseconds
+  const getTimeframeMs = (tf: string): number => {
+    const timeframeMap: Record<string, number> = {
+      '1m': 60 * 1000,
+      '5m': 5 * 60 * 1000,
+      '15m': 15 * 60 * 1000,
+      '30m': 30 * 60 * 1000,
+      '1h': 60 * 60 * 1000,
+      '4h': 4 * 60 * 60 * 1000,
+      '1d': 24 * 60 * 60 * 1000,
+      '1w': 7 * 24 * 60 * 60 * 1000
+    };
+    return timeframeMap[tf] || timeframeMap['1d']; // Default to daily
+  };
+  
+  const timeframeMs = getTimeframeMs(timeframe);
+  
+  // Adjust volatility based on timeframe (longer timeframes have higher volatility)
+  const baseVolatility = timeframe === '1m' ? 0.005 : 
+                        timeframe === '5m' ? 0.008 :
+                        timeframe === '15m' ? 0.012 :
+                        timeframe === '30m' ? 0.015 :
+                        timeframe === '1h' ? 0.02 :
+                        timeframe === '4h' ? 0.035 :
+                        timeframe === '1d' ? 0.05 :
+                        timeframe === '1w' ? 0.08 : 0.05;
+  
   for (let i = 0; i < periods; i++) {
-    const volatility = 0.02; // 2% volatility
+    const volatility = baseVolatility;
     const trend = Math.random() > 0.5 ? 1 : -1;
     const change = price * volatility * (Math.random() * trend);
     
@@ -492,7 +520,7 @@ export const generateOHLCData = (
     const volume = Math.floor(Math.random() * 1000000) + 100000;
     
     data.push({
-      timestamp: Date.now() - (periods - i) * 3600000, // 1 hour intervals
+      timestamp: Date.now() - (periods - i) * timeframeMs,
       open,
       high,
       low,
@@ -509,7 +537,7 @@ export const generateOHLCData = (
 // Comprehensive pattern analysis with advanced options recommendations
 export const performPatternAnalysis = (
   ohlcData: OHLCData[],
-  timeframe: string = '1h',
+  timeframe: string = '1d',
   currentPrice?: number
 ): PatternAnalysisResult => {
   const detectedPatterns = detectCandlestickPatterns(ohlcData, timeframe);
