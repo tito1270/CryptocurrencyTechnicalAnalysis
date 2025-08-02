@@ -13,6 +13,7 @@ import AnalysisResults from './components/AnalysisResults';
 import LivePrices from './components/LivePrices';
 import CryptoNews from './components/CryptoNews';
 import BulkScanner from './components/BulkScanner';
+import TestAnalyzer from './components/TestAnalyzer';
 import Sitemap from './components/Sitemap';
 import SEOHead from './components/SEOHead';
 import SEOValidator from './components/SEOValidator';
@@ -184,6 +185,17 @@ function AppContent() {
   };
 
   const handleAnalyze = async () => {
+    // Validation checks
+    if (!selectedPair) {
+      alert('Piliin muna ang trading pair!');
+      return;
+    }
+    
+    if (selectedIndicators.length === 0) {
+      alert('Piliin muna ang mga technical indicators!');
+      return;
+    }
+    
     setIsAnalyzing(true);
 
     try {
@@ -195,7 +207,11 @@ function AppContent() {
         selectedIndicators,
         selectedStrategies
       );
+      
       setAnalysisResult(result);
+      
+      // Show success message
+      alert(`✅ Analysis completed for ${selectedPair}!`);
       
       // Scroll to results section after analysis is complete
       setTimeout(() => {
@@ -206,6 +222,7 @@ function AppContent() {
       }, 100);
     } catch (error) {
       console.error('Analysis error:', error);
+      alert(`❌ Error sa analysis: ${error.message || 'May problema sa system'}`);
     } finally {
       setIsAnalyzing(false);
     }
@@ -307,6 +324,9 @@ function AppContent() {
             <div className="mb-12">
               <Homepage />
             </div>
+
+            {/* TEST COMPONENT - TEMPORARY */}
+            <TestAnalyzer />
 
             {/* Trading Analysis Section */}
             <div id="scan-section" className="border-t border-gray-700 pt-12 scroll-mt-20">

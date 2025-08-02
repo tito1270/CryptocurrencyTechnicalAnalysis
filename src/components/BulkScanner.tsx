@@ -179,6 +179,16 @@ const BulkScanner: React.FC<BulkScannerProps> = ({
   };
 
   const handleIndividualScan = async (pair: string) => {
+    if (!pair) {
+      alert('Piliin muna ang trading pair!');
+      return;
+    }
+    
+    if (selectedIndicators.length === 0) {
+      alert('Piliin muna ang mga technical indicators!');
+      return;
+    }
+    
     setIsScanning(true);
     setCurrentlyScanning(pair);
     setScanProgress(0);
@@ -232,10 +242,11 @@ const BulkScanner: React.FC<BulkScannerProps> = ({
           } catch (error) {
         console.error('Individual scan error:', error);
         setNotification({
-          message: `❌ Error scanning ${pair}. Please try again.`,
+          message: `❌ Error scanning ${pair}: ${error.message || 'Please try again'}`,
           type: 'error'
         });
         setTimeout(() => setNotification(null), 3000);
+        alert(`❌ Error sa scan ng ${pair}: ${error.message || 'Subukan ulit'}`);
       } finally {
         setIsScanning(false);
         setCurrentlyScanning('');
@@ -243,7 +254,15 @@ const BulkScanner: React.FC<BulkScannerProps> = ({
   };
 
   const handleBulkScan = async () => {
-    if (currentBatchPairs.length === 0) return;
+    if (currentBatchPairs.length === 0) {
+      alert('Walang available pairs sa current batch!');
+      return;
+    }
+    
+    if (selectedIndicators.length === 0) {
+      alert('Piliin muna ang mga technical indicators!');
+      return;
+    }
 
     setIsScanning(true);
     setScanProgress(0);

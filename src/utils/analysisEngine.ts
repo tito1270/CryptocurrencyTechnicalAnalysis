@@ -13,6 +13,15 @@ export const performAnalysis = async (
   selectedIndicators: string[],
   selectedStrategies: string[]
 ): Promise<AnalysisResult> => {
+  // Validate inputs
+  if (!pair || !broker || !timeframe) {
+    throw new Error('Missing required parameters: pair, broker, or timeframe');
+  }
+  
+  if (selectedIndicators.length === 0) {
+    throw new Error('At least one technical indicator must be selected');
+  }
+  
   // Filter selected indicators and strategies
   const activeIndicators = technicalIndicators.filter(ind => 
     selectedIndicators.includes(ind.id)
@@ -31,6 +40,13 @@ export const performAnalysis = async (
   // Get LIVE current price with metadata from specific broker
   const priceData = await getCurrentPrice(pair, broker);
   const currentPrice = priceData.price;
+  
+  // Generate OHLC data for pattern analysis (simulated from current price)
+  const ohlcData = generateOHLCData(currentPrice, 30, timeframe);
+  
+  // Perform candlestick pattern analysis with current price
+  const patternAnalysis = performPatternAnalysis(ohlcData, timeframe, currentPrice);
+  
   const priceLevels = calculatePriceLevels(currentPrice, sentiment, newsAnalysis.impact);
   
   // Generate comprehensive recommendation
@@ -44,12 +60,6 @@ export const performAnalysis = async (
     priceLevels,
     patternAnalysis
   );
-
-  // Generate OHLC data for pattern analysis (simulated from current price)
-  const ohlcData = generateOHLCData(currentPrice, 30, timeframe);
-  
-  // Perform candlestick pattern analysis with current price
-  const patternAnalysis = performPatternAnalysis(ohlcData, timeframe, currentPrice);
   
   return {
     pair,
