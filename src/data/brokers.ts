@@ -80,95 +80,151 @@ const generateRealisticPairs = (baseCurrency: string = 'USDT', exchangeType: 'ma
   return [...new Set(pairs)].sort();
 };
 
+// Define futures-specific pairs (typically major cryptocurrencies)
+const generateFuturesPairs = (): string[] => {
+  const futureCryptos = [
+    'BTC', 'ETH', 'BNB', 'XRP', 'ADA', 'SOL', 'DOGE', 'DOT', 'MATIC', 'AVAX',
+    'ATOM', 'LINK', 'UNI', 'LTC', 'BCH', 'XLM', 'ALGO', 'VET', 'ICP', 'FIL',
+    'TRX', 'ETC', 'NEAR', 'FTM', 'SAND', 'MANA', 'OP', 'ARB', 'SUI'
+  ];
+  
+  const futuresPairs: string[] = [];
+  const quoteCurrencies = ['USDT', 'USD', 'BTC'];
+  
+  quoteCurrencies.forEach(quote => {
+    futureCryptos.forEach(crypto => {
+      if (crypto !== quote) {
+        futuresPairs.push(`${crypto}/${quote}`);
+      }
+    });
+  });
+  
+  return [...new Set(futuresPairs)].sort();
+};
+
 export const brokers: Broker[] = [
   {
     id: 'binance',
     name: 'Binance',
     logo: '🟡',
-    pairs: generateRealisticPairs('USDT', 'altcoin') // Full altcoin selection
+    pairs: generateRealisticPairs('USDT', 'altcoin'), // Full altcoin selection
+    supportsFutures: true,
+    futuresPairs: generateFuturesPairs()
   },
   {
     id: 'okx',
     name: 'OKX',
     logo: '⚫',
-    pairs: generateRealisticPairs('USDT', 'altcoin') // Full altcoin selection
+    pairs: generateRealisticPairs('USDT', 'altcoin'), // Full altcoin selection
+    supportsFutures: true,
+    futuresPairs: generateFuturesPairs()
   },
   {
     id: 'coinbase',
     name: 'Coinbase Pro',
     logo: '🔵',
-    pairs: generateRealisticPairs('USD', 'major') // More conservative, USD-focused
+    pairs: generateRealisticPairs('USD', 'major'), // More conservative, USD-focused
+    supportsFutures: false,
+    futuresPairs: []
   },
   {
     id: 'kraken',
     name: 'Kraken',
     logo: '🟣',
-    pairs: generateRealisticPairs('USD', 'major') // More conservative, USD-focused
+    pairs: generateRealisticPairs('USD', 'major'), // More conservative, USD-focused
+    supportsFutures: true,
+    futuresPairs: generateFuturesPairs().filter(pair => pair.includes('/USD') || pair.includes('/BTC'))
   },
   {
     id: 'kucoin',
     name: 'KuCoin',
     logo: '🟢',
-    pairs: generateRealisticPairs('USDT', 'altcoin') // Full altcoin selection
+    pairs: generateRealisticPairs('USDT', 'altcoin'), // Full altcoin selection
+    supportsFutures: true,
+    futuresPairs: generateFuturesPairs()
   },
   {
     id: 'huobi',
     name: 'Huobi',
     logo: '🔴',
-    pairs: generateRealisticPairs('USDT', 'altcoin') // Full altcoin selection
+    pairs: generateRealisticPairs('USDT', 'altcoin'), // Full altcoin selection
+    supportsFutures: true,
+    futuresPairs: generateFuturesPairs()
   },
   {
     id: 'gate',
     name: 'Gate.io',
     logo: '🟠',
-    pairs: generateRealisticPairs('USDT', 'altcoin') // Full altcoin selection
+    pairs: generateRealisticPairs('USDT', 'altcoin'), // Full altcoin selection
+    supportsFutures: true,
+    futuresPairs: generateFuturesPairs()
   },
   {
     id: 'bitget',
     name: 'Bitget',
     logo: '🟨',
-    pairs: generateRealisticPairs('USDT', 'altcoin') // Full altcoin selection
+    pairs: generateRealisticPairs('USDT', 'altcoin'), // Full altcoin selection
+    supportsFutures: true,
+    futuresPairs: generateFuturesPairs()
   },
   {
     id: 'mexc',
     name: 'MEXC',
     logo: '🔷',
-    pairs: generateRealisticPairs('USDT', 'altcoin') // Full altcoin selection
+    pairs: generateRealisticPairs('USDT', 'altcoin'), // Full altcoin selection
+    supportsFutures: true,
+    futuresPairs: generateFuturesPairs()
   },
   {
     id: 'bybit',
     name: 'Bybit',
     logo: '🟡',
-    pairs: generateRealisticPairs('USDT', 'altcoin') // Full altcoin selection
+    pairs: generateRealisticPairs('USDT', 'altcoin'), // Full altcoin selection
+    supportsFutures: true,
+    futuresPairs: generateFuturesPairs()
   },
   {
     id: 'crypto_com',
     name: 'Crypto.com',
     logo: '🔵',
-    pairs: generateRealisticPairs('USD', 'major') // More conservative
+    pairs: generateRealisticPairs('USD', 'major'), // More conservative
+    supportsFutures: false,
+    futuresPairs: []
   },
   {
     id: 'bingx',
     name: 'BingX',
     logo: '⚪',
-    pairs: generateRealisticPairs('USDT', 'major') // Mid-tier selection
+    pairs: generateRealisticPairs('USDT', 'major'), // Mid-tier selection
+    supportsFutures: true,
+    futuresPairs: generateFuturesPairs().filter(pair => 
+      ['BTC', 'ETH', 'BNB', 'XRP', 'ADA', 'SOL', 'DOGE', 'DOT', 'MATIC', 'AVAX'].some(crypto => pair.startsWith(crypto))
+    )
   },
   {
     id: 'bitfinex',
     name: 'Bitfinex',
     logo: '🟢',
-    pairs: generateRealisticPairs('USD', 'major') // More conservative, USD-focused
+    pairs: generateRealisticPairs('USD', 'major'), // More conservative, USD-focused
+    supportsFutures: false,
+    futuresPairs: []
   },
   {
     id: 'phemex',
     name: 'Phemex',
     logo: '🟨',
-    pairs: generateRealisticPairs('USDT', 'major') // Mid-tier selection
+    pairs: generateRealisticPairs('USDT', 'major'), // Mid-tier selection
+    supportsFutures: true,
+    futuresPairs: generateFuturesPairs().filter(pair => 
+      ['BTC', 'ETH', 'XRP', 'LTC', 'LINK', 'ADA', 'DOT', 'UNI'].some(crypto => pair.startsWith(crypto))
+    )
   },
   {
     id: 'deribit',
     name: 'Deribit',
     logo: '⚫',
-    pairs: ['BTC/USD', 'ETH/USD', 'SOL/USD', 'BTC/USDC', 'ETH/USDC'] // Specialized derivatives exchange
+    pairs: ['BTC/USD', 'ETH/USD', 'SOL/USD', 'BTC/USDC', 'ETH/USDC'], // Specialized derivatives exchange
+    supportsFutures: true,
+    futuresPairs: ['BTC/USD', 'ETH/USD', 'SOL/USD']
   }
 ];
