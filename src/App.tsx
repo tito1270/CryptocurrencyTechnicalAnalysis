@@ -172,6 +172,21 @@ function AppContent() {
     } catch (e) {
       console.warn('Failed to save broker preference:', e);
     }
+
+    // Validate if current pair is available in the new broker for the current trade type
+    const newBroker = brokers.find(b => b.id === brokerId);
+    if (newBroker) {
+      const availablePairs = tradeType === 'FUTURES' 
+        ? (newBroker.futuresPairs || [])
+        : newBroker.pairs;
+      
+      // If current pair is not available in the new broker, reset to first available pair
+      if (!availablePairs.includes(selectedPair)) {
+        const newPair = availablePairs.length > 0 ? availablePairs[0] : 'BTC/USDT';
+        setSelectedPair(newPair);
+        updatePairInURL(newPair);
+      }
+    }
   };
 
   const handlePairChange = (pair: string) => {
@@ -182,6 +197,25 @@ function AppContent() {
   const handleTimeframeChange = (timeframe: string) => {
     setSelectedTimeframe(timeframe);
     updateTimeframeInURL(timeframe);
+  };
+
+  const handleTradeTypeChange = (newTradeType: 'SPOT' | 'FUTURES') => {
+    setTradeType(newTradeType);
+    
+    // Validate if current pair is available in the new trade type
+    const currentBroker = brokers.find(b => b.id === selectedBroker);
+    if (currentBroker) {
+      const availablePairs = newTradeType === 'FUTURES' 
+        ? (currentBroker.futuresPairs || [])
+        : currentBroker.pairs;
+      
+      // If current pair is not available in the new trade type, reset to first available pair
+      if (!availablePairs.includes(selectedPair)) {
+        const newPair = availablePairs.length > 0 ? availablePairs[0] : 'BTC/USDT';
+        setSelectedPair(newPair);
+        updatePairInURL(newPair);
+      }
+    }
   };
 
   const handleAnalyze = async () => {
@@ -356,7 +390,7 @@ function AppContent() {
                     onBrokerChange={handleBrokerChange}
                     onPairChange={handlePairChange}
                     onTimeframeChange={handleTimeframeChange}
-                    onTradeTypeChange={setTradeType}
+                    onTradeTypeChange={handleTradeTypeChange}
                     onIndicatorToggle={handleIndicatorToggle}
                     onStrategyToggle={handleStrategyToggle}
                     onAnalyze={handleAnalyze}

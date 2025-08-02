@@ -3,6 +3,8 @@ export interface Broker {
   name: string;
   logo: string;
   pairs: string[];
+  supportsFutures: boolean;
+  futuresPairs?: string[];
 }
 
 export interface CryptoPairType {

@@ -59,16 +59,23 @@ const TradingControls: React.FC<TradingControlsProps> = ({
   const { limitedPairs, totalPages, hasNextPage, hasPrevPage } = useMemo(() => {
     if (!currentBroker) return { limitedPairs: [], totalPages: 0, hasNextPage: false, hasPrevPage: false };
 
-    const allPairs = currentBroker.pairs;
-    const totalPairs = allPairs.length;
+    // Get pairs based on trade type
+    let availablePairs: string[] = [];
+    if (tradeType === 'FUTURES') {
+      availablePairs = currentBroker.futuresPairs || [];
+    } else {
+      availablePairs = currentBroker.pairs;
+    }
+
+    const totalPairs = availablePairs.length;
     const totalPagesCount = Math.ceil(totalPairs / PAIRS_PER_PAGE);
 
     // Always include the selected pair first if it exists
-    const selectedPairIncluded = selectedPair && allPairs.includes(selectedPair);
+    const selectedPairIncluded = selectedPair && availablePairs.includes(selectedPair);
 
     // Get pairs for current page
     const startIndex = currentDropdownPage * PAIRS_PER_PAGE;
-    let pagePairs = allPairs.slice(startIndex, startIndex + PAIRS_PER_PAGE);
+    let pagePairs = availablePairs.slice(startIndex, startIndex + PAIRS_PER_PAGE);
 
     // If selected pair is included, ensure it's always first and adjust the list
     if (selectedPairIncluded) {
@@ -84,7 +91,7 @@ const TradingControls: React.FC<TradingControlsProps> = ({
       hasNextPage: currentDropdownPage < totalPagesCount - 1,
       hasPrevPage: currentDropdownPage > 0
     };
-  }, [currentBroker, selectedPair, currentDropdownPage]);
+  }, [currentBroker, selectedPair, currentDropdownPage, tradeType]);
 
   const fallbackCopyTextToClipboard = (text: string) => {
     const textArea = document.createElement("textarea");
@@ -183,7 +190,7 @@ const TradingControls: React.FC<TradingControlsProps> = ({
           </div>
           <div className="mt-2 text-xs text-gray-400">
             Selected: <span className="text-emerald-400 font-medium">{currentBroker?.logo} {currentBroker?.name}</span> 
-            • {currentBroker?.pairs.length} trading pairs available
+            • {tradeType === 'FUTURES' ? (currentBroker?.futuresPairs?.length || 0) : (currentBroker?.pairs.length || 0)} {tradeType.toLowerCase()} pairs available
           </div>
         </div>
         
@@ -245,7 +252,7 @@ const TradingControls: React.FC<TradingControlsProps> = ({
           <div className="flex items-center justify-between text-xs text-gray-400 mt-1">
             <div className="flex items-center space-x-2">
               <Link className="w-3 h-3" />
-              <span>Quick select or search {currentBroker?.pairs.length || 0} pairs • URL updates automatically</span>
+              <span>Quick select or search {tradeType === 'FUTURES' ? (currentBroker?.futuresPairs?.length || 0) : (currentBroker?.pairs.length || 0)} {tradeType.toLowerCase()} pairs • URL updates automatically</span>
             </div>
 
             {/* Dropdown Pagination Controls */}
@@ -324,6 +331,37 @@ const TradingControls: React.FC<TradingControlsProps> = ({
           </div>
         </div>
       </div>
+
+      {/* Futures Not Supported Message */}
+      {tradeType === 'FUTURES' && currentBroker && !currentBroker.supportsFutures && (
+        <div className="bg-yellow-900/20 border border-yellow-700 rounded-lg p-4">
+          <div className="flex items-center space-x-2">
+            <span className="text-yellow-400 text-lg">⚠️</span>
+            <div>
+              <h4 className="text-yellow-400 font-medium">Futures Trading Not Available</h4>
+              <p className="text-gray-300 text-sm mt-1">
+                {currentBroker.logo} {currentBroker.name} only supports spot trading. 
+                Please select a different exchange that offers futures trading or switch to SPOT trade type.
+              </p>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* No Futures Pairs Available Message */}
+      {tradeType === 'FUTURES' && currentBroker && currentBroker.supportsFutures && (!currentBroker.futuresPairs || currentBroker.futuresPairs.length === 0) && (
+        <div className="bg-orange-900/20 border border-orange-700 rounded-lg p-4">
+          <div className="flex items-center space-x-2">
+            <span className="text-orange-400 text-lg">📈</span>
+            <div>
+              <h4 className="text-orange-400 font-medium">No Futures Pairs Available</h4>
+              <p className="text-gray-300 text-sm mt-1">
+                {currentBroker.logo} {currentBroker.name} supports futures trading but no futures pairs are currently available for scanning.
+              </p>
+            </div>
+          </div>
+        </div>
+      )}
       
       {/* Technical Indicators */}
       <div>
@@ -409,7 +447,7 @@ const TradingControls: React.FC<TradingControlsProps> = ({
 
       {/* Advanced Crypto Pair Search Modal */}
       <CryptoPairSearch
-        pairs={currentBroker?.pairs || []}
+        pairs={tradeType === 'FUTURES' ? (currentBroker?.futuresPairs || []) : (currentBroker?.pairs || [])}
         selectedPair={selectedPair}
         onPairSelect={onPairChange}
         isOpen={showAdvancedPairSearch}
