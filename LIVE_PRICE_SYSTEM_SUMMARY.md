@@ -13,7 +13,8 @@ Successfully implemented a comprehensive live cryptocurrency price streaming sys
 - **Multi-Exchange Support**: Streams from all major exchanges simultaneously
 
 ### 2. 🔌 Enhanced API Integration (`priceAPI.ts`)
-- **8 Live Exchange APIs**: Binance, OKX, Coinbase, KuCoin, Bybit, Gate.io, MEXC, Bitget
+- **15+ Exchange Support**: Binance, OKX, Coinbase, KuCoin, Bybit, Gate.io, MEXC, Bitget, Kraken, Huobi, and more
+- **Smart Exchange Selection**: User preferences saved locally, popular exchanges quick-accessible
 - **Optimized Caching**: 10-second cache for ultra-fresh data
 - **3-second Timeouts**: Fast response times for real-time experience
 - **Error Recovery**: Automatic retry with exponential backoff

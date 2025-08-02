@@ -20,7 +20,7 @@ A comprehensive cryptocurrency trading analysis platform with advanced pair sear
 ### URL Parameters
 The platform supports URL parameters for direct access:
 - `?pair=BTC/USDT` - Set trading pair
-- `?broker=binance` - Set exchange
+- `?broker=binance` - Set exchange (supported: binance, okx, coinbase, kucoin, bybit, etc.)
 - `?timeframe=1h` - Set timeframe
 - `?type=SPOT` - Set trade type
 
@@ -28,7 +28,9 @@ Example: `http://localhost:5173/?pair=ETH/USDT&broker=binance&timeframe=4h&type=
 
 ## 🛠️ Features
 
-- **Multi-exchange support**: Binance, OKX, and more
+- **Multi-exchange support**: 15+ exchanges including Binance, OKX, Coinbase, KuCoin, Bybit, and more
+- **Smart broker selection**: Remembers your preferred exchange choice
+- **Quick exchange switching**: Popular exchanges accessible with one click
 - **Technical indicators**: 25+ indicators including RSI, MACD, Bollinger Bands
 - **Trading strategies**: 16+ strategies for comprehensive analysis
 - **Real-time data**: Live price feeds and market data

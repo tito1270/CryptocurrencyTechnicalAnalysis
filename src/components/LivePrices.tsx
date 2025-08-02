@@ -40,9 +40,11 @@ const LivePrices: React.FC<LivePricesProps> = ({ selectedPair, selectedBroker })
         
         console.log(`✅ LivePrices: Successfully loaded ${newPrices.length} LIVE prices`);
         
-        // Log key prices for verification
-        const btcPrice = newPrices.find(p => p.pair === 'BTC/USDT' && p.broker === 'binance');
-        const ethPrice = newPrices.find(p => p.pair === 'ETH/USDT' && p.broker === 'binance');
+        // Log key prices for verification (use selected broker or fallback to any available)
+        const btcPrice = newPrices.find(p => p.pair === 'BTC/USDT' && p.broker === selectedBroker) || 
+                        newPrices.find(p => p.pair === 'BTC/USDT');
+        const ethPrice = newPrices.find(p => p.pair === 'ETH/USDT' && p.broker === selectedBroker) || 
+                        newPrices.find(p => p.pair === 'ETH/USDT');
         
         if (btcPrice) console.log(`💰 LIVE BTC/USDT: $${btcPrice.price.toLocaleString()}`);
         if (ethPrice) console.log(`💎 LIVE ETH/USDT: $${ethPrice.price.toLocaleString()}`);

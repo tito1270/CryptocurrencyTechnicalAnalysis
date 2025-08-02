@@ -25,6 +25,27 @@ const useTradingParametersFromURL = () => {
   const location = useLocation();
   const navigate = useNavigate();
   
+  // Utility functions for localStorage preferences
+  const savePreferredBroker = (brokerId: string) => {
+    try {
+      localStorage.setItem('preferred_broker', brokerId);
+    } catch (e) {
+      console.warn('Failed to save broker preference:', e);
+    }
+  };
+  
+  const getPreferredBroker = (): string => {
+    try {
+      const saved = localStorage.getItem('preferred_broker');
+      if (saved && brokers.find(b => b.id === saved)) {
+        return saved;
+      }
+    } catch (e) {
+      console.warn('Failed to load broker preference:', e);
+    }
+    return 'binance'; // Default fallback
+  };
+  
   const getPairFromURL = () => {
     const params = new URLSearchParams(location.search);
     return params.get('pair') || 'BTC/USDT';
@@ -37,7 +58,20 @@ const useTradingParametersFromURL = () => {
   
   const getBrokerFromURL = () => {
     const params = new URLSearchParams(location.search);
-    return params.get('broker') || brokers[0].id;
+    const brokerParam = params.get('broker');
+    
+    // If broker is specified in URL, validate it exists
+    if (brokerParam) {
+      const validBroker = brokers.find(b => b.id === brokerParam);
+      if (validBroker) {
+        // Save this as user's preference for future visits
+        savePreferredBroker(brokerParam);
+        return brokerParam;
+      }
+    }
+    
+    // Use user's saved preference or default to Binance
+    return getPreferredBroker();
   };
   
   const getTradeTypeFromURL = () => {
@@ -129,6 +163,16 @@ function AppContent() {
     );
   };
 
+  const handleBrokerChange = (brokerId: string) => {
+    setSelectedBroker(brokerId);
+    // Save user's broker preference
+    try {
+      localStorage.setItem('preferred_broker', brokerId);
+    } catch (e) {
+      console.warn('Failed to save broker preference:', e);
+    }
+  };
+
   const handlePairChange = (pair: string) => {
     setSelectedPair(pair);
     updatePairInURL(pair);
@@ -166,7 +210,7 @@ function AppContent() {
 
     // Reset to default values
     setSelectedPair('BTC/USDT');
-    setSelectedBroker(brokers[0].id);
+    handleBrokerChange('binance'); // Default to Binance and save preference
     setSelectedTimeframe('1h');
     setTradeType('SPOT');
     setSelectedIndicators([
@@ -278,7 +322,7 @@ function AppContent() {
                     tradeType={tradeType}
                     selectedIndicators={selectedIndicators}
                     selectedStrategies={selectedStrategies}
-                    onBrokerChange={setSelectedBroker}
+                    onBrokerChange={handleBrokerChange}
                     onPairChange={handlePairChange}
                     onTimeframeChange={handleTimeframeChange}
                     onTradeTypeChange={setTradeType}
