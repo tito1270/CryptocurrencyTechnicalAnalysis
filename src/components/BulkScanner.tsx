@@ -168,9 +168,9 @@ const BulkScanner: React.FC<BulkScannerProps> = ({
   const scanPair = async (pair: string): Promise<void> => {
     if (scannedPairs.has(pair)) return;
     
-    setScannedPairs(prev => new Set([...prev, pair]));
-    
     try {
+      setScannedPairs(prev => new Set([...prev, pair]));
+      
       const analysis = await performAnalysis({
         pair,
         broker: selectedBroker,
@@ -183,48 +183,66 @@ const BulkScanner: React.FC<BulkScannerProps> = ({
       setScanResults(prev => new Map([...prev, [pair, analysis]]));
     } catch (error) {
       console.error(`Failed to scan ${pair}:`, error);
+      // Remove from scanned pairs if analysis failed
+      setScannedPairs(prev => {
+        const newSet = new Set(prev);
+        newSet.delete(pair);
+        return newSet;
+      });
     }
   };
 
   // Bulk scan current page
   const handleBulkScan = async () => {
-    if (isScanning) {
-      setIsPaused(!isPaused);
-      return;
-    }
-
-    setIsScanning(true);
-    setIsPaused(false);
-    setCurrentScanIndex(0);
-    
-    const pairsToScan = paginatedData.filter(price => !scannedPairs.has(price.pair));
-    
-    for (let i = 0; i < pairsToScan.length; i++) {
-      if (isPaused) {
-        await new Promise(resolve => {
-          const checkPause = () => {
-            if (!isPaused) {
-              resolve(undefined);
-            } else {
-              setTimeout(checkPause, 100);
-            }
-          };
-          checkPause();
-        });
+    try {
+      if (isScanning) {
+        setIsPaused(!isPaused);
+        return;
       }
 
-      if (!isScanning) break; // Stop if scanning was cancelled
+      if (selectedIndicators.length === 0) {
+        console.error('No indicators selected for bulk scan');
+        return;
+      }
+
+      setIsScanning(true);
+      setIsPaused(false);
+      setCurrentScanIndex(0);
       
-      setCurrentScanIndex(i + 1);
-      setScanProgress(Math.round(((i + 1) / pairsToScan.length) * 100));
+      const pairsToScan = paginatedData.filter(price => !scannedPairs.has(price.pair));
       
-      await scanPair(pairsToScan[i].pair);
-      await new Promise(resolve => setTimeout(resolve, scanSpeed));
+      for (let i = 0; i < pairsToScan.length; i++) {
+        if (isPaused) {
+          await new Promise(resolve => {
+            const checkPause = () => {
+              if (!isPaused) {
+                resolve(undefined);
+              } else {
+                setTimeout(checkPause, 100);
+              }
+            };
+            checkPause();
+          });
+        }
+
+        if (!isScanning) break; // Stop if scanning was cancelled
+        
+        setCurrentScanIndex(i + 1);
+        setScanProgress(Math.round(((i + 1) / pairsToScan.length) * 100));
+        
+        await scanPair(pairsToScan[i].pair);
+        await new Promise(resolve => setTimeout(resolve, scanSpeed));
+      }
+      
+      setIsScanning(false);
+      setCurrentScanIndex(0);
+      setScanProgress(0);
+    } catch (error) {
+      console.error('Error in bulk scan:', error);
+      setIsScanning(false);
+      setCurrentScanIndex(0);
+      setScanProgress(0);
     }
-    
-    setIsScanning(false);
-    setCurrentScanIndex(0);
-    setScanProgress(0);
   };
 
   // Auto-scan functionality
@@ -232,13 +250,17 @@ const BulkScanner: React.FC<BulkScannerProps> = ({
     if (!autoScanEnabled || isScanning) return;
 
     const interval = setInterval(async () => {
-      const unscannedPairs = filteredData.filter(price => !scannedPairs.has(price.pair));
-      if (unscannedPairs.length === 0) return;
+      try {
+        const unscannedPairs = filteredData.filter(price => !scannedPairs.has(price.pair));
+        if (unscannedPairs.length === 0) return;
 
-      const batch = unscannedPairs.slice(0, scanBatchSize);
-      for (const price of batch) {
-        await scanPair(price.pair);
-        await new Promise(resolve => setTimeout(resolve, scanSpeed * 2)); // Slower for auto-scan
+        const batch = unscannedPairs.slice(0, scanBatchSize);
+        for (const price of batch) {
+          await scanPair(price.pair);
+          await new Promise(resolve => setTimeout(resolve, scanSpeed * 2)); // Slower for auto-scan
+        }
+      } catch (error) {
+        console.error('Error in auto-scan:', error);
       }
     }, 30000); // Run every 30 seconds
 
@@ -247,17 +269,70 @@ const BulkScanner: React.FC<BulkScannerProps> = ({
 
   // Stop scanning
   const stopScanning = () => {
-    setIsScanning(false);
-    setIsPaused(false);
-    setCurrentScanIndex(0);
-    setScanProgress(0);
+    try {
+      setIsScanning(false);
+      setIsPaused(false);
+      setCurrentScanIndex(0);
+      setScanProgress(0);
+    } catch (error) {
+      console.error('Error stopping scan:', error);
+    }
   };
 
   // Clear all results
   const clearResults = () => {
-    setScanResults(new Map());
-    setScannedPairs(new Set());
-    stopScanning();
+    try {
+      setScanResults(new Map());
+      setScannedPairs(new Set());
+      stopScanning();
+    } catch (error) {
+      console.error('Error clearing results:', error);
+    }
+  };
+
+  // Handle refresh with error handling
+  const handleRefresh = () => {
+    try {
+      if (refreshPairs && typeof refreshPairs === 'function') {
+        refreshPairs();
+      }
+    } catch (error) {
+      console.error('Error refreshing pairs:', error);
+    }
+  };
+
+  // Handle individual scan with validation
+  const handleIndividualScan = async (pair: string) => {
+    try {
+      if (!pair) {
+        console.error('No pair specified for scan');
+        return;
+      }
+
+      if (selectedIndicators.length === 0) {
+        console.error('No indicators selected for scan');
+        return;
+      }
+
+      if (scannedPairs.has(pair) || isScanning) {
+        return;
+      }
+
+      await scanPair(pair);
+    } catch (error) {
+      console.error(`Error scanning individual pair ${pair}:`, error);
+    }
+  };
+
+  // Handle page change
+  const handlePageChange = (newPage: number) => {
+    try {
+      if (newPage >= 1 && newPage <= totalPages) {
+        setCurrentPage(newPage);
+      }
+    } catch (error) {
+      console.error('Error changing page:', error);
+    }
   };
 
   // Get recommendation badge
@@ -302,9 +377,11 @@ const BulkScanner: React.FC<BulkScannerProps> = ({
           
           <div className="flex items-center space-x-4">
             <button
-              onClick={refreshPairs}
+              onClick={handleRefresh}
               disabled={dataLoading}
-              className="flex items-center space-x-2 px-3 py-2 bg-gray-700 hover:bg-gray-600 text-white rounded-lg transition-colors disabled:opacity-50"
+              className="flex items-center space-x-2 px-3 py-2 bg-gray-700 hover:bg-gray-600 text-white rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              type="button"
+              title="Refresh market data"
             >
               <RefreshCw className={`w-4 h-4 ${dataLoading ? 'animate-spin' : ''}`} />
               <span>Refresh Data</span>
@@ -313,7 +390,9 @@ const BulkScanner: React.FC<BulkScannerProps> = ({
             <button
               onClick={clearResults}
               disabled={isScanning}
-              className="flex items-center space-x-2 px-3 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg transition-colors disabled:opacity-50"
+              className="flex items-center space-x-2 px-3 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              type="button"
+              title="Clear all scan results"
             >
               <AlertCircle className="w-4 h-4" />
               <span>Clear Results</span>
@@ -632,17 +711,19 @@ const BulkScanner: React.FC<BulkScannerProps> = ({
                       )}
                     </td>
                     <td className="py-3 px-4 text-center">
-                      <button
-                        onClick={() => scanPair(price.pair)}
-                        disabled={isScanned || isScanning}
-                        className={`px-3 py-1 rounded text-xs font-medium transition-colors ${
-                          isScanned
-                            ? 'bg-gray-600/20 text-gray-500 cursor-not-allowed'
-                            : 'bg-blue-600 hover:bg-blue-700 text-white'
-                        }`}
-                      >
-                        {isScanned ? 'Done' : 'Scan'}
-                      </button>
+                                              <button
+                          onClick={() => handleIndividualScan(price.pair)}
+                          disabled={isScanned || isScanning}
+                          className={`px-3 py-1 rounded text-xs font-medium transition-colors ${
+                            isScanned
+                              ? 'bg-gray-600/20 text-gray-500 cursor-not-allowed'
+                              : 'bg-blue-600 hover:bg-blue-700 text-white'
+                          }`}
+                          type="button"
+                          title={isScanned ? 'Already scanned' : 'Scan this pair'}
+                        >
+                          {isScanned ? 'Done' : 'Scan'}
+                        </button>
                     </td>
                   </tr>
                 );
@@ -659,9 +740,11 @@ const BulkScanner: React.FC<BulkScannerProps> = ({
             </div>
             <div className="flex items-center space-x-2">
               <button
-                onClick={() => setCurrentPage(Math.max(1, currentPage - 1))}
+                onClick={() => handlePageChange(Math.max(1, currentPage - 1))}
                 disabled={currentPage === 1}
                 className="flex items-center space-x-1 px-3 py-1 bg-gray-700 text-gray-300 rounded hover:bg-gray-600 disabled:opacity-50 disabled:cursor-not-allowed"
+                type="button"
+                title="Previous page"
               >
                 <ChevronLeft className="w-4 h-4" />
                 <span>Previous</span>
@@ -671,25 +754,29 @@ const BulkScanner: React.FC<BulkScannerProps> = ({
                 {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
                   const pageNum = Math.max(1, Math.min(totalPages, currentPage - 2 + i));
                   return (
-                    <button
-                      key={pageNum}
-                      onClick={() => setCurrentPage(pageNum)}
-                      className={`px-3 py-1 rounded ${
-                        currentPage === pageNum
-                          ? 'bg-emerald-600 text-white'
-                          : 'bg-gray-700 text-gray-300 hover:bg-gray-600'
-                      }`}
-                    >
-                      {pageNum}
-                    </button>
+                                          <button
+                        key={pageNum}
+                        onClick={() => handlePageChange(pageNum)}
+                        className={`px-3 py-1 rounded ${
+                          currentPage === pageNum
+                            ? 'bg-emerald-600 text-white'
+                            : 'bg-gray-700 text-gray-300 hover:bg-gray-600'
+                        }`}
+                        type="button"
+                        title={`Go to page ${pageNum}`}
+                      >
+                        {pageNum}
+                      </button>
                   );
                 })}
               </div>
               
               <button
-                onClick={() => setCurrentPage(Math.min(totalPages, currentPage + 1))}
+                onClick={() => handlePageChange(Math.min(totalPages, currentPage + 1))}
                 disabled={currentPage === totalPages}
                 className="flex items-center space-x-1 px-3 py-1 bg-gray-700 text-gray-300 rounded hover:bg-gray-600 disabled:opacity-50 disabled:cursor-not-allowed"
+                type="button"
+                title="Next page"
               >
                 <span>Next</span>
                 <ChevronRight className="w-4 h-4" />

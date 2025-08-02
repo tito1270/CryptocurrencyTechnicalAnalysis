@@ -29,7 +29,7 @@ const CryptoPairSearch: React.FC<CryptoPairSearchProps> = ({
   const [currentPage, setCurrentPage] = useState(1);
 
   const filteredPairs = useMemo(() => {
-    let filtered = pairs;
+    let filtered = pairs || []; // Add null safety
 
     if (searchQuery.trim()) {
       filtered = filtered.filter(pair =>
@@ -46,9 +46,53 @@ const CryptoPairSearch: React.FC<CryptoPairSearchProps> = ({
   const currentPairs = filteredPairs.slice(startIndex, endIndex);
 
   const handlePairSelect = (pair: string) => {
-    onPairSelect(pair);
-    onClose();
+    try {
+      if (onPairSelect && typeof onPairSelect === 'function') {
+        onPairSelect(pair);
+      }
+      if (onClose && typeof onClose === 'function') {
+        onClose();
+      }
+    } catch (err) {
+      console.error('Error selecting pair:', err);
+    }
   };
+
+  const handleRefresh = () => {
+    try {
+      if (onRefresh && typeof onRefresh === 'function') {
+        onRefresh();
+      }
+    } catch (err) {
+      console.error('Error refreshing pairs:', err);
+    }
+  };
+
+  const handleClose = () => {
+    try {
+      if (onClose && typeof onClose === 'function') {
+        onClose();
+      }
+    } catch (err) {
+      console.error('Error closing modal:', err);
+    }
+  };
+
+  const handleClearSearch = () => {
+    setSearchQuery('');
+    setCurrentPage(1);
+  };
+
+  const handlePageChange = (page: number) => {
+    if (page >= 1 && page <= totalPages) {
+      setCurrentPage(page);
+    }
+  };
+
+  // Reset page when search changes
+  React.useEffect(() => {
+    setCurrentPage(1);
+  }, [searchQuery]);
 
   if (!isOpen) return null;
 
@@ -69,10 +113,11 @@ const CryptoPairSearch: React.FC<CryptoPairSearchProps> = ({
             <div className="flex items-center space-x-2">
               {onRefresh && (
                 <button
-                  onClick={onRefresh}
+                  onClick={handleRefresh}
                   disabled={loading}
-                  className="p-2 hover:bg-gray-700 rounded-lg transition-colors disabled:opacity-50"
+                  className="p-2 hover:bg-gray-700 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                   title="Refresh pairs"
+                  type="button"
                 >
                   <span className={`text-gray-400 ${loading ? 'animate-spin' : ''}`}>
                     ↻
@@ -80,8 +125,10 @@ const CryptoPairSearch: React.FC<CryptoPairSearchProps> = ({
                 </button>
               )}
               <button
-                onClick={onClose}
+                onClick={handleClose}
                 className="p-2 hover:bg-gray-700 rounded-lg transition-colors"
+                title="Close dialog"
+                type="button"
               >
                 <span className="text-gray-400 text-lg">×</span>
               </button>
@@ -110,7 +157,7 @@ const CryptoPairSearch: React.FC<CryptoPairSearchProps> = ({
             <div className="text-center">
               <div className="inline-block animate-spin rounded-full h-8 w-8 border-4 border-emerald-500 border-t-transparent mb-4"></div>
               <p className="text-gray-400">Loading active trading pairs...</p>
-              <p className="text-sm text-gray-500 mt-2">Fetching live data from Binance</p>
+              <p className="text-sm text-gray-500 mt-2">Fetching live data from exchange</p>
             </div>
           </div>
         )}
@@ -124,8 +171,9 @@ const CryptoPairSearch: React.FC<CryptoPairSearchProps> = ({
               <p className="text-sm text-gray-400 mb-4">{error}</p>
               {onRefresh && (
                 <button
-                  onClick={onRefresh}
+                  onClick={handleRefresh}
                   className="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-lg transition-colors"
+                  type="button"
                 >
                   Try Again
                 </button>
@@ -137,7 +185,7 @@ const CryptoPairSearch: React.FC<CryptoPairSearchProps> = ({
         {/* Pairs List */}
         {!loading && !error && (
           <div className="flex-1 overflow-auto p-6">
-            {pairs.length > 0 && (
+            {pairs && pairs.length > 0 && (
               <div className="mb-6 text-center bg-gray-700/50 rounded-lg p-4">
                 <div className="flex items-center justify-center space-x-4 text-sm">
                   <div className="text-emerald-400 font-semibold">
@@ -172,6 +220,8 @@ const CryptoPairSearch: React.FC<CryptoPairSearchProps> = ({
                         ? 'bg-emerald-600 text-white shadow-lg transform scale-105'
                         : 'bg-gray-700 hover:bg-gray-600 text-gray-300 hover:shadow-md'
                     }`}
+                    type="button"
+                    disabled={loading}
                   >
                     <div className="font-medium text-sm">
                       <span className="text-white">{base}</span>
@@ -182,7 +232,7 @@ const CryptoPairSearch: React.FC<CryptoPairSearchProps> = ({
               })}
             </div>
 
-            {filteredPairs.length === 0 && pairs.length > 0 && (
+            {filteredPairs.length === 0 && pairs && pairs.length > 0 && (
               <div className="text-center py-12 text-gray-400">
                 <div className="text-4xl mb-4">🔍</div>
                 <p className="text-lg font-medium">No trading pairs found</p>
@@ -190,11 +240,31 @@ const CryptoPairSearch: React.FC<CryptoPairSearchProps> = ({
                   Try adjusting your search terms or browse all {pairs.length.toLocaleString()} available pairs
                 </p>
                 <button
-                  onClick={() => setSearchQuery('')}
+                  onClick={handleClearSearch}
                   className="mt-4 px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg transition-colors text-sm"
+                  type="button"
                 >
                   Clear Search
                 </button>
+              </div>
+            )}
+
+            {(!pairs || pairs.length === 0) && !loading && !error && (
+              <div className="text-center py-12 text-gray-400">
+                <div className="text-4xl mb-4">📋</div>
+                <p className="text-lg font-medium">No pairs available</p>
+                <p className="text-sm text-gray-500 mt-2">
+                  Please check your connection and try refreshing
+                </p>
+                {onRefresh && (
+                  <button
+                    onClick={handleRefresh}
+                    className="mt-4 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors text-sm"
+                    type="button"
+                  >
+                    Refresh Pairs
+                  </button>
+                )}
               </div>
             )}
           </div>
@@ -217,26 +287,28 @@ const CryptoPairSearch: React.FC<CryptoPairSearchProps> = ({
               <div className="flex items-center space-x-2">
                 {/* First Page */}
                 <button
-                  onClick={() => setCurrentPage(1)}
+                  onClick={() => handlePageChange(1)}
                   disabled={currentPage === 1}
                   className={`px-3 py-2 rounded-lg transition-colors text-sm ${
                     currentPage === 1
                       ? 'bg-gray-700 text-gray-500 cursor-not-allowed'
                       : 'bg-gray-700 hover:bg-gray-600 text-gray-300'
                   }`}
+                  type="button"
                 >
                   ⏮️ First
                 </button>
 
                 {/* Previous Page */}
                 <button
-                  onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
+                  onClick={() => handlePageChange(currentPage - 1)}
                   disabled={currentPage === 1}
                   className={`flex items-center space-x-2 px-4 py-2 rounded-lg transition-colors ${
                     currentPage === 1
                       ? 'bg-gray-700 text-gray-500 cursor-not-allowed'
                       : 'bg-gray-700 hover:bg-gray-600 text-gray-300'
                   }`}
+                  type="button"
                 >
                   <span>←</span>
                   <span>Previous</span>
@@ -258,12 +330,13 @@ const CryptoPairSearch: React.FC<CryptoPairSearchProps> = ({
                       pages.push(
                         <button
                           key={i}
-                          onClick={() => setCurrentPage(i)}
+                          onClick={() => handlePageChange(i)}
                           className={`px-3 py-2 rounded-lg transition-colors text-sm ${
                             currentPage === i
                               ? 'bg-emerald-600 text-white'
                               : 'bg-gray-700 hover:bg-gray-600 text-gray-300'
                           }`}
+                          type="button"
                         >
                           {i}
                         </button>
@@ -275,13 +348,14 @@ const CryptoPairSearch: React.FC<CryptoPairSearchProps> = ({
 
                 {/* Next Page */}
                 <button
-                  onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
+                  onClick={() => handlePageChange(currentPage + 1)}
                   disabled={currentPage === totalPages}
                   className={`flex items-center space-x-2 px-4 py-2 rounded-lg transition-colors ${
                     currentPage === totalPages
                       ? 'bg-gray-700 text-gray-500 cursor-not-allowed'
                       : 'bg-emerald-600 hover:bg-emerald-700 text-white'
                   }`}
+                  type="button"
                 >
                   <span>Next</span>
                   <span>→</span>
@@ -289,13 +363,14 @@ const CryptoPairSearch: React.FC<CryptoPairSearchProps> = ({
 
                 {/* Last Page */}
                 <button
-                  onClick={() => setCurrentPage(totalPages)}
+                  onClick={() => handlePageChange(totalPages)}
                   disabled={currentPage === totalPages}
                   className={`px-3 py-2 rounded-lg transition-colors text-sm ${
                     currentPage === totalPages
                       ? 'bg-gray-700 text-gray-500 cursor-not-allowed'
                       : 'bg-gray-700 hover:bg-gray-600 text-gray-300'
                   }`}
+                  type="button"
                 >
                   Last ⏭️
                 </button>
@@ -313,7 +388,7 @@ const CryptoPairSearch: React.FC<CryptoPairSearchProps> = ({
                 onChange={(e) => {
                   const page = parseInt(e.target.value);
                   if (page >= 1 && page <= totalPages) {
-                    setCurrentPage(page);
+                    handlePageChange(page);
                   }
                 }}
                 className="w-20 px-2 py-1 bg-gray-700 border border-gray-600 rounded text-white text-center"

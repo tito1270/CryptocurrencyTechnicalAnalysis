@@ -423,8 +423,18 @@ function AppContent() {
                   </div>
                   {!binancePairsLoading && (
                     <button
-                      onClick={refreshBinancePairs}
+                      onClick={() => {
+                        try {
+                          if (refreshBinancePairs && typeof refreshBinancePairs === 'function') {
+                            refreshBinancePairs();
+                          }
+                        } catch (error) {
+                          console.error('Error refreshing Binance pairs:', error);
+                        }
+                      }}
                       className="px-3 py-1 bg-emerald-600 hover:bg-emerald-700 text-white text-sm rounded-lg transition-colors"
+                      type="button"
+                      title="Refresh Binance pairs data"
                     >
                       Refresh
                     </button>
