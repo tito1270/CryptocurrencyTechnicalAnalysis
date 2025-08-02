@@ -126,12 +126,17 @@ const LivePrices: React.FC<LivePricesProps> = ({ selectedPair, selectedBroker })
 
   // Handle scan individual pair
   const handleScanPair = async (pair: string) => {
-    if (isScanning || scannedPairs.has(pair)) return;
-    
-    setIsScanning(true);
-    setScannedPairs(prev => new Set([...prev, pair]));
-    
     try {
+      if (isScanning || scannedPairs.has(pair)) return;
+      
+      if (!pair) {
+        console.error('No pair specified for scan');
+        return;
+      }
+      
+      setIsScanning(true);
+      setScannedPairs(prev => new Set([...prev, pair]));
+      
       const analysis = await performAnalysis({
         pair,
         broker: 'binance',
@@ -144,6 +149,12 @@ const LivePrices: React.FC<LivePricesProps> = ({ selectedPair, selectedBroker })
       setScanResults(prev => new Map([...prev, [pair, analysis]]));
     } catch (error) {
       console.error(`Failed to scan ${pair}:`, error);
+      // Remove from scanned pairs if analysis failed
+      setScannedPairs(prev => {
+        const newSet = new Set(prev);
+        newSet.delete(pair);
+        return newSet;
+      });
     } finally {
       setIsScanning(false);
     }
@@ -151,16 +162,18 @@ const LivePrices: React.FC<LivePricesProps> = ({ selectedPair, selectedBroker })
 
   // Handle bulk scan visible pairs
   const handleBulkScan = async () => {
-    if (isScanning) return;
-    
-    setIsScanning(true);
-    const pairsToScan = paginatedData.map(price => price.pair);
-    
     try {
+      if (isScanning) return;
+      
+      setIsScanning(true);
+      const pairsToScan = paginatedData.map(price => price.pair);
+      
       for (const pair of pairsToScan) {
-        if (!scannedPairs.has(pair)) {
-          setScannedPairs(prev => new Set([...prev, pair]));
-          
+        if (scannedPairs.has(pair)) continue;
+        
+        setScannedPairs(prev => new Set([...prev, pair]));
+        
+        try {
           const analysis = await performAnalysis({
             pair,
             broker: 'binance',
@@ -171,15 +184,45 @@ const LivePrices: React.FC<LivePricesProps> = ({ selectedPair, selectedBroker })
           });
           
           setScanResults(prev => new Map([...prev, [pair, analysis]]));
-          
-          // Small delay to prevent rate limiting
-          await new Promise(resolve => setTimeout(resolve, 100));
+        } catch (error) {
+          console.error(`Failed to analyze ${pair}:`, error);
+          // Remove from scanned pairs if analysis failed
+          setScannedPairs(prev => {
+            const newSet = new Set(prev);
+            newSet.delete(pair);
+            return newSet;
+          });
         }
+        
+        // Add delay between scans
+        await new Promise(resolve => setTimeout(resolve, 500));
       }
     } catch (error) {
-      console.error('Bulk scan failed:', error);
+      console.error('Error in bulk scan:', error);
     } finally {
       setIsScanning(false);
+    }
+  };
+
+  // Handle refresh with error handling
+  const handleRefresh = () => {
+    try {
+      if (refreshPairs && typeof refreshPairs === 'function') {
+        refreshPairs();
+      }
+    } catch (error) {
+      console.error('Error refreshing pairs:', error);
+    }
+  };
+
+  // Handle page change
+  const handlePageChange = (newPage: number) => {
+    try {
+      if (newPage >= 1 && newPage <= totalPages) {
+        setCurrentPage(newPage);
+      }
+    } catch (error) {
+      console.error('Error changing page:', error);
     }
   };
 
@@ -213,9 +256,11 @@ const LivePrices: React.FC<LivePricesProps> = ({ selectedPair, selectedBroker })
               </span>
             )}
             <button
-              onClick={refreshPairs}
+              onClick={handleRefresh}
               disabled={loading}
-              className="flex items-center space-x-2 px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg transition-colors disabled:opacity-50"
+              className="flex items-center space-x-2 px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              type="button"
+              title="Refresh live prices"
             >
               <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
               <span>{loading ? 'Loading...' : 'Refresh'}</span>
@@ -270,7 +315,9 @@ const LivePrices: React.FC<LivePricesProps> = ({ selectedPair, selectedBroker })
             <button
               onClick={handleBulkScan}
               disabled={isScanning || paginatedData.length === 0}
-              className="flex items-center space-x-2 px-4 py-2 bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 text-white rounded-lg transition-all disabled:opacity-50"
+              className="flex items-center space-x-2 px-4 py-2 bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 text-white rounded-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+              type="button"
+              title="Scan all pairs on current page"
             >
               {isScanning ? (
                 <>
@@ -418,6 +465,8 @@ const LivePrices: React.FC<LivePricesProps> = ({ selectedPair, selectedBroker })
                             ? 'bg-emerald-600/20 text-emerald-400 cursor-not-allowed'
                             : 'bg-blue-600 hover:bg-blue-700 text-white'
                         }`}
+                        type="button"
+                        title={isScanned ? 'Already scanned' : `Scan ${price.pair}`}
                       >
                         {isScanned ? 'Scanned' : 'Scan'}
                       </button>
@@ -450,9 +499,11 @@ const LivePrices: React.FC<LivePricesProps> = ({ selectedPair, selectedBroker })
             </div>
             <div className="flex items-center space-x-2">
               <button
-                onClick={() => setCurrentPage(Math.max(1, currentPage - 1))}
+                onClick={() => handlePageChange(Math.max(1, currentPage - 1))}
                 disabled={currentPage === 1}
                 className="flex items-center space-x-1 px-3 py-1 bg-gray-700 text-gray-300 rounded hover:bg-gray-600 disabled:opacity-50 disabled:cursor-not-allowed"
+                type="button"
+                title="Previous page"
               >
                 <ChevronLeft className="w-4 h-4" />
                 <span>Previous</span>
@@ -464,12 +515,14 @@ const LivePrices: React.FC<LivePricesProps> = ({ selectedPair, selectedBroker })
                   return (
                     <button
                       key={pageNum}
-                      onClick={() => setCurrentPage(pageNum)}
+                      onClick={() => handlePageChange(pageNum)}
                       className={`px-3 py-1 rounded ${
                         currentPage === pageNum
                           ? 'bg-emerald-600 text-white'
                           : 'bg-gray-700 text-gray-300 hover:bg-gray-600'
                       }`}
+                      type="button"
+                      title={`Go to page ${pageNum}`}
                     >
                       {pageNum}
                     </button>
@@ -478,9 +531,11 @@ const LivePrices: React.FC<LivePricesProps> = ({ selectedPair, selectedBroker })
               </div>
               
               <button
-                onClick={() => setCurrentPage(Math.min(totalPages, currentPage + 1))}
+                onClick={() => handlePageChange(Math.min(totalPages, currentPage + 1))}
                 disabled={currentPage === totalPages}
                 className="flex items-center space-x-1 px-3 py-1 bg-gray-700 text-gray-300 rounded hover:bg-gray-600 disabled:opacity-50 disabled:cursor-not-allowed"
+                type="button"
+                title="Next page"
               >
                 <span>Next</span>
                 <ChevronRight className="w-4 h-4" />

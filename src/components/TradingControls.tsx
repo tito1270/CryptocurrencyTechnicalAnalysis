@@ -140,44 +140,144 @@ const TradingControls: React.FC<TradingControlsProps> = ({
   };
 
   const handleCopyLink = async () => {
-    const currentUrl = new URL(window.location.href);
-    currentUrl.searchParams.set('pair', selectedPair);
-    currentUrl.searchParams.set('broker', selectedBroker);
-    currentUrl.searchParams.set('timeframe', selectedTimeframe);
-    currentUrl.searchParams.set('type', tradeType);
-
-    const urlString = currentUrl.toString();
-
-    // Check if we're in an iframe or restricted context - use fallback directly
-    const isRestricted = window.self !== window.top || !window.isSecureContext;
-
-    if (isRestricted || !navigator.clipboard) {
-      // Use fallback method directly for restricted environments
-      const success = fallbackCopyTextToClipboard(urlString);
-      if (success) {
-        setCopied(true);
-        setTimeout(() => setCopied(false), 2000);
-      } else {
-        console.error('Failed to copy link using fallback method');
-      }
-      return;
-    }
-
     try {
-      // Only try clipboard API in unrestricted, secure contexts
-      await navigator.clipboard.writeText(urlString);
-      setCopied(true);
-      setTimeout(() => setCopied(false), 2000);
-    } catch (err) {
-      console.error('Clipboard API failed, trying fallback:', err);
-      // Try fallback method
-      const success = fallbackCopyTextToClipboard(urlString);
-      if (success) {
+      const currentUrl = new URL(window.location.href);
+      currentUrl.searchParams.set('pair', selectedPair);
+      currentUrl.searchParams.set('broker', selectedBroker);
+      currentUrl.searchParams.set('timeframe', selectedTimeframe);
+      currentUrl.searchParams.set('type', tradeType);
+
+      const urlString = currentUrl.toString();
+
+      // Check if we're in an iframe or restricted context - use fallback directly
+      const isRestricted = window.self !== window.top || !window.isSecureContext;
+
+      if (isRestricted || !navigator.clipboard) {
+        // Use fallback method directly for restricted environments
+        const success = fallbackCopyTextToClipboard(urlString);
+        if (success) {
+          setCopied(true);
+          setTimeout(() => setCopied(false), 2000);
+        } else {
+          console.error('Failed to copy link using fallback method');
+        }
+        return;
+      }
+
+      try {
+        // Only try clipboard API in unrestricted, secure contexts
+        await navigator.clipboard.writeText(urlString);
         setCopied(true);
         setTimeout(() => setCopied(false), 2000);
-      } else {
-        console.error('Failed to copy link: Both methods failed');
+      } catch (err) {
+        console.error('Clipboard API failed, trying fallback:', err);
+        // Try fallback method
+        const success = fallbackCopyTextToClipboard(urlString);
+        if (success) {
+          setCopied(true);
+          setTimeout(() => setCopied(false), 2000);
+        } else {
+          console.error('Failed to copy link: Both methods failed');
+        }
       }
+    } catch (error) {
+      console.error('Error in handleCopyLink:', error);
+    }
+  };
+
+  const handleBrokerChange = (newBroker: string) => {
+    try {
+      if (onBrokerChange && typeof onBrokerChange === 'function') {
+        onBrokerChange(newBroker);
+      }
+    } catch (error) {
+      console.error('Error changing broker:', error);
+    }
+  };
+
+  const handlePairChange = (newPair: string) => {
+    try {
+      if (onPairChange && typeof onPairChange === 'function') {
+        onPairChange(newPair);
+      }
+    } catch (error) {
+      console.error('Error changing pair:', error);
+    }
+  };
+
+  const handleTimeframeChange = (newTimeframe: string) => {
+    try {
+      if (onTimeframeChange && typeof onTimeframeChange === 'function') {
+        onTimeframeChange(newTimeframe);
+      }
+    } catch (error) {
+      console.error('Error changing timeframe:', error);
+    }
+  };
+
+  const handleTradeTypeChange = (newType: 'SPOT' | 'FUTURES') => {
+    try {
+      if (onTradeTypeChange && typeof onTradeTypeChange === 'function') {
+        onTradeTypeChange(newType);
+      }
+    } catch (error) {
+      console.error('Error changing trade type:', error);
+    }
+  };
+
+  const handleIndicatorToggle = (indicatorId: string) => {
+    try {
+      if (onIndicatorToggle && typeof onIndicatorToggle === 'function') {
+        onIndicatorToggle(indicatorId);
+      }
+    } catch (error) {
+      console.error('Error toggling indicator:', error);
+    }
+  };
+
+  const handleStrategyToggle = (strategyId: string) => {
+    try {
+      if (onStrategyToggle && typeof onStrategyToggle === 'function') {
+        onStrategyToggle(strategyId);
+      }
+    } catch (error) {
+      console.error('Error toggling strategy:', error);
+    }
+  };
+
+  const handleAnalyze = () => {
+    try {
+      if (onAnalyze && typeof onAnalyze === 'function') {
+        onAnalyze();
+      }
+    } catch (error) {
+      console.error('Error starting analysis:', error);
+    }
+  };
+
+  const handleAdvancedPairSearch = () => {
+    try {
+      setShowAdvancedPairSearch(true);
+    } catch (error) {
+      console.error('Error opening advanced pair search:', error);
+    }
+  };
+
+  const handleCloseAdvancedSearch = () => {
+    try {
+      setShowAdvancedPairSearch(false);
+    } catch (error) {
+      console.error('Error closing advanced pair search:', error);
+    }
+  };
+
+  const handlePaginationChange = (newPage: number) => {
+    try {
+      if (newPage >= 0 && newPage < totalPages) {
+        setCurrentDropdownPage(newPage);
+      }
+    } catch (error) {
+      console.error('Error changing pagination:', error);
     }
   };
 
@@ -195,7 +295,7 @@ const TradingControls: React.FC<TradingControlsProps> = ({
           <div className="relative">
             <select
               value={selectedBroker}
-              onChange={(e) => onBrokerChange(e.target.value)}
+              onChange={(e) => handleBrokerChange(e.target.value)}
               className="w-full bg-gradient-to-r from-gray-700 to-gray-600 border border-gray-500 rounded-lg px-4 py-3 text-white focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition-all duration-200 appearance-none cursor-pointer text-sm font-medium shadow-lg"
             >
               {brokers.map(broker => (
@@ -226,12 +326,13 @@ const TradingControls: React.FC<TradingControlsProps> = ({
               return (
                 <button
                   key={brokerId}
-                  onClick={() => onBrokerChange(brokerId)}
+                  onClick={() => handleBrokerChange(brokerId)}
                   className={`px-3 py-2 rounded-lg text-sm font-medium transition-all duration-200 ${
                     selectedBroker === brokerId
                       ? 'bg-emerald-600 text-white shadow-lg'
                       : 'bg-gray-700 text-gray-300 hover:bg-gray-600 hover:text-white'
                   }`}
+                  type="button"
                 >
                   {broker.logo} {broker.name}
                 </button>
@@ -248,7 +349,7 @@ const TradingControls: React.FC<TradingControlsProps> = ({
           <div className="flex space-x-2">
             <select
               value={selectedPair}
-              onChange={(e) => onPairChange(e.target.value)}
+              onChange={(e) => handlePairChange(e.target.value)}
               className="flex-1 bg-gray-700 border border-gray-600 rounded-lg px-3 py-2 text-white focus:ring-2 focus:ring-emerald-500 focus:border-transparent"
             >
               {limitedPairs.map(pair => (
@@ -256,9 +357,10 @@ const TradingControls: React.FC<TradingControlsProps> = ({
               ))}
             </select>
             <button
-              onClick={() => setShowAdvancedPairSearch(true)}
+              onClick={handleAdvancedPairSearch}
               className="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg transition-colors font-medium flex items-center space-x-2"
-              title="Advanced Pair Search with 300 pairs per batch, filtering, and URL updates"
+              title="Advanced Pair Search with filtering and URL updates"
+              type="button"
             >
               <Search className="w-4 h-4" />
               <span className="hidden sm:inline">Search</span>
@@ -267,6 +369,7 @@ const TradingControls: React.FC<TradingControlsProps> = ({
               onClick={handleCopyLink}
               className="px-3 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors font-medium"
               title="Copy analysis link with current settings"
+              type="button"
             >
               {copied ? <Check className="w-4 h-4" /> : <Copy className="w-4 h-4" />}
             </button>
@@ -281,13 +384,14 @@ const TradingControls: React.FC<TradingControlsProps> = ({
             {totalPages > 1 && (
               <div className="flex items-center space-x-2">
                 <button
-                  onClick={() => setCurrentDropdownPage(prev => Math.max(0, prev - 1))}
+                  onClick={() => handlePaginationChange(currentDropdownPage - 1)}
                   disabled={!hasPrevPage}
                   className={`px-2 py-1 rounded text-xs font-medium transition-colors ${
                     hasPrevPage
                       ? 'bg-gray-600 hover:bg-gray-500 text-gray-300'
                       : 'bg-gray-700 text-gray-500 cursor-not-allowed'
                   }`}
+                  type="button"
                 >
                   PREV
                 </button>
@@ -297,13 +401,14 @@ const TradingControls: React.FC<TradingControlsProps> = ({
                 </span>
 
                 <button
-                  onClick={() => setCurrentDropdownPage(prev => Math.min(totalPages - 1, prev + 1))}
+                  onClick={() => handlePaginationChange(currentDropdownPage + 1)}
                   disabled={!hasNextPage}
                   className={`px-2 py-1 rounded text-xs font-medium transition-colors ${
                     hasNextPage
                       ? 'bg-emerald-600 hover:bg-emerald-700 text-white'
                       : 'bg-gray-700 text-gray-500 cursor-not-allowed'
                   }`}
+                  type="button"
                 >
                   NEXT
                 </button>
@@ -321,12 +426,13 @@ const TradingControls: React.FC<TradingControlsProps> = ({
             {timeframes.map(tf => (
               <button
                 key={tf}
-                onClick={() => onTimeframeChange(tf)}
+                onClick={() => handleTimeframeChange(tf)}
                 className={`px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
                   selectedTimeframe === tf
                     ? 'bg-emerald-600 text-white'
                     : 'bg-gray-700 text-gray-300 hover:bg-gray-600'
                 }`}
+                type="button"
               >
                 {tf}
               </button>
@@ -340,12 +446,13 @@ const TradingControls: React.FC<TradingControlsProps> = ({
             {(['SPOT', 'FUTURES'] as const).map(type => (
               <button
                 key={type}
-                onClick={() => onTradeTypeChange(type)}
+                onClick={() => handleTradeTypeChange(type)}
                 className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
                   tradeType === type
                     ? 'bg-blue-600 text-white'
                     : 'bg-gray-700 text-gray-300 hover:bg-gray-600'
                 }`}
+                type="button"
               >
                 {type}
               </button>
@@ -394,7 +501,7 @@ const TradingControls: React.FC<TradingControlsProps> = ({
               <input
                 type="checkbox"
                 checked={selectedIndicators.includes(indicator.id)}
-                onChange={() => onIndicatorToggle(indicator.id)}
+                onChange={() => handleIndicatorToggle(indicator.id)}
                 className="rounded border-gray-600 text-emerald-600 focus:ring-emerald-500 focus:ring-offset-gray-800"
               />
               <span className="text-sm text-gray-300">{indicator.name}</span>
@@ -412,7 +519,7 @@ const TradingControls: React.FC<TradingControlsProps> = ({
               <input
                 type="checkbox"
                 checked={selectedStrategies.includes(strategy.id)}
-                onChange={() => onStrategyToggle(strategy.id)}
+                onChange={() => handleStrategyToggle(strategy.id)}
                 className="rounded border-gray-600 text-blue-600 focus:ring-blue-500 focus:ring-offset-gray-800"
               />
               <span className="text-sm text-gray-300">{strategy.name}</span>
@@ -423,7 +530,7 @@ const TradingControls: React.FC<TradingControlsProps> = ({
       
       {/* Enhanced Analyze Button */}
       <button
-        onClick={onAnalyze}
+        onClick={handleAnalyze}
         disabled={isAnalyzing || !selectedPair || selectedIndicators.length === 0}
         className={`w-full font-semibold py-4 px-6 rounded-lg transition-all duration-200 shadow-lg focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:ring-offset-2 focus:ring-offset-gray-800 ${
           isAnalyzing
@@ -433,6 +540,7 @@ const TradingControls: React.FC<TradingControlsProps> = ({
             : 'bg-gradient-to-r from-emerald-600 to-blue-600 hover:from-emerald-700 hover:to-blue-700 text-white transform hover:scale-105 animate-pulse hover:animate-none'
         }`}
         aria-label={`Analyze ${selectedPair} market data and get trading recommendations using ${selectedTimeframe} timeframe`}
+        type="button"
       >
         <div className="flex items-center justify-center space-x-2">
           {isAnalyzing ? (
@@ -478,9 +586,9 @@ const TradingControls: React.FC<TradingControlsProps> = ({
           return tradeType === 'FUTURES' ? (currentBroker?.futuresPairs || []) : (currentBroker?.pairs || []);
         })()}
         selectedPair={selectedPair}
-        onPairSelect={onPairChange}
+        onPairSelect={handlePairChange}
         isOpen={showAdvancedPairSearch}
-        onClose={() => setShowAdvancedPairSearch(false)}
+        onClose={handleCloseAdvancedSearch}
         loading={selectedBroker === 'binance' && dynamicPairs ? dynamicPairs.loading : false}
         error={selectedBroker === 'binance' && dynamicPairs ? dynamicPairs.error : null}
         lastUpdated={selectedBroker === 'binance' && dynamicPairs ? dynamicPairs.lastUpdated : null}

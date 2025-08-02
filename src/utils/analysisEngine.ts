@@ -4,18 +4,31 @@ import { tradingStrategies } from '../data/strategies';
 import { cryptoNews } from '../data/news';
 import { getPairPrice, getFallbackPrice } from './priceAPI';
 
+interface AnalysisConfig {
+  pair: string;
+  broker: string;
+  timeframe: string;
+  tradeType: 'SPOT' | 'FUTURES';
+  indicators: string[];
+  strategies: string[];
+}
+
 // Simple analysis engine without conflicts
-export const performAnalysis = async (
-  pair: string,
-  broker: string,
-  timeframe: string,
-  tradeType: 'SPOT' | 'FUTURES',
-  selectedIndicators: string[],
-  selectedStrategies: string[]
-): Promise<AnalysisResult> => {
+export const performAnalysis = async (config: AnalysisConfig): Promise<AnalysisResult> => {
+  const { pair, broker, timeframe, tradeType, indicators: selectedIndicators, strategies: selectedStrategies } = config;
+  
   console.log(`🚀 Starting analysis for ${pair} on ${broker}...`);
   
   try {
+    // Validate input parameters
+    if (!pair || !broker) {
+      throw new Error('Missing required parameters: pair and broker');
+    }
+
+    if (!selectedIndicators || selectedIndicators.length === 0) {
+      throw new Error('At least one indicator must be selected');
+    }
+
     // Get current price
     const currentPrice = await getCurrentPrice(pair, broker);
     
@@ -92,6 +105,7 @@ const getCurrentPrice = async (pair: string, broker: string): Promise<number> =>
     }
     return getFallbackPrice(pair);
   } catch (error) {
+    console.error(`Failed to get price for ${pair}:`, error);
     return getFallbackPrice(pair);
   }
 };
@@ -127,7 +141,7 @@ const calculateSentiment = (indicators: TechnicalIndicator[], strategies: Tradin
   
   const confidence = Math.round(Math.abs(bullishRatio - 0.5) * 200);
   
-  return { sentiment, confidence: Math.max(50, Math.min(90, confidence)) };
+  return { sentiment, confidence: Math.max(50, Math.min(95, confidence)) };
 };
 
 // Generate trading recommendation
@@ -190,11 +204,11 @@ const calculatePriceLevels = (currentPrice: number, sentiment: string) => {
   }
   
   return {
-    entryPrice: currentPrice * entryMultiplier,
-    profitTarget: currentPrice * targetMultiplier,
-    stopLoss: currentPrice * stopMultiplier,
-    supportLevel: currentPrice * 0.95,
-    resistanceLevel: currentPrice * 1.05
+    entryPrice: Number((currentPrice * entryMultiplier).toFixed(8)),
+    profitTarget: Number((currentPrice * targetMultiplier).toFixed(8)),
+    stopLoss: Number((currentPrice * stopMultiplier).toFixed(8)),
+    supportLevel: Number((currentPrice * 0.95).toFixed(8)),
+    resistanceLevel: Number((currentPrice * 1.05).toFixed(8))
   };
 };
 
