@@ -3,6 +3,7 @@ import { technicalIndicators } from '../data/indicators';
 import { tradingStrategies } from '../data/strategies';
 import { cryptoNews } from '../data/news';
 import { getPairPrice, getFallbackPrice } from './priceAPI';
+import { generateOHLCData, performPatternAnalysis } from './candlestickPatterns';
 
 export const performAnalysis = async (
   pair: string,
@@ -42,6 +43,12 @@ export const performAnalysis = async (
     currentPrice,
     priceLevels
   );
+
+  // Generate OHLC data for pattern analysis (simulated from current price)
+  const ohlcData = generateOHLCData(currentPrice, 30);
+  
+  // Perform candlestick pattern analysis with current price
+  const patternAnalysis = performPatternAnalysis(ohlcData, timeframe, currentPrice);
   
   return {
     pair,
@@ -66,7 +73,13 @@ export const performAnalysis = async (
     indicators: activeIndicators,
     strategies: activeStrategies,
     priceSource: priceData.source,
-    priceTimestamp: priceData.timestamp
+    priceTimestamp: priceData.timestamp,
+    // Pattern analysis results
+    patternAnalysis,
+    candlestickPatterns: patternAnalysis.detectedPatterns,
+    trendAnalysis: patternAnalysis.trendAnalysis,
+    patternConfirmation: patternAnalysis.patternConfirmation,
+    optionsRecommendations: patternAnalysis.optionsRecommendations
   };
 };
 
