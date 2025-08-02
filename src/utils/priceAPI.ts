@@ -905,20 +905,29 @@ export const fetchRealTimePrices = async (selectedBrokers?: string[]): Promise<P
         return prices;
       } catch (error) {
         console.error(`❌ ${name.toUpperCase()} failed:`, error);
-        return generateFallbackForExchange(name);
+        return await generateFallbackForExchange(name);
       }
     })
   );
   
-  results.forEach((result, index) => {
+  // Handle results and add fallback for completely failed exchanges
+  for (let index = 0; index < results.length; index++) {
+    const result = results[index];
     if (result.status === 'fulfilled') {
       allPrices.push(...result.value);
     } else {
       const exchangeName = exchangeFetchers[index].name;
       console.error(`❌ ${exchangeName.toUpperCase()} completely failed`);
-      allPrices.push(...generateFallbackForExchange(exchangeName));
+      try {
+        const fallbackPrices = await generateFallbackForExchange(exchangeName);
+        allPrices.push(...fallbackPrices);
+      } catch (fallbackError) {
+        console.error(`❌ Fallback also failed for ${exchangeName.toUpperCase()}:`, fallbackError);
+        // Use static fallback as last resort
+        allPrices.push(...generateStaticFallbackForExchange(exchangeName));
+      }
     }
-  });
+  }
   
   // All major exchanges now have live API implementations
   // If any exchange fails, the fallback is already handled in the Promise.allSettled above
@@ -933,90 +942,26 @@ export const fetchRealTimePrices = async (selectedBrokers?: string[]): Promise<P
   return allPrices;
 };
 
-// Generate realistic fallback for specific exchange
-const generateFallbackForExchange = (exchangeName: string): PriceData[] => {
-  console.log(`🔄 Generating fallback for ${exchangeName.toUpperCase()}...`);
+// Generate realistic fallback for specific exchange using Binance prices as reference
+const generateFallbackForExchange = async (exchangeName: string): Promise<PriceData[]> => {
+  console.log(`🔄 Generating realistic fallback for ${exchangeName.toUpperCase()} using Binance reference...`);
   
-  // Current market prices (January 2025)
-  const marketPrices: { [key: string]: number } = {
-    'BTC': 97500,
-    'ETH': 3480,
-    'BNB': 695,
-    'XRP': 2.48,
-    'ADA': 0.98,
-    'SOL': 238,
-    'DOGE': 0.385,
-    'MATIC': 1.15,
-    'DOT': 8.95,
-    'AVAX': 42.5,
-    'SHIB': 0.0000285,
-    'LTC': 115,
-    'ATOM': 8.85,
-    'LINK': 22.5,
-    'UNI': 12.8,
-    'BCH': 485,
-    'XLM': 0.385,
-    'ALGO': 0.385,
-    'VET': 0.0485,
-    'ICP': 12.5,
-    'FIL': 5.95,
-    'TRX': 0.285,
-    'ETC': 32.5,
-    'THETA': 2.85,
-    'NEAR': 6.95,
-    'FTM': 0.885,
-    'HBAR': 0.285,
-    'ONE': 0.0285,
-    'SAND': 0.585,
-    'MANA': 0.485,
-    'CRO': 0.185,
-    'PEPE': 0.0000185,
-    'FLOKI': 0.000285,
-    'BONK': 0.0000085,
-    'WIF': 3.85,
-    'OP': 2.85,
-    'ARB': 1.285,
-    'SUI': 2.85,
-    'SEI': 0.585,
-    'TIA': 8.85,
-    'JTO': 4.25,
-    'PYTH': 0.585,
-    'JUP': 1.485,
-    'BLUR': 0.485,
-    'IMX': 2.85,
-    'APT': 12.85,
-    'GMT': 0.285,
-    'STX': 2.85,
-    'INJ': 32.5,
-    'ROSE': 0.125,
-    'JASMY': 0.0485,
-    'LUNC': 0.000185,
-    'USTC': 0.0385,
-    'FET': 2.85,
-    'AGIX': 0.885,
-    'OCEAN': 0.985,
-    'RNDR': 12.5,
-    'TAO': 585,
-    'AI': 1.285,
-    'WLD': 3.85,
-    'ARKM': 2.85,
-    'LPT': 22.5,
-    'GRT': 0.385,
-    'AAVE': 285,
-    'COMP': 85.5,
-    'MKR': 1685,
-    'SNX': 3.85,
-    'CRV': 0.785,
-    'UMA': 4.85,
-    'BAL': 3.85,
-    'SUSHI': 1.85,
-    'YFI': 7850,
-    'CAKE': 3.85,
-    'USDT': 1.000,
-    'USDC': 0.9998,
-    'DAI': 1.001,
-    'BUSD': 1.000
-  };
+  let binancePrices: PriceData[] = [];
+  
+  // Try to get live Binance prices as reference
+  try {
+    binancePrices = await fetchBinanceLivePrices();
+    console.log(`✅ Got ${binancePrices.length} Binance reference prices for ${exchangeName.toUpperCase()}`);
+  } catch (error) {
+    console.warn(`⚠️ Could not fetch Binance reference prices, using static fallback: ${error}`);
+    // If Binance also fails, use the basic fallback from getFallbackPrice
+    return generateStaticFallbackForExchange(exchangeName);
+  }
+  
+  if (binancePrices.length === 0) {
+    console.warn(`⚠️ No Binance prices available, using static fallback for ${exchangeName.toUpperCase()}`);
+    return generateStaticFallbackForExchange(exchangeName);
+  }
   
   // Exchange-specific spreads and characteristics
   const exchangeConfig: { [key: string]: { spread: number; volume_mult: number; pairs: string[] } } = {
@@ -1100,13 +1045,83 @@ const generateFallbackForExchange = (exchangeName: string): PriceData[] => {
   const config = exchangeConfig[exchangeName] || exchangeConfig['binance'];
   const results: PriceData[] = [];
   
-  // Generate prices for major cryptocurrencies
+  // Filter Binance prices to only include pairs that this exchange supports
+  const exchangePairs = new Set(config.pairs);
+  
+  binancePrices.forEach(binancePrice => {
+    const [base, quote] = binancePrice.pair.split('/');
+    
+    // Check if this exchange supports this quote currency
+    if (!exchangePairs.has(quote)) return;
+    
+    // Apply exchange-specific spread and characteristics
+    const spreadVariation = (Math.random() - 0.5) * 0.0002; // ±0.01% random variation
+    const finalSpread = config.spread + spreadVariation;
+    const adjustedPrice = binancePrice.price * (1 + finalSpread);
+    
+    // Apply slight volume adjustment for this exchange
+    const volumeAdjustment = config.volume_mult * (0.9 + Math.random() * 0.2); // 0.9-1.1x
+    const adjustedVolume = binancePrice.volume * volumeAdjustment;
+    
+    // Adjust high/low based on the price adjustment
+    const priceRatio = adjustedPrice / binancePrice.price;
+    const adjustedHigh24h = binancePrice.high24h * priceRatio;
+    const adjustedLow24h = binancePrice.low24h * priceRatio;
+    
+    results.push({
+      broker: exchangeName,
+      pair: binancePrice.pair,
+      price: adjustedPrice,
+      change24h: binancePrice.change24h * (0.95 + Math.random() * 0.1), // Slight variation in change%
+      volume: adjustedVolume,
+      high24h: adjustedHigh24h,
+      low24h: adjustedLow24h,
+      timestamp: Date.now()
+    });
+  });
+  
+  console.log(`📊 ${exchangeName.toUpperCase()} realistic fallback: ${results.length} prices based on Binance reference`);
+  return results;
+};
+
+// Static fallback when even Binance fails (preserves original hardcoded logic as last resort)
+const generateStaticFallbackForExchange = (exchangeName: string): PriceData[] => {
+  console.log(`🔄 Generating static fallback for ${exchangeName.toUpperCase()} (last resort)...`);
+  
+  // Current market prices (January 2025) - kept as emergency fallback only
+  const marketPrices: { [key: string]: number } = {
+    'BTC': 97500, 'ETH': 3480, 'BNB': 695, 'XRP': 2.48, 'ADA': 0.98, 'SOL': 238,
+    'DOGE': 0.385, 'MATIC': 1.15, 'DOT': 8.95, 'AVAX': 42.5, 'SHIB': 0.0000285,
+    'LTC': 115, 'ATOM': 8.85, 'LINK': 22.5, 'UNI': 12.8, 'USDT': 1.000, 'USDC': 0.9998,
+    'DAI': 1.001, 'BUSD': 1.000
+  };
+  
+  // Exchange-specific spreads and characteristics
+  const exchangeConfig: { [key: string]: { spread: number; volume_mult: number; pairs: string[] } } = {
+    'binance': { spread: 0, volume_mult: 1.0, pairs: ['USDT', 'USDC', 'BTC', 'ETH', 'BNB', 'FDUSD'] },
+    'okx': { spread: 0.0005, volume_mult: 0.85, pairs: ['USDT', 'USDC', 'BTC', 'ETH'] },
+    'coinbase': { spread: -0.0010, volume_mult: 0.7, pairs: ['USD', 'USDC', 'BTC', 'ETH'] },
+    'kraken': { spread: 0.0008, volume_mult: 0.6, pairs: ['USD', 'USDT', 'BTC', 'ETH'] },
+    'kucoin': { spread: 0.0010, volume_mult: 0.55, pairs: ['USDT', 'USDC', 'BTC', 'ETH'] },
+    'huobi': { spread: 0.0005, volume_mult: 0.5, pairs: ['USDT', 'BTC', 'ETH'] },
+    'gate': { spread: -0.0005, volume_mult: 0.4, pairs: ['USDT', 'BTC', 'ETH'] },
+    'bitget': { spread: 0.0015, volume_mult: 0.45, pairs: ['USDT', 'BTC', 'ETH'] },
+    'mexc': { spread: -0.0005, volume_mult: 0.35, pairs: ['USDT', 'BTC', 'ETH'] },
+    'bybit': { spread: 0.0010, volume_mult: 0.55, pairs: ['USDT', 'BTC', 'ETH'] },
+    'crypto_com': { spread: -0.0008, volume_mult: 0.4, pairs: ['USD', 'USDT', 'BTC'] },
+    'bingx': { spread: 0.0012, volume_mult: 0.3, pairs: ['USDT', 'BTC'] },
+    'bitfinex': { spread: -0.0012, volume_mult: 0.45, pairs: ['USD', 'USDT', 'BTC'] },
+    'phemex': { spread: 0.0008, volume_mult: 0.35, pairs: ['USDT', 'BTC'] },
+    'deribit': { spread: 0.0006, volume_mult: 0.25, pairs: ['USD'] }
+  };
+  
+  const config = exchangeConfig[exchangeName] || exchangeConfig['binance'];
+  const results: PriceData[] = [];
+  
+  // Generate prices for major cryptocurrencies only
   const majorCryptos = ['BTC', 'ETH', 'BNB', 'XRP', 'ADA', 'SOL', 'DOGE', 'MATIC', 'DOT', 'AVAX'];
-  const popularCryptos = ['SHIB', 'LTC', 'ATOM', 'LINK', 'UNI', 'PEPE', 'OP', 'ARB', 'AAVE', 'COMP'];
   
-  const allCryptos = [...majorCryptos, ...popularCryptos];
-  
-  allCryptos.forEach(crypto => {
+  majorCryptos.forEach(crypto => {
     const basePrice = marketPrices[crypto];
     if (!basePrice) return;
     
@@ -1118,15 +1133,13 @@ const generateFallbackForExchange = (exchangeName: string): PriceData[] => {
       
       // Generate realistic 24h change
       const volatility = crypto === 'BTC' || crypto === 'ETH' ? 4 : 
-                         ['USDT', 'USDC', 'DAI'].includes(crypto) ? 0.1 : 
-                         8;
+                         ['USDT', 'USDC', 'DAI'].includes(crypto) ? 0.1 : 8;
       const change24h = (Math.random() - 0.5) * volatility;
       
       // Volume based on market cap
       const baseVolume = basePrice > 1000 ? 100000000 : 
                          basePrice > 10 ? 50000000 : 
-                         basePrice > 0.1 ? 20000000 : 
-                         8000000;
+                         basePrice > 0.1 ? 20000000 : 8000000;
       
       const volume = baseVolume * config.volume_mult * (0.8 + Math.random() * 0.4);
       
@@ -1148,7 +1161,7 @@ const generateFallbackForExchange = (exchangeName: string): PriceData[] => {
     });
   });
   
-  console.log(`📊 ${exchangeName.toUpperCase()} fallback: ${results.length} prices generated`);
+  console.log(`📊 ${exchangeName.toUpperCase()} static fallback: ${results.length} prices generated`);
   return results;
 };
 
@@ -1210,9 +1223,9 @@ export const getPairPrice = async (broker: string, pair: string): Promise<number
       return pairData.price;
     }
     
-    // Fallback to calculated price
-    console.log(`⚠️ No live data for ${pair} on ${broker.toUpperCase()}, using calculated price`);
-    const fallbackPrice = getFallbackPrice(pair);
+    // Fallback to calculated price with Binance reference
+    console.log(`⚠️ No live data for ${pair} on ${broker.toUpperCase()}, using Binance-based fallback`);
+    const fallbackPrice = await getFallbackPriceAsync(pair);
     
     if (fallbackPrice > 0) {
       return fallbackPrice;
@@ -1225,9 +1238,9 @@ export const getPairPrice = async (broker: string, pair: string): Promise<number
     
     // Enhanced fallback with error handling
     try {
-      const fallbackPrice = getFallbackPrice(pair);
+      const fallbackPrice = await getFallbackPriceAsync(pair);
       if (fallbackPrice > 0) {
-        console.log(`🔄 Using fallback price for ${pair}: $${fallbackPrice}`);
+        console.log(`🔄 Using Binance-based fallback price for ${pair}: $${fallbackPrice}`);
         return fallbackPrice;
       }
     } catch (fallbackError) {
@@ -1254,11 +1267,36 @@ const normalizePairFormat = (pair: string): string => {
   return pair.toUpperCase();
 };
 
-// Enhanced fallback price calculation
-export const getFallbackPrice = (pair: string): number => {
+// Enhanced fallback price calculation with Binance reference (async version)
+export const getFallbackPriceAsync = async (pair: string): Promise<number> => {
   const [base, quote] = pair.split('/');
   
-  // Comprehensive cryptocurrency price list (January 2025 estimates)
+  // Try to get live price from Binance first
+  try {
+    const binancePrices = await fetchBinanceLivePrices();
+    const binancePrice = binancePrices.find(p => p.pair === pair);
+    if (binancePrice && binancePrice.price > 0) {
+      console.log(`✅ Got live fallback price for ${pair} from Binance: $${binancePrice.price}`);
+      return binancePrice.price;
+    }
+  } catch (error) {
+    console.warn(`⚠️ Could not get Binance reference for ${pair}, using static fallback`);
+  }
+  
+  // Fall back to static price calculation
+  return getFallbackPriceStatic(pair);
+};
+
+// Synchronous fallback price calculation (for backward compatibility)
+export const getFallbackPrice = (pair: string): number => {
+  return getFallbackPriceStatic(pair);
+};
+
+// Static fallback price calculation
+const getFallbackPriceStatic = (pair: string): number => {
+  const [base, quote] = pair.split('/');
+  
+  // Static fallback prices (January 2025 estimates)
   const prices: { [key: string]: number } = {
     // Major cryptocurrencies
     'BTC': 97500, 'ETH': 3480, 'BNB': 695, 'XRP': 2.48, 'ADA': 0.98, 'SOL': 238,
