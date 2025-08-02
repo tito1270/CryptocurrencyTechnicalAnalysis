@@ -554,7 +554,16 @@ const BulkScanner: React.FC<BulkScannerProps> = ({
             {filteredResults.map((result) => (
               <div key={result.pair} className="bg-gray-700 rounded-lg p-4 space-y-3">
                 <div className="flex items-center justify-between">
-                  <h4 className="font-medium text-white">{result.pair}</h4>
+                  <div className="flex items-center space-x-2">
+                    <h4 className="font-medium text-white">{result.pair}</h4>
+                    <span className={`text-xs font-medium px-2 py-1 rounded ${
+                      result.tradeType === 'SPOT' 
+                        ? 'bg-emerald-600 text-emerald-100' 
+                        : 'bg-blue-600 text-blue-100'
+                    }`}>
+                      {result.tradeType}
+                    </span>
+                  </div>
                   <div className={`flex items-center space-x-1 ${getRecommendationColor(result.recommendation)}`}>
                     {getRecommendationIcon(result.recommendation)}
                     <span className="text-sm font-medium">{result.recommendation.replace('_', ' ')}</span>
