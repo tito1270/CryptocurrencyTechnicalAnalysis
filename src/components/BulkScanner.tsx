@@ -348,6 +348,23 @@ const BulkScanner: React.FC<BulkScannerProps> = ({
     }
   };
 
+  const getSentimentColor = (sentiment: string) => {
+    switch (sentiment) {
+      case 'STRONG_BULLISH':
+        return 'text-green-400';
+      case 'BULLISH':
+        return 'text-green-300';
+      case 'NEUTRAL':
+        return 'text-yellow-400';
+      case 'BEARISH':
+        return 'text-red-300';
+      case 'STRONG_BEARISH':
+        return 'text-red-400';
+      default:
+        return 'text-gray-400';
+    }
+  };
+
   const exportScanResults = () => {
     const exportData = filteredResults.map(result => ({
       pair: result.pair,
@@ -867,9 +884,9 @@ const BulkScanner: React.FC<BulkScannerProps> = ({
                   </div>
                   <div className="flex items-center justify-between">
                     <span className="text-gray-400 text-sm">Sentiment</span>
-                    <span className={`font-medium text-sm ${getSentimentColor(result.sentiment)}`}>
-                      {result.sentiment.replace('_', ' ')}
-                    </span>
+                                          <span className={`font-medium text-sm ${getSentimentColor(result.overallSentiment)}`}>
+                        {result.overallSentiment.replace('_', ' ')}
+                      </span>
                   </div>
                   <div className="flex items-center justify-between">
                     <span className="text-gray-400 text-sm">Scan Time</span>

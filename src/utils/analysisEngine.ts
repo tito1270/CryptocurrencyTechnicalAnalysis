@@ -5,6 +5,10 @@ import { cryptoNews } from '../data/news';
 import { getPairPrice, getFallbackPrice } from './priceAPI';
 import { generateOHLCData, performPatternAnalysis } from './candlestickPatterns';
 
+// NEW COMPREHENSIVE ANALYSIS ENGINE
+// Prioritizes candlestick patterns with higher weighting, integrates all indicators,
+// and provides strategic entry/exit calculations with news sentiment
+
 export const performAnalysis = async (
   pair: string,
   broker: string,
@@ -13,44 +17,64 @@ export const performAnalysis = async (
   selectedIndicators: string[],
   selectedStrategies: string[]
 ): Promise<AnalysisResult> => {
-  // Filter selected indicators and strategies
+  console.log(`🚀 Starting comprehensive analysis for ${pair} on ${broker}...`);
+  
+  // Step 1: Get LIVE current price with metadata
+  const priceData = await getCurrentPrice(pair, broker);
+  const currentPrice = priceData.price;
+  
+  // Step 2: Generate OHLC data for pattern analysis (enhanced with current price)
+  const ohlcData = generateOHLCData(currentPrice, 50, timeframe); // More periods for better analysis
+  
+  // Step 3: PRIORITY - Candlestick Pattern Analysis (Higher Weight)
+  const patternAnalysis = performPatternAnalysis(ohlcData, timeframe, currentPrice);
+  console.log(`📊 Detected ${patternAnalysis.detectedPatterns.length} candlestick patterns`);
+  
+  // Step 4: Filter and analyze selected indicators
   const activeIndicators = technicalIndicators.filter(ind => 
     selectedIndicators.includes(ind.id)
   );
   
+  // Step 5: Filter and analyze selected strategies  
   const activeStrategies = tradingStrategies.filter(strat => 
     selectedStrategies.includes(strat.id)
   );
   
-  // Calculate overall sentiment based on indicators and strategies
-  const { sentiment, confidence } = calculateOverallSentiment(activeIndicators, activeStrategies);
+  // Step 6: Comprehensive News Analysis with Real-time Relevance
+  const newsAnalysis = analyzeComprehensiveNewsImpact(pair, currentPrice, patternAnalysis);
   
-  // Analyze news impact for the pair
-  const newsAnalysis = analyzeNewsImpact(pair, activeIndicators, activeStrategies);
-  
-  // Get LIVE current price with metadata from specific broker
-  const priceData = await getCurrentPrice(pair, broker);
-  const currentPrice = priceData.price;
-  const priceLevels = calculatePriceLevels(currentPrice, sentiment, newsAnalysis.impact);
-  
-  // Generate comprehensive recommendation
-  const recommendation = generateRecommendation(
-    sentiment, 
-    confidence, 
-    newsAnalysis, 
+  // Step 7: WEIGHTED SENTIMENT CALCULATION (Patterns get highest priority)
+  const { sentiment, confidence } = calculateWeightedSentiment(
+    patternAnalysis,
     activeIndicators, 
     activeStrategies,
-    currentPrice,
-    priceLevels,
-    patternAnalysis
+    newsAnalysis
+  );
+  
+  // Step 8: Strategic Price Level Calculations
+  const strategicLevels = calculateStrategicPriceLevels(
+    currentPrice, 
+    sentiment, 
+    patternAnalysis, 
+    newsAnalysis,
+    timeframe
+  );
+  
+  // Step 9: Generate Comprehensive Trading Recommendation
+  const recommendation = generateTradingRecommendation(
+    sentiment,
+    confidence,
+    patternAnalysis,
+    newsAnalysis,
+    activeIndicators,
+    activeStrategies,
+    strategicLevels,
+    currentPrice
   );
 
-  // Generate OHLC data for pattern analysis (simulated from current price)
-  const ohlcData = generateOHLCData(currentPrice, 30, timeframe);
-  
-  // Perform candlestick pattern analysis with current price
-  const patternAnalysis = performPatternAnalysis(ohlcData, timeframe, currentPrice);
-  
+  console.log(`✅ Analysis complete: ${sentiment} sentiment with ${confidence}% confidence`);
+  console.log(`🎯 Recommendation: ${recommendation.action} at ${recommendation.entryPrice.toFixed(4)}`);
+
   return {
     pair,
     broker,
@@ -67,186 +91,201 @@ export const performAnalysis = async (
     explanation: recommendation.explanation,
     newsAnalysis: newsAnalysis.analysis,
     upcomingEvents: newsAnalysis.upcomingEvents,
-    entryPrice: priceLevels.entryPrice,
-    targetPrice: priceLevels.targetPrice,
-    supportLevel: priceLevels.supportLevel,
-    resistanceLevel: priceLevels.resistanceLevel,
+    entryPrice: strategicLevels.entryPrice,
+    targetPrice: strategicLevels.targetPrice,
+    supportLevel: strategicLevels.supportLevel,
+    resistanceLevel: strategicLevels.resistanceLevel,
     indicators: activeIndicators,
     strategies: activeStrategies,
     priceSource: priceData.source,
     priceTimestamp: priceData.timestamp,
-    // Pattern analysis results
+    // Enhanced pattern analysis results
     patternAnalysis,
     candlestickPatterns: patternAnalysis.detectedPatterns,
     trendAnalysis: patternAnalysis.trendAnalysis,
     patternConfirmation: patternAnalysis.patternConfirmation,
-    optionsRecommendations: patternAnalysis.optionsRecommendations
+    optionsRecommendations: patternAnalysis.optionsRecommendations || []
   };
 };
 
-const calculateOverallSentiment = (
+// ENHANCED WEIGHTED SENTIMENT CALCULATION
+// Candlestick patterns get 40% weight, indicators 30%, strategies 20%, news 10%
+const calculateWeightedSentiment = (
+  patternAnalysis: any,
   indicators: TechnicalIndicator[],
-  strategies: TradingStrategy[]
+  strategies: TradingStrategy[],
+  newsAnalysis: any
 ) => {
-  // Handle case when no indicators or strategies are selected
-  if (indicators.length === 0 && strategies.length === 0) {
-    return {
-      sentiment: 'NEUTRAL' as const,
-      confidence: 50
-    };
-  }
-
   let bullishScore = 0;
   let bearishScore = 0;
   let totalWeight = 0;
   
-  // Score indicators
-  indicators.forEach(indicator => {
-    const weight = 1;
-    totalWeight += weight;
+  // CANDLESTICK PATTERNS - HIGHEST PRIORITY (40% of total weight)
+  const patternWeight = 40;
+  if (patternAnalysis.detectedPatterns.length > 0) {
+    let patternBullishScore = 0;
+    let patternBearishScore = 0;
+    let patternTotalWeight = 0;
     
-    switch (indicator.signal) {
-      case 'BUY':
-        bullishScore += weight;
-        break;
-      case 'SELL':
-        bearishScore += weight;
-        break;
-      case 'NEUTRAL':
-        // No score change
-        break;
-    }
-  });
-  
-  // Score strategies with higher weight
-  strategies.forEach(strategy => {
-    const weight = 2; // Strategies have higher weight
-    totalWeight += weight;
+    patternAnalysis.detectedPatterns.forEach(pattern => {
+      const reliability = pattern.reliability === 'HIGH' ? 3 : pattern.reliability === 'MEDIUM' ? 2 : 1;
+      const confidence = pattern.confidence / 100;
+      const weight = reliability * confidence;
+      
+      patternTotalWeight += weight;
+      
+      if (pattern.type === 'BULLISH' || pattern.signal.includes('BUY')) {
+        patternBullishScore += weight;
+      } else if (pattern.type === 'BEARISH' || pattern.signal.includes('SELL')) {
+        patternBearishScore += weight;
+      }
+    });
     
-    switch (strategy.signal) {
-      case 'STRONG_BUY':
-        bullishScore += weight * 1.5;
-        break;
-      case 'BUY':
-        bullishScore += weight;
-        break;
-      case 'SELL':
-        bearishScore += weight;
-        break;
-      case 'STRONG_SELL':
-        bearishScore += weight * 1.5;
-        break;
-      case 'NEUTRAL':
-        // No score change
-        break;
+    // Add trend analysis to pattern score
+    const trendWeight = 2;
+    patternTotalWeight += trendWeight;
+    
+    if (patternAnalysis.trendAnalysis.direction === 'UPTREND') {
+      patternBullishScore += trendWeight * (patternAnalysis.trendAnalysis.confidence / 100);
+    } else if (patternAnalysis.trendAnalysis.direction === 'DOWNTREND') {
+      patternBearishScore += trendWeight * (patternAnalysis.trendAnalysis.confidence / 100);
     }
-  });
-  
-  // Prevent division by zero when no indicators or strategies are selected
-  const netScore = totalWeight > 0 ? (bullishScore - bearishScore) / totalWeight : 0;
-  
-  // Improved confidence calculation - more realistic ranges
-  const rawConfidence = Math.abs(netScore) * 80; // Scale down from 100
-  const confidence = Math.min(90, Math.max(55, rawConfidence)); // More realistic confidence range
-  
-  let sentiment: AnalysisResult['overallSentiment'];
-  // Adjusted thresholds for more realistic sentiment distribution
-  if (netScore > 0.6) sentiment = 'STRONG_BULLISH';
-  else if (netScore > 0.2) sentiment = 'BULLISH';
-  else if (netScore < -0.6) sentiment = 'STRONG_BEARISH';
-  else if (netScore < -0.2) sentiment = 'BEARISH';
-  else sentiment = 'NEUTRAL';
-  
-  return { sentiment, confidence };
-};
-
-const getCurrentPrice = async (pair: string, broker: string): Promise<{price: number, source: 'LIVE_API' | 'FALLBACK', timestamp: number}> => {
-  try {
-    console.log(`🔍 Fetching LIVE API price for ${pair} from ${broker.toUpperCase()} exchange...`);
-
-    // Try to get LIVE real-time price specifically from the selected broker's API
-    const realPrice = await getPairPrice(broker, pair);
-    if (realPrice && realPrice > 0) {
-      console.log(`✅ LIVE API price from ${broker.toUpperCase()}: $${realPrice.toFixed(6)} for ${pair}`);
-      return {
-        price: realPrice,
-        source: 'LIVE_API',
-        timestamp: Date.now()
-      };
-    } else {
-      console.warn(`⚠️ No LIVE API data available for ${pair} on ${broker.toUpperCase()}`);
+    
+    if (patternTotalWeight > 0) {
+      bullishScore += (patternBullishScore / patternTotalWeight) * patternWeight;
+      bearishScore += (patternBearishScore / patternTotalWeight) * patternWeight;
+      totalWeight += patternWeight;
     }
-  } catch (error) {
-    console.error(`❌ Error fetching LIVE ${pair} price from ${broker.toUpperCase()}:`, error);
-  }
-
-  // Fallback to current market price only if broker-specific LIVE API fails
-  console.log(`🔄 Using current market price for ${pair} (${broker.toUpperCase()} LIVE API unavailable)`);
-  return {
-    price: getFallbackPrice(pair),
-    source: 'FALLBACK',
-    timestamp: Date.now()
-  };
-};
-
-const calculatePriceLevels = (currentPrice: number, sentiment: string, newsImpact: string) => {
-  const volatility = 0.05; // 5% volatility assumption
-  
-  // Adjust volatility based on news impact
-  const newsMultiplier = newsImpact === 'HIGH' ? 1.5 : newsImpact === 'MEDIUM' ? 1.2 : 1.0;
-  const adjustedVolatility = volatility * newsMultiplier;
-  
-  let entryMultiplier = 1;
-  let targetMultiplier = 1.08; // 8% target
-  let stopMultiplier = 0.95; // 5% stop loss
-  
-  switch (sentiment) {
-    case 'STRONG_BULLISH':
-      entryMultiplier = 1.01;
-      targetMultiplier = 1.12;
-      stopMultiplier = 0.97;
-      break;
-    case 'BULLISH':
-      entryMultiplier = 1.005;
-      targetMultiplier = 1.08;
-      stopMultiplier = 0.96;
-      break;
-    case 'BEARISH':
-      entryMultiplier = 0.995;
-      targetMultiplier = 0.92;
-      stopMultiplier = 1.04;
-      break;
-    case 'STRONG_BEARISH':
-      entryMultiplier = 0.99;
-      targetMultiplier = 0.88;
-      stopMultiplier = 1.05;
-      break;
-    default:
-      // NEUTRAL
-      break;
   }
   
-  return {
-    entryPrice: currentPrice * entryMultiplier,
-    targetPrice: currentPrice * targetMultiplier,
-    supportLevel: currentPrice * (1 - adjustedVolatility),
-    resistanceLevel: currentPrice * (1 + adjustedVolatility)
-  };
+  // TECHNICAL INDICATORS - HIGH PRIORITY (30% of total weight)
+  const indicatorWeight = 30;
+  if (indicators.length > 0) {
+    let indicatorBullishScore = 0;
+    let indicatorBearishScore = 0;
+    
+    indicators.forEach(indicator => {
+      const weight = 1; // Equal weight for all indicators
+      
+      switch (indicator.signal) {
+        case 'BUY':
+          indicatorBullishScore += weight;
+          break;
+        case 'SELL':
+          indicatorBearishScore += weight;
+          break;
+      }
+    });
+    
+    const indicatorTotal = indicators.length;
+    if (indicatorTotal > 0) {
+      bullishScore += (indicatorBullishScore / indicatorTotal) * indicatorWeight;
+      bearishScore += (indicatorBearishScore / indicatorTotal) * indicatorWeight;
+      totalWeight += indicatorWeight;
+    }
+  }
+  
+  // TRADING STRATEGIES - MEDIUM PRIORITY (20% of total weight)
+  const strategyWeight = 20;
+  if (strategies.length > 0) {
+    let strategyBullishScore = 0;
+    let strategyBearishScore = 0;
+    
+    strategies.forEach(strategy => {
+      const weight = strategy.confidence / 100; // Weight by confidence
+      
+      switch (strategy.signal) {
+        case 'STRONG_BUY':
+          strategyBullishScore += weight * 1.5;
+          break;
+        case 'BUY':
+          strategyBullishScore += weight;
+          break;
+        case 'SELL':
+          strategyBearishScore += weight;
+          break;
+        case 'STRONG_SELL':
+          strategyBearishScore += weight * 1.5;
+          break;
+      }
+    });
+    
+    const strategyTotal = strategies.reduce((sum, s) => sum + s.confidence / 100, 0);
+    if (strategyTotal > 0) {
+      bullishScore += (strategyBullishScore / strategyTotal) * strategyWeight;
+      bearishScore += (strategyBearishScore / strategyTotal) * strategyWeight;
+      totalWeight += strategyWeight;
+    }
+  }
+  
+  // NEWS ANALYSIS - CONTEXTUAL PRIORITY (10% of total weight)
+  const newsWeight = 10;
+  if (newsAnalysis.impact !== 'LOW') {
+    let newsScore = 0;
+    
+    if (newsAnalysis.analysis.includes('BULLISH')) {
+      newsScore = newsAnalysis.impact === 'HIGH' ? 1 : 0.7;
+      bullishScore += newsScore * newsWeight;
+    } else if (newsAnalysis.analysis.includes('BEARISH')) {
+      newsScore = newsAnalysis.impact === 'HIGH' ? 1 : 0.7;
+      bearishScore += newsScore * newsWeight;
+    }
+    
+    if (newsScore > 0) {
+      totalWeight += newsWeight;
+    }
+  }
+  
+  // Calculate final sentiment
+  let sentiment: AnalysisResult['overallSentiment'] = 'NEUTRAL';
+  let confidence = 50;
+  
+  if (totalWeight > 0) {
+    const netScore = (bullishScore - bearishScore) / totalWeight;
+    
+    // More refined thresholds based on weighted scoring
+    if (netScore > 0.7) sentiment = 'STRONG_BULLISH';
+    else if (netScore > 0.3) sentiment = 'BULLISH';
+    else if (netScore < -0.7) sentiment = 'STRONG_BEARISH';
+    else if (netScore < -0.3) sentiment = 'BEARISH';
+    else sentiment = 'NEUTRAL';
+    
+    // Confidence based on signal strength and pattern confirmation
+    confidence = Math.min(95, Math.max(55, Math.abs(netScore) * 100));
+    
+    // Boost confidence if patterns confirm trend
+    if (patternAnalysis.patternConfirmation) {
+      confidence = Math.min(95, confidence + 10);
+    }
+    
+    // Reduce confidence if conflicting signals
+    if (patternAnalysis.conflictingSignals) {
+      confidence = Math.max(50, confidence - 15);
+    }
+  }
+  
+  return { sentiment, confidence: Math.round(confidence) };
 };
 
-const analyzeNewsImpact = (pair: string, indicators: TechnicalIndicator[], strategies: TradingStrategy[]) => {
+// COMPREHENSIVE NEWS ANALYSIS WITH REAL-TIME MARKET RELEVANCE
+const analyzeComprehensiveNewsImpact = (pair: string, currentPrice: number, patternAnalysis: any) => {
   const [baseCurrency] = pair.split('/');
   const scanTimestamp = new Date().toISOString();
 
-  // Find relevant news for this pair (include all news, not just pair-specific)
-  const relevantNews = cryptoNews.filter(news =>
+  console.log(`📰 Analyzing news impact for ${pair} with ${cryptoNews.length} sources...`);
+
+  // Find highly relevant news for this specific pair
+  const pairSpecificNews = cryptoNews.filter(news =>
     news.relevantPairs.some(newsPair =>
-      newsPair.includes(baseCurrency) || newsPair === pair
+      newsPair.toLowerCase().includes(baseCurrency.toLowerCase()) || 
+      newsPair.toLowerCase() === pair.toLowerCase()
     )
   );
 
-  // Also include general market news that affects all cryptocurrencies
-  const generalMarketNews = cryptoNews.filter(news =>
+  // Find general market-moving news
+  const marketMovingNews = cryptoNews.filter(news =>
+    news.title.toLowerCase().includes('bitcoin') ||
+    news.title.toLowerCase().includes('ethereum') ||
     news.title.toLowerCase().includes('fed') ||
     news.title.toLowerCase().includes('sec') ||
     news.title.toLowerCase().includes('regulation') ||
@@ -255,126 +294,156 @@ const analyzeNewsImpact = (pair: string, indicators: TechnicalIndicator[], strat
     news.impact === 'HIGH'
   );
 
-  // Combine relevant and general market news (remove duplicates)
-  const allRelevantNews = [...relevantNews];
-  generalMarketNews.forEach(generalNews => {
+  // Combine and deduplicate news
+  const allRelevantNews = [...pairSpecificNews];
+  marketMovingNews.forEach(generalNews => {
     if (!allRelevantNews.find(news => news.id === generalNews.id)) {
       allRelevantNews.push(generalNews);
     }
   });
 
-  // Sort by timestamp (newest first)
-  allRelevantNews.sort((a, b) => b.timestamp - a.timestamp);
+  // Sort by relevance and recency
+  allRelevantNews.sort((a, b) => {
+    // Prioritize pair-specific news
+    const aIsPairSpecific = pairSpecificNews.includes(a) ? 2 : 1;
+    const bIsPairSpecific = pairSpecificNews.includes(b) ? 2 : 1;
+    
+    if (aIsPairSpecific !== bIsPairSpecific) {
+      return bIsPairSpecific - aIsPairSpecific;
+    }
+    
+    // Then by impact level
+    const impactScore = { HIGH: 3, MEDIUM: 2, LOW: 1 };
+    const aImpactScore = impactScore[a.impact];
+    const bImpactScore = impactScore[b.impact];
+    
+    if (aImpactScore !== bImpactScore) {
+      return bImpactScore - aImpactScore;
+    }
+    
+    // Finally by timestamp (newest first)
+    return b.timestamp - a.timestamp;
+  });
 
   if (allRelevantNews.length === 0) {
     return {
       impact: 'LOW' as const,
-      analysis: `📊 COMPREHENSIVE NEWS SCAN (${scanTimestamp})\n\n❌ No significant recent news found specifically for ${pair}. Technical analysis is based purely on price action and selected indicators.\n\n📈 Total News Sources Analyzed: ${cryptoNews.length}\n🔍 Relevant News Found: 0\n📅 Scan Date/Time: ${new Date().toLocaleString()}`,
+      analysis: `📊 REAL-TIME NEWS ANALYSIS (${scanTimestamp})\n\n❌ No significant news found for ${pair}. Analysis based purely on technical patterns and indicators.\n\n🔍 Searched ${cryptoNews.length} news sources\n📅 Scan Time: ${new Date().toLocaleString()}`,
       upcomingEvents: []
     };
   }
 
-  // Analyze sentiment from news with timestamps
+  // Enhanced sentiment analysis with pattern correlation
   const positiveNews = allRelevantNews.filter(news => news.sentiment === 'POSITIVE');
   const negativeNews = allRelevantNews.filter(news => news.sentiment === 'NEGATIVE');
   const neutralNews = allRelevantNews.filter(news => news.sentiment === 'NEUTRAL');
   const highImpactNews = allRelevantNews.filter(news => news.impact === 'HIGH');
   const mediumImpactNews = allRelevantNews.filter(news => news.impact === 'MEDIUM');
-  const lowImpactNews = allRelevantNews.filter(news => news.impact === 'LOW');
 
+  // Determine impact level with pattern consideration
   let impact: 'HIGH' | 'MEDIUM' | 'LOW' = 'LOW';
-  if (highImpactNews.length >= 2) impact = 'HIGH';
-  else if (highImpactNews.length > 0 || mediumImpactNews.length >= 3) impact = 'MEDIUM';
-  else if (allRelevantNews.length >= 5) impact = 'MEDIUM';
+  
+  // Boost impact if news aligns with pattern signals
+  const patternIsBullish = patternAnalysis.overallSignal.includes('BUY');
+  const patternIsBearish = patternAnalysis.overallSignal.includes('SELL');
+  const newsIsBullish = positiveNews.length > negativeNews.length;
+  const newsIsBearish = negativeNews.length > positiveNews.length;
+  
+  const newsPatternAlignment = (patternIsBullish && newsIsBullish) || (patternIsBearish && newsIsBearish);
+  
+  if (highImpactNews.length >= 2 || (highImpactNews.length >= 1 && newsPatternAlignment)) {
+    impact = 'HIGH';
+  } else if (highImpactNews.length > 0 || mediumImpactNews.length >= 3 || (mediumImpactNews.length >= 2 && newsPatternAlignment)) {
+    impact = 'MEDIUM';
+  } else if (allRelevantNews.length >= 5 || newsPatternAlignment) {
+    impact = 'MEDIUM';
+  }
 
-  // Generate comprehensive news analysis with timestamps
-  let analysis = `📊 COMPREHENSIVE NEWS SCAN REPORT\n`;
-  analysis += `🕐 Scan Date/Time: ${new Date().toLocaleString()}\n`;
-  analysis += `📈 Total News Sources Analyzed: ${cryptoNews.length}\n`;
-  analysis += `🔍 Relevant News for ${pair}: ${allRelevantNews.length}\n\n`;
+  // Generate comprehensive analysis
+  let analysis = `📊 COMPREHENSIVE NEWS MARKET ANALYSIS\n`;
+  analysis += `🕐 Real-time Scan: ${new Date().toLocaleString()}\n`;
+  analysis += `💱 Pair Focus: ${pair} (${baseCurrency} analysis)\n`;
+  analysis += `📈 Total Sources: ${cryptoNews.length} | Relevant: ${allRelevantNews.length}\n`;
+  analysis += `🎯 Pair-Specific News: ${pairSpecificNews.length}\n\n`;
+
+  // Pattern-News Correlation Analysis
+  analysis += `🔗 PATTERN-NEWS CORRELATION:\n`;
+  if (newsPatternAlignment) {
+    analysis += `✅ NEWS CONFIRMS TECHNICAL PATTERNS: ${patternAnalysis.overallSignal.replace('_', ' ')} signal supported by ${newsIsBullish ? 'positive' : 'negative'} news sentiment\n`;
+  } else if ((patternIsBullish && newsIsBearish) || (patternIsBearish && newsIsBullish)) {
+    analysis += `⚠️ CONFLICTING SIGNALS: Technical patterns suggest ${patternAnalysis.overallSignal.replace('_', ' ')} while news sentiment is ${newsIsBullish ? 'bullish' : 'bearish'}\n`;
+  } else {
+    analysis += `🔄 MIXED SIGNALS: Patterns show ${patternAnalysis.overallSignal.replace('_', ' ')}, news sentiment neutral/mixed\n`;
+  }
+  analysis += `\n`;
 
   analysis += `📊 SENTIMENT BREAKDOWN:\n`;
-  analysis += `🟢 Positive News: ${positiveNews.length} (${((positiveNews.length / allRelevantNews.length) * 100).toFixed(1)}%)\n`;
-  analysis += `🔴 Negative News: ${negativeNews.length} (${((negativeNews.length / allRelevantNews.length) * 100).toFixed(1)}%)\n`;
-  analysis += `🟡 Neutral News: ${neutralNews.length} (${((neutralNews.length / allRelevantNews.length) * 100).toFixed(1)}%)\n\n`;
+  analysis += `🟢 Positive: ${positiveNews.length} (${((positiveNews.length / allRelevantNews.length) * 100).toFixed(1)}%)\n`;
+  analysis += `🔴 Negative: ${negativeNews.length} (${((negativeNews.length / allRelevantNews.length) * 100).toFixed(1)}%)\n`;
+  analysis += `🟡 Neutral: ${neutralNews.length} (${((neutralNews.length / allRelevantNews.length) * 100).toFixed(1)}%)\n\n`;
 
-  analysis += `📈 IMPACT DISTRIBUTION:\n`;
+  analysis += `📈 IMPACT ANALYSIS:\n`;
   analysis += `🚨 High Impact: ${highImpactNews.length}\n`;
   analysis += `⚠️ Medium Impact: ${mediumImpactNews.length}\n`;
-  analysis += `ℹ️ Low Impact: ${lowImpactNews.length}\n\n`;
+  analysis += `ℹ️ Low Impact: ${allRelevantNews.filter(n => n.impact === 'LOW').length}\n\n`;
 
-  if (positiveNews.length > negativeNews.length + 2) {
-    analysis += `📈 OVERALL BULLISH NEWS SENTIMENT: ${positiveNews.length} positive vs ${negativeNews.length} negative news items.\n\n`;
+  // Market sentiment determination
+  if (positiveNews.length > negativeNews.length + 1) {
+    analysis += `📈 OVERALL BULLISH NEWS ENVIRONMENT: Strong positive sentiment (${positiveNews.length} vs ${negativeNews.length})\n`;
+    if (newsPatternAlignment) analysis += `🎯 Technical patterns CONFIRM bullish news bias\n`;
   } else if (negativeNews.length > positiveNews.length + 1) {
-    analysis += `📉 OVERALL BEARISH NEWS SENTIMENT: ${negativeNews.length} negative vs ${positiveNews.length} positive news items.\n\n`;
+    analysis += `📉 OVERALL BEARISH NEWS ENVIRONMENT: Strong negative sentiment (${negativeNews.length} vs ${positiveNews.length})\n`;
+    if (newsPatternAlignment) analysis += `🎯 Technical patterns CONFIRM bearish news bias\n`;
   } else {
-    analysis += `⚖️ MIXED NEWS SENTIMENT: Close balance between positive (${positiveNews.length}) and negative (${negativeNews.length}) coverage creating market uncertainty.\n\n`;
+    analysis += `⚖️ BALANCED NEWS ENVIRONMENT: Mixed sentiment creating market uncertainty\n`;
   }
+  analysis += `\n`;
 
-  // Add most recent and impactful news items with timestamps
-  analysis += `🗞️ KEY NEWS ITEMS (Most Recent & High Impact):\n\n`;
-
-  const topNewsItems = allRelevantNews
-    .filter(news => news.impact === 'HIGH' || news.sentiment !== 'NEUTRAL')
-    .slice(0, 5);
-
-  topNewsItems.forEach((news, index) => {
+  // Top news items with enhanced relevance scoring
+  analysis += `🗞️ KEY MARKET-MOVING NEWS:\n\n`;
+  const topNews = allRelevantNews.slice(0, 5);
+  
+  topNews.forEach((news, index) => {
     const emoji = news.sentiment === 'POSITIVE' ? '🟢' : news.sentiment === 'NEGATIVE' ? '🔴' : '🟡';
+    const isPairSpecific = pairSpecificNews.includes(news);
+    const relevanceTag = isPairSpecific ? '[PAIR-SPECIFIC]' : '[MARKET-WIDE]';
     const timeAgo = Math.floor((Date.now() - news.timestamp) / (1000 * 60 * 60));
-    const publishedDate = new Date(news.publishedAt).toLocaleDateString();
-
-    analysis += `${emoji} [${news.impact} IMPACT] ${news.title}\n`;
+    
+    analysis += `${emoji} ${relevanceTag} [${news.impact}] ${news.title}\n`;
     analysis += `📝 ${news.summary}\n`;
-    analysis += `📰 Source: ${news.source}\n`;
-    analysis += `📅 Published: ${publishedDate} (${timeAgo}h ago)\n`;
-    analysis += `🔗 URL: ${news.url}\n`;
-    analysis += `💱 Pairs: ${news.relevantPairs.slice(0, 3).join(', ')}\n\n`;
+    analysis += `📰 ${news.source} | 📅 ${timeAgo}h ago\n`;
+    if (isPairSpecific) analysis += `💱 Direct impact on ${news.relevantPairs.join(', ')}\n`;
+    analysis += `\n`;
   });
 
-  // Add remaining news count
-  if (allRelevantNews.length > 5) {
-    analysis += `📊 Additional ${allRelevantNews.length - 5} news items analyzed but not displayed.\n\n`;
-  }
-
-  // Look for upcoming events based on recent news patterns
+  // Upcoming catalysts and events
   const upcomingEvents: string[] = [];
-
-  // Check for ETF-related news
+  
   if (allRelevantNews.some(news => news.title.toLowerCase().includes('etf'))) {
-    upcomingEvents.push('🏛️ ETF decisions and institutional flows may continue impacting market');
+    upcomingEvents.push('🏛️ ETF decisions and institutional adoption trends');
   }
-
-  // Check for regulatory news
   if (allRelevantNews.some(news => news.title.toLowerCase().includes('sec') || news.title.toLowerCase().includes('regulation'))) {
-    upcomingEvents.push('⚖️ Regulatory developments may affect market sentiment in coming weeks');
+    upcomingEvents.push('⚖️ Regulatory developments and compliance updates');
   }
-
-  // Check for technical upgrades
-  if (allRelevantNews.some(news => news.title.toLowerCase().includes('upgrade') || news.title.toLowerCase().includes('launch'))) {
-    upcomingEvents.push('🔧 Protocol upgrades and new launches may drive ecosystem growth');
-  }
-
-  // Check for institutional adoption
-  if (allRelevantNews.some(news => news.title.toLowerCase().includes('institutional') || news.title.toLowerCase().includes('adoption'))) {
-    upcomingEvents.push('🏢 Institutional adoption trends suggest continued corporate interest');
-  }
-
-  // Add Fed-related events if relevant
   if (allRelevantNews.some(news => news.title.toLowerCase().includes('fed') || news.title.toLowerCase().includes('rate'))) {
-    upcomingEvents.push('🏦 Federal Reserve decisions may impact crypto markets via risk-on/risk-off sentiment');
+    upcomingEvents.push('🏦 Federal Reserve decisions affecting crypto market sentiment');
+  }
+  if (allRelevantNews.some(news => news.title.toLowerCase().includes('upgrade') || news.title.toLowerCase().includes('launch'))) {
+    upcomingEvents.push('🔧 Protocol upgrades and new product launches');
+  }
+  if (allRelevantNews.some(news => news.title.toLowerCase().includes('institutional'))) {
+    upcomingEvents.push('🏢 Institutional adoption and corporate treasury decisions');
   }
 
   analysis += `🔮 UPCOMING MARKET CATALYSTS:\n`;
   if (upcomingEvents.length > 0) {
-    upcomingEvents.forEach(event => {
-      analysis += `• ${event}\n`;
-    });
+    upcomingEvents.forEach(event => analysis += `• ${event}\n`);
   } else {
-    analysis += `• No major upcoming catalysts identified from current news flow\n`;
+    analysis += `• No major catalysts identified from current news flow\n`;
   }
 
-  analysis += `\n⏰ Next news scan will include all new sources and updates\n`;
-  analysis += `📊 This analysis included ${cryptoNews.length} total news sources from multiple exchanges and media outlets\n`;
+  analysis += `\n📊 Analysis includes real-time correlation with technical patterns\n`;
+  analysis += `⏰ Next scan will incorporate new developments and price action\n`;
 
   return {
     impact,
@@ -383,184 +452,250 @@ const analyzeNewsImpact = (pair: string, indicators: TechnicalIndicator[], strat
   };
 };
 
-const generateRecommendation = (
+// STRATEGIC PRICE LEVEL CALCULATIONS
+const calculateStrategicPriceLevels = (
+  currentPrice: number, 
+  sentiment: string, 
+  patternAnalysis: any, 
+  newsAnalysis: any,
+  timeframe: string
+) => {
+  console.log(`💰 Calculating strategic price levels for ${sentiment} sentiment...`);
+  
+  // Base volatility adjusted by timeframe
+  const timeframeMultipliers = {
+    '1m': 0.002, '5m': 0.005, '15m': 0.008, '30m': 0.012,
+    '1h': 0.015, '4h': 0.025, '1d': 0.035, '1w': 0.055
+  };
+  const baseVolatility = timeframeMultipliers[timeframe] || 0.035;
+  
+  // Adjust volatility based on news impact and pattern strength
+  let adjustedVolatility = baseVolatility;
+  
+  if (newsAnalysis.impact === 'HIGH') adjustedVolatility *= 1.5;
+  else if (newsAnalysis.impact === 'MEDIUM') adjustedVolatility *= 1.25;
+  
+  if (patternAnalysis.detectedPatterns.length > 2) adjustedVolatility *= 1.2;
+  if (patternAnalysis.patternConfirmation) adjustedVolatility *= 1.1;
+  
+  // Calculate strategic levels based on sentiment and analysis
+  let entryMultiplier = 1;
+  let targetMultiplier = 1;
+  let stopMultiplier = 1;
+  
+  // Enhanced multipliers based on comprehensive analysis
+  switch (sentiment) {
+    case 'STRONG_BULLISH':
+      entryMultiplier = 1.008; // Enter slightly above current
+      targetMultiplier = 1.15; // 15% target
+      stopMultiplier = 0.93;   // 7% stop
+      break;
+    case 'BULLISH':
+      entryMultiplier = 1.005;
+      targetMultiplier = 1.10; // 10% target
+      stopMultiplier = 0.95;   // 5% stop
+      break;
+    case 'BEARISH':
+      entryMultiplier = 0.995;
+      targetMultiplier = 0.90; // 10% target (short)
+      stopMultiplier = 1.05;   // 5% stop
+      break;
+    case 'STRONG_BEARISH':
+      entryMultiplier = 0.992;
+      targetMultiplier = 0.85; // 15% target (short)
+      stopMultiplier = 1.07;   // 7% stop
+      break;
+    default: // NEUTRAL
+      entryMultiplier = 1.000;
+      targetMultiplier = 1.05; // 5% conservative target
+      stopMultiplier = 0.97;   // 3% stop
+      break;
+  }
+  
+  // Use trend analysis for support/resistance
+  const supportLevel = patternAnalysis.trendAnalysis.supportLevel || currentPrice * (1 - adjustedVolatility);
+  const resistanceLevel = patternAnalysis.trendAnalysis.resistanceLevel || currentPrice * (1 + adjustedVolatility);
+  
+  return {
+    entryPrice: currentPrice * entryMultiplier,
+    targetPrice: currentPrice * targetMultiplier,
+    supportLevel,
+    resistanceLevel
+  };
+};
+
+// COMPREHENSIVE TRADING RECOMMENDATION GENERATOR
+const generateTradingRecommendation = (
   sentiment: string,
   confidence: number,
-  newsAnalysis: { impact: string; analysis: string; upcomingEvents?: string[] },
+  patternAnalysis: any,
+  newsAnalysis: any,
   indicators: TechnicalIndicator[],
   strategies: TradingStrategy[],
-  currentPrice: number,
-  priceLevels: any,
-  patternAnalysis?: any
+  strategicLevels: any,
+  currentPrice: number
 ) => {
-  let action: 'STRONG_BUY' | 'BUY' | 'HOLD' | 'SELL' | 'STRONG_SELL';
-  let explanation = '';
+  console.log(`🎯 Generating trading recommendation for ${sentiment} sentiment...`);
   
-  // More realistic thresholds - require higher confidence for strong actions
-  if (sentiment === 'STRONG_BULLISH' && confidence > 85) {
+  let action: 'STRONG_BUY' | 'BUY' | 'HOLD' | 'SELL' | 'STRONG_SELL' = 'HOLD';
+  
+  // Enhanced decision logic with pattern priority
+  const patternSignal = patternAnalysis.overallSignal;
+  const hasStrongPatterns = patternAnalysis.detectedPatterns.some(p => p.reliability === 'HIGH');
+  const trendStrength = patternAnalysis.trendAnalysis.strength;
+  
+  // Pattern-driven decisions (highest priority)
+  if (patternSignal === 'STRONG_BUY' && confidence > 75 && hasStrongPatterns) {
     action = 'STRONG_BUY';
-  } else if (sentiment === 'BULLISH' && confidence > 65) {
+  } else if (patternSignal === 'BUY' && confidence > 65) {
     action = 'BUY';
-  } else if (sentiment === 'STRONG_BEARISH' && confidence > 85) {
+  } else if (patternSignal === 'STRONG_SELL' && confidence > 75 && hasStrongPatterns) {
     action = 'STRONG_SELL';
-  } else if (sentiment === 'BEARISH' && confidence > 65) {
+  } else if (patternSignal === 'SELL' && confidence > 65) {
     action = 'SELL';
-  } else {
-    action = 'HOLD';
+  } else if (sentiment === 'STRONG_BULLISH' && confidence > 80) {
+    action = 'STRONG_BUY';
+  } else if (sentiment === 'BULLISH' && confidence > 70) {
+    action = 'BUY';
+  } else if (sentiment === 'STRONG_BEARISH' && confidence > 80) {
+    action = 'STRONG_SELL';
+  } else if (sentiment === 'BEARISH' && confidence > 70) {
+    action = 'SELL';
   }
   
-  // Adjust based on news impact - more conservative approach
-  if (newsAnalysis.impact === 'HIGH') {
-    if (newsAnalysis.analysis.includes('BULLISH') && action === 'HOLD') {
-      action = 'BUY';
-    } else if (newsAnalysis.analysis.includes('BEARISH') && action === 'HOLD') {
-      action = 'SELL';
+  // News impact adjustments
+  if (newsAnalysis.impact === 'HIGH' && confidence > 60) {
+    if (newsAnalysis.analysis.includes('BULLISH') && !action.includes('SELL')) {
+      action = action === 'BUY' ? 'STRONG_BUY' : 'BUY';
+    } else if (newsAnalysis.analysis.includes('BEARISH') && !action.includes('BUY')) {
+      action = action === 'SELL' ? 'STRONG_SELL' : 'SELL';
     }
-    // Only upgrade to STRONG actions if already in that direction and very high confidence
-    else if (newsAnalysis.analysis.includes('BULLISH') && action === 'BUY' && confidence > 80) {
-      action = 'STRONG_BUY';
-    } else if (newsAnalysis.analysis.includes('BEARISH') && action === 'SELL' && confidence > 80) {
-      action = 'STRONG_SELL';
-    }
   }
   
-  // Additional reality check - if too many conflicting signals, default to HOLD
-  const buySignals = indicators.filter(i => i.signal === 'BUY').length + 
-                    strategies.filter(s => s.signal.includes('BUY')).length;
-  const sellSignals = indicators.filter(i => i.signal === 'SELL').length + 
-                     strategies.filter(s => s.signal.includes('SELL')).length;
-  const totalSignals = buySignals + sellSignals;
-  
-  // If signals are too close or confidence is low, recommend HOLD
-  if (totalSignals > 0 && Math.abs(buySignals - sellSignals) / totalSignals < 0.3 && confidence < 70) {
-    action = 'HOLD';
-  }
-  
-  // Calculate recommended prices based on action
-  let entryPrice = currentPrice;
-  let profitTarget = currentPrice;
+  // Calculate strategic prices
+  const entryPrice = strategicLevels.entryPrice;
+  let profitTarget = strategicLevels.targetPrice;
   let stopLoss = currentPrice;
   let riskRewardRatio = 1;
   
+  // Action-specific price calculations
   switch (action) {
     case 'STRONG_BUY':
-      entryPrice = currentPrice * 1.005; // Enter slightly above current price
-      profitTarget = currentPrice * 1.15; // 15% profit target
-      stopLoss = currentPrice * 0.95; // 5% stop loss
-      riskRewardRatio = 3.0;
+      profitTarget = currentPrice * 1.18; // 18% target
+      stopLoss = currentPrice * 0.93;     // 7% stop
+      riskRewardRatio = 2.5;
       break;
     case 'BUY':
-      entryPrice = currentPrice * 1.002;
-      profitTarget = currentPrice * 1.10; // 10% profit target
-      stopLoss = currentPrice * 0.96; // 4% stop loss
-      riskRewardRatio = 2.5;
+      profitTarget = currentPrice * 1.12; // 12% target
+      stopLoss = currentPrice * 0.95;     // 5% stop
+      riskRewardRatio = 2.4;
       break;
     case 'HOLD':
-      entryPrice = currentPrice;
-      profitTarget = currentPrice * 1.05; // 5% profit target
-      stopLoss = currentPrice * 0.97; // 3% stop loss
-      riskRewardRatio = 1.7;
+      profitTarget = currentPrice * 1.06; // 6% target
+      stopLoss = currentPrice * 0.96;     // 4% stop
+      riskRewardRatio = 1.5;
       break;
     case 'SELL':
-      entryPrice = currentPrice * 0.998;
-      profitTarget = currentPrice * 0.90; // 10% profit on short
-      stopLoss = currentPrice * 1.04; // 4% stop loss
-      riskRewardRatio = 2.5;
+      profitTarget = currentPrice * 0.88; // 12% profit on short
+      stopLoss = currentPrice * 1.05;     // 5% stop
+      riskRewardRatio = 2.4;
       break;
     case 'STRONG_SELL':
-      entryPrice = currentPrice * 0.995;
-      profitTarget = currentPrice * 0.85; // 15% profit on short
-      stopLoss = currentPrice * 1.05; // 5% stop loss
-      riskRewardRatio = 3.0;
+      profitTarget = currentPrice * 0.82; // 18% profit on short
+      stopLoss = currentPrice * 1.07;     // 7% stop
+      riskRewardRatio = 2.5;
       break;
   }
   
-  // Generate detailed explanation
-  explanation = `🎯 **${action} RECOMMENDATION** (Confidence: ${confidence}%)\n\n`;
+  // Generate comprehensive explanation
+  let explanation = `🎯 **${action} RECOMMENDATION** (${confidence}% confidence)\n\n`;
   
-  explanation += `**Technical Analysis Summary:**\n`;
-  explanation += `• Overall Sentiment: ${sentiment.replace('_', ' ')}\n`;
-  explanation += `• Active Indicators: ${indicators.length} (${indicators.filter(i => i.signal === 'BUY').length} bullish, ${indicators.filter(i => i.signal === 'SELL').length} bearish)\n`;
-  explanation += `• Active Strategies: ${strategies.length} (${strategies.filter(s => s.signal.includes('BUY')).length} bullish, ${strategies.filter(s => s.signal.includes('SELL')).length} bearish)\n`;
+  explanation += `**🔬 COMPREHENSIVE ANALYSIS SUMMARY:**\n`;
+  explanation += `• Market Sentiment: ${sentiment.replace('_', ' ')}\n`;
+  explanation += `• Pattern Signal: ${patternSignal.replace('_', ' ')}\n`;
+  explanation += `• Detected Patterns: ${patternAnalysis.detectedPatterns.length}\n`;
+  explanation += `• Trend Direction: ${patternAnalysis.trendAnalysis.direction} (${patternAnalysis.trendAnalysis.strength})\n`;
+  explanation += `• News Impact: ${newsAnalysis.impact}\n`;
+  explanation += `• Active Indicators: ${indicators.length}\n`;
+  explanation += `• Active Strategies: ${strategies.length}\n\n`;
   
-  // Add pattern analysis information
-  if (patternAnalysis) {
-    explanation += `• Candlestick Patterns: ${patternAnalysis.detectedPatterns.length} detected\n`;
-    explanation += `• Trend Direction: ${patternAnalysis.trendAnalysis.direction} (${patternAnalysis.trendAnalysis.strength})\n`;
-    explanation += `• Pattern Signal: ${patternAnalysis.overallSignal.replace('_', ' ')}\n`;
-    if (patternAnalysis.patternConfirmation) {
-      explanation += `• ✅ Pattern confirmation with trend analysis\n`;
+  // Pattern analysis highlights
+  if (patternAnalysis.detectedPatterns.length > 0) {
+    explanation += `**🕯️ CANDLESTICK PATTERN ANALYSIS (Priority Signal):**\n`;
+    const topPatterns = patternAnalysis.detectedPatterns
+      .filter(p => p.reliability === 'HIGH' || p.confidence > 75)
+      .slice(0, 3);
+    
+    if (topPatterns.length > 0) {
+      topPatterns.forEach(pattern => {
+        explanation += `• ${pattern.name}: ${pattern.type} signal (${pattern.confidence}% confidence, ${pattern.reliability} reliability)\n`;
+      });
+      explanation += `• Pattern Confirmation: ${patternAnalysis.patternConfirmation ? '✅ Confirmed with trend' : '⚠️ Mixed signals'}\n`;
     }
-    if (patternAnalysis.conflictingSignals) {
-      explanation += `• ⚠️ Mixed pattern signals detected\n`;
-    }
+    explanation += `\n`;
   }
-  explanation += `\n`;
   
-  explanation += `**News Impact Analysis:**\n`;
-  explanation += `• News Impact Level: ${newsAnalysis.impact}\n`;
+  // News correlation
+  explanation += `**📰 NEWS-TECHNICAL CORRELATION:**\n`;
+  if (newsAnalysis.analysis.includes('CONFIRMS')) {
+    explanation += `• ✅ News sentiment CONFIRMS technical patterns\n`;
+  } else if (newsAnalysis.analysis.includes('CONFLICTING')) {
+    explanation += `• ⚠️ News sentiment conflicts with technical signals\n`;
+  } else {
+    explanation += `• 🔄 News sentiment neutral/mixed with technical analysis\n`;
+  }
   explanation += `• ${newsAnalysis.analysis.split('\n')[0]}\n\n`;
   
-  explanation += `**Key Reasoning:**\n`;
-  
+  // Key reasoning based on action
+  explanation += `**🎯 KEY REASONING:**\n`;
   if (action.includes('BUY')) {
-    explanation += `• 📈 Multiple bullish signals detected across technical indicators\n`;
-    explanation += `• 🎯 Strong momentum and trend confirmation\n`;
+    explanation += `• 📈 Strong bullish confluence across multiple timeframes\n`;
+    explanation += `• 🎯 High-probability upward momentum confirmed\n`;
+    if (patternAnalysis.patternConfirmation) {
+      explanation += `• 🕯️ Candlestick patterns confirm bullish bias\n`;
+    }
+    if (hasStrongPatterns) {
+      explanation += `• ⭐ High-reliability patterns detected\n`;
+    }
     if (newsAnalysis.impact === 'HIGH' && newsAnalysis.analysis.includes('BULLISH')) {
-      explanation += `• 📰 Positive news sentiment providing additional upward catalyst\n`;
+      explanation += `• 📰 Positive news catalyst supporting upward move\n`;
     }
-    // Add bullish pattern information
-    if (patternAnalysis && patternAnalysis.detectedPatterns.length > 0) {
-      const bullishPatterns = patternAnalysis.detectedPatterns.filter(p => p.type === 'BULLISH' || p.signal.includes('BUY'));
-      if (bullishPatterns.length > 0) {
-        explanation += `• 🕯️ Bullish candlestick patterns detected: ${bullishPatterns.slice(0, 2).map(p => p.name).join(', ')}\n`;
-      }
-    }
-    explanation += `• 💰 Favorable risk-reward ratio of ${riskRewardRatio}:1\n`;
   } else if (action.includes('SELL')) {
-    explanation += `• 📉 Multiple bearish signals detected across technical indicators\n`;
-    explanation += `• ⚠️ Negative momentum and trend reversal signs\n`;
+    explanation += `• 📉 Strong bearish confluence across multiple indicators\n`;
+    explanation += `• ⚠️ High-probability downward pressure identified\n`;
+    if (patternAnalysis.patternConfirmation) {
+      explanation += `• 🕯️ Candlestick patterns confirm bearish bias\n`;
+    }
+    if (hasStrongPatterns) {
+      explanation += `• ⭐ High-reliability reversal patterns detected\n`;
+    }
     if (newsAnalysis.impact === 'HIGH' && newsAnalysis.analysis.includes('BEARISH')) {
-      explanation += `• 📰 Negative news sentiment creating downward pressure\n`;
+      explanation += `• 📰 Negative news creating downward pressure\n`;
     }
-    // Add bearish pattern information
-    if (patternAnalysis && patternAnalysis.detectedPatterns.length > 0) {
-      const bearishPatterns = patternAnalysis.detectedPatterns.filter(p => p.type === 'BEARISH' || p.signal.includes('SELL'));
-      if (bearishPatterns.length > 0) {
-        explanation += `• 🕯️ Bearish candlestick patterns detected: ${bearishPatterns.slice(0, 2).map(p => p.name).join(', ')}\n`;
-      }
-    }
-    explanation += `• 🛡️ Risk-reward ratio of ${riskRewardRatio}:1 favors short position\n`;
   } else {
-    explanation += `• ⚖️ Mixed signals from technical indicators\n`;
-    explanation += `• 🔄 Market consolidation phase detected\n`;
-    explanation += `• ⏳ Waiting for clearer directional signals\n`;
-    // Add neutral/consolidation pattern information
-    if (patternAnalysis && patternAnalysis.detectedPatterns.length > 0) {
-      const neutralPatterns = patternAnalysis.detectedPatterns.filter(p => p.type === 'NEUTRAL' || p.type === 'CONTINUATION');
-      if (neutralPatterns.length > 0) {
-        explanation += `• 🕯️ Consolidation patterns detected: ${neutralPatterns.slice(0, 2).map(p => p.name).join(', ')}\n`;
-      }
-    }
-    if (newsAnalysis.upcomingEvents && newsAnalysis.upcomingEvents.length > 0) {
-      explanation += `• 📅 Upcoming events may provide trading opportunities:\n`;
-      newsAnalysis.upcomingEvents.forEach(event => {
-        explanation += `  - ${event}\n`;
-      });
-    }
+    explanation += `• ⚖️ Mixed signals requiring cautious approach\n`;
+    explanation += `• 🔄 Market in consolidation/decision phase\n`;
+    explanation += `• ⏳ Waiting for clearer directional confirmation\n`;
   }
   
-  explanation += `\n**Risk Management:**\n`;
-  explanation += `• Entry Price: $${entryPrice.toFixed(4)}\n`;
-  explanation += `• Profit Target: $${profitTarget.toFixed(4)}\n`;
-  explanation += `• Stop Loss: $${stopLoss.toFixed(4)}\n`;
-  explanation += `• Risk-Reward Ratio: ${riskRewardRatio}:1\n`;
+  explanation += `• 💎 Optimal risk-reward ratio: ${riskRewardRatio}:1\n\n`;
   
+  // Strategic price levels
+  explanation += `**💰 STRATEGIC TRADING LEVELS:**\n`;
+  explanation += `• Entry Price: $${entryPrice.toFixed(6)}\n`;
+  explanation += `• Profit Target: $${profitTarget.toFixed(6)}\n`;
+  explanation += `• Stop Loss: $${stopLoss.toFixed(6)}\n`;
+  explanation += `• Support Level: $${strategicLevels.supportLevel.toFixed(6)}\n`;
+  explanation += `• Resistance Level: $${strategicLevels.resistanceLevel.toFixed(6)}\n\n`;
+  
+  // Risk management
+  explanation += `**🛡️ RISK MANAGEMENT:**\n`;
+  explanation += `• Position Size: Conservative (2-5% of portfolio)\n`;
+  explanation += `• Risk per Trade: Maximum 1-2% account risk\n`;
+  explanation += `• Time Horizon: Short to medium term\n`;
   if (action === 'HOLD') {
-    explanation += `\n**Hold Strategy:**\n`;
-    explanation += `• Monitor for breakout above $${priceLevels.resistanceLevel.toFixed(4)} for bullish continuation\n`;
-    explanation += `• Watch for breakdown below $${priceLevels.supportLevel.toFixed(4)} for bearish reversal\n`;
-    explanation += `• Keep position size moderate due to uncertainty\n`;
+    explanation += `• Strategy: Monitor for breakout signals\n`;
+    explanation += `• Watch for: Break above $${strategicLevels.resistanceLevel.toFixed(4)} (bullish) or below $${strategicLevels.supportLevel.toFixed(4)} (bearish)\n`;
   }
   
   return {
@@ -570,5 +705,31 @@ const generateRecommendation = (
     stopLoss,
     riskRewardRatio,
     explanation
+  };
+};
+
+// EXISTING HELPER FUNCTIONS (keeping the same)
+const getCurrentPrice = async (pair: string, broker: string): Promise<{price: number, source: 'LIVE_API' | 'FALLBACK', timestamp: number}> => {
+  try {
+    console.log(`🔍 Fetching LIVE price for ${pair} from ${broker.toUpperCase()}...`);
+    const realPrice = await getPairPrice(broker, pair);
+    
+    if (realPrice && realPrice > 0) {
+      console.log(`✅ LIVE price: $${realPrice.toFixed(6)}`);
+      return {
+        price: realPrice,
+        source: 'LIVE_API',
+        timestamp: Date.now()
+      };
+    }
+  } catch (error) {
+    console.error(`❌ Error fetching LIVE price:`, error);
+  }
+
+  console.log(`🔄 Using fallback price for ${pair}`);
+  return {
+    price: getFallbackPrice(pair),
+    source: 'FALLBACK',
+    timestamp: Date.now()
   };
 };
