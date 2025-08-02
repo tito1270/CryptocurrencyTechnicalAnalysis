@@ -20,20 +20,20 @@ export const performAnalysis = async (
   console.log(`🚀 Starting comprehensive analysis for ${pair} on ${broker}...`);
   
   try {
-    // Step 1: Get LIVE current price with enhanced error handling
-    const priceData = await getCurrentPrice(pair, broker);
-    const currentPrice = priceData.price;
-    
-    // Validate price data
-    if (!currentPrice || currentPrice <= 0) {
-      console.warn(`⚠️ Invalid price for ${pair}, using fallback price`);
-      const fallbackPrice = getFallbackPrice(pair);
-      if (fallbackPrice <= 0) {
-        throw new Error(`Unable to get valid price for ${pair}. Please try again.`);
-      }
-      priceData.price = fallbackPrice;
-      priceData.source = 'FALLBACK';
+      // Step 1: Get LIVE current price with enhanced error handling
+  const priceData = await getCurrentPrice(pair, broker);
+  const currentPrice = priceData.price;
+
+  // Validate price data
+  if (!currentPrice || currentPrice <= 0) {
+    console.warn(`⚠️ Invalid price for ${pair}, using Binance-based fallback price`);
+    const fallbackPrice = getFallbackPrice(pair);
+    if (fallbackPrice <= 0) {
+      throw new Error(`Unable to get valid price for ${pair}. Please try again.`);
     }
+    priceData.price = fallbackPrice;
+    priceData.source = 'FALLBACK';
+  }
     
     // Step 2: Generate OHLC data for pattern analysis (enhanced with current price)
     const ohlcData = generateOHLCData(priceData.price, 50, timeframe);
