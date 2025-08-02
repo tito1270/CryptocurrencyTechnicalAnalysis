@@ -303,9 +303,9 @@ const getAlternativePrice = async (pair: string): Promise<number | null> => {
 export const getFallbackPrice = (pair: string): number => {
   const [base] = pair.split('/');
   
-  // Updated fallback prices (more realistic current market prices)
+  // Updated fallback prices (current market prices as of December 2024)
   const basePrices: { [key: string]: number } = {
-    'BTC': 43250.00,
+    'BTC': 113000.00, // Updated to current BTC price
     'ETH': 2650.75,
     'BNB': 315.20,
     'XRP': 0.6234,

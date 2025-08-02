@@ -863,17 +863,40 @@ const BulkScanner: React.FC<BulkScannerProps> = ({
           </table>
         </div>
 
-        {/* Pagination */}
+                {/* Enhanced Pagination */}
         {totalPages > 1 && (
-          <div className="flex items-center justify-between p-4 border-t border-gray-700 bg-gray-900">
+          <div className="flex flex-col sm:flex-row items-center justify-between p-4 border-t border-gray-700 bg-gray-900 space-y-4 sm:space-y-0">
             <div className="text-sm text-gray-400">
-              Showing {((currentPage - 1) * ITEMS_PER_PAGE) + 1} to {Math.min(currentPage * ITEMS_PER_PAGE, filteredData.length)} of {filteredData.length} pairs
+              <div className="flex items-center space-x-2">
+                <span>Page {currentPage} of {totalPages.toLocaleString()}</span>
+                <span>•</span>
+                <span>Showing {((currentPage - 1) * ITEMS_PER_PAGE) + 1} to {Math.min(currentPage * ITEMS_PER_PAGE, filteredData.length)} of {filteredData.length.toLocaleString()} pairs</span>
+                <span>•</span>
+                <span>{Math.min(ITEMS_PER_PAGE, filteredData.length - (currentPage - 1) * ITEMS_PER_PAGE)} per page</span>
+              </div>
             </div>
+            
             <div className="flex items-center space-x-2">
+              {/* First Page */}
+              <button
+                onClick={() => handlePageChange(1)}
+                disabled={currentPage === 1}
+                className={`px-3 py-2 rounded-lg transition-colors text-sm ${
+                  currentPage === 1
+                    ? 'bg-gray-700 text-gray-500 cursor-not-allowed'
+                    : 'bg-gray-700 hover:bg-gray-600 text-gray-300'
+                }`}
+                type="button"
+                title="First page"
+              >
+                ⏮️ First
+              </button>
+
+              {/* Previous Page */}
               <button
                 onClick={() => handlePageChange(Math.max(1, currentPage - 1))}
                 disabled={currentPage === 1}
-                className="flex items-center space-x-1 px-3 py-1 bg-gray-700 text-gray-300 rounded hover:bg-gray-600 disabled:opacity-50 disabled:cursor-not-allowed"
+                className="flex items-center space-x-1 px-3 py-2 bg-gray-700 text-gray-300 rounded-lg hover:bg-gray-600 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
                 type="button"
                 title="Previous page"
               >
@@ -881,38 +904,87 @@ const BulkScanner: React.FC<BulkScannerProps> = ({
                 <span>Previous</span>
               </button>
               
-              <div className="flex items-center space-x-1">
-                {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
-                  const pageNum = Math.max(1, Math.min(totalPages, currentPage - 2 + i));
-                  return (
-                                          <button
-                        key={pageNum}
-                        onClick={() => handlePageChange(pageNum)}
-                        className={`px-3 py-1 rounded ${
-                          currentPage === pageNum
+              {/* Page Numbers */}
+              <div className="hidden sm:flex items-center space-x-1">
+                {(() => {
+                  const pages = [];
+                  const showPages = 5;
+                  let startPage = Math.max(1, currentPage - Math.floor(showPages / 2));
+                  let endPage = Math.min(totalPages, startPage + showPages - 1);
+                  
+                  if (endPage - startPage < showPages - 1) {
+                    startPage = Math.max(1, endPage - showPages + 1);
+                  }
+
+                  for (let i = startPage; i <= endPage; i++) {
+                    pages.push(
+                      <button
+                        key={i}
+                        onClick={() => handlePageChange(i)}
+                        className={`px-3 py-2 rounded-lg transition-colors text-sm ${
+                          currentPage === i
                             ? 'bg-emerald-600 text-white'
-                            : 'bg-gray-700 text-gray-300 hover:bg-gray-600'
+                            : 'bg-gray-700 hover:bg-gray-600 text-gray-300'
                         }`}
                         type="button"
-                        title={`Go to page ${pageNum}`}
+                        title={`Go to page ${i}`}
                       >
-                        {pageNum}
+                        {i}
                       </button>
-                  );
-                })}
+                    );
+                  }
+                  return pages;
+                })()}
               </div>
-              
+
+              {/* Next Page */}
               <button
                 onClick={() => handlePageChange(Math.min(totalPages, currentPage + 1))}
                 disabled={currentPage === totalPages}
-                className="flex items-center space-x-1 px-3 py-1 bg-gray-700 text-gray-300 rounded hover:bg-gray-600 disabled:opacity-50 disabled:cursor-not-allowed"
+                className="flex items-center space-x-1 px-3 py-2 bg-gray-700 text-gray-300 rounded-lg hover:bg-gray-600 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
                 type="button"
                 title="Next page"
               >
                 <span>Next</span>
                 <ChevronRight className="w-4 h-4" />
               </button>
+
+              {/* Last Page */}
+              <button
+                onClick={() => handlePageChange(totalPages)}
+                disabled={currentPage === totalPages}
+                className={`px-3 py-2 rounded-lg transition-colors text-sm ${
+                  currentPage === totalPages
+                    ? 'bg-gray-700 text-gray-500 cursor-not-allowed'
+                    : 'bg-gray-700 hover:bg-gray-600 text-gray-300'
+                }`}
+                type="button"
+                title="Last page"
+              >
+                Last ⏭️
+              </button>
             </div>
+          </div>
+        )}
+
+        {/* Quick Jump to Page */}
+        {totalPages > 1 && (
+          <div className="flex items-center justify-center space-x-2 p-3 bg-gray-800/50 border-t border-gray-700 text-sm">
+            <span className="text-gray-400">Jump to page:</span>
+            <input
+              type="number"
+              min="1"
+              max={totalPages}
+              value={currentPage}
+              onChange={(e) => {
+                const page = parseInt(e.target.value);
+                if (page >= 1 && page <= totalPages) {
+                  handlePageChange(page);
+                }
+              }}
+              className="w-20 px-2 py-1 bg-gray-700 border border-gray-600 rounded text-white text-center"
+            />
+            <span className="text-gray-400">of {totalPages.toLocaleString()}</span>
           </div>
         )}
       </div>
