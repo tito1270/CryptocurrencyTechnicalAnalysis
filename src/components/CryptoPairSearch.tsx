@@ -12,7 +12,7 @@ interface CryptoPairSearchProps {
   onRefresh?: () => void;
 }
 
-const ITEMS_PER_PAGE = 50;
+const ITEMS_PER_PAGE = 100;
 
 const CryptoPairSearch: React.FC<CryptoPairSearchProps> = ({
   pairs,
@@ -138,48 +138,97 @@ const CryptoPairSearch: React.FC<CryptoPairSearchProps> = ({
         {!loading && !error && (
           <div className="flex-1 overflow-auto p-6">
             {pairs.length > 0 && (
-              <div className="mb-4 text-center">
-                <p className="text-sm text-gray-400">
-                  Showing {filteredPairs.length} of {pairs.length} active trading pairs
-                </p>
+              <div className="mb-6 text-center bg-gray-700/50 rounded-lg p-4">
+                <div className="flex items-center justify-center space-x-4 text-sm">
+                  <div className="text-emerald-400 font-semibold">
+                    📊 {pairs.length.toLocaleString()} Total Pairs
+                  </div>
+                  <div className="text-gray-400">•</div>
+                  <div className="text-blue-400 font-semibold">
+                    🔍 {filteredPairs.length.toLocaleString()} Filtered
+                  </div>
+                  <div className="text-gray-400">•</div>
+                  <div className="text-purple-400 font-semibold">
+                    📄 {currentPairs.length} Per Page
+                  </div>
+                </div>
+                {searchQuery && (
+                  <div className="mt-2 text-xs text-gray-500">
+                    Search results for: "<span className="text-emerald-400">{searchQuery}</span>"
+                  </div>
+                )}
               </div>
             )}
             
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-2">
-              {currentPairs.map(pair => (
-                <button
-                  key={pair}
-                  onClick={() => handlePairSelect(pair)}
-                  className={`p-3 rounded-lg text-left transition-colors ${
-                    selectedPair === pair
-                      ? 'bg-emerald-600 text-white'
-                      : 'bg-gray-700 hover:bg-gray-600 text-gray-300'
-                  }`}
-                >
-                  <span className="font-medium">{pair}</span>
-                </button>
-              ))}
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 xl:grid-cols-5 gap-2">
+              {currentPairs.map(pair => {
+                const [base, quote] = pair.split('/');
+                return (
+                  <button
+                    key={pair}
+                    onClick={() => handlePairSelect(pair)}
+                    className={`p-3 rounded-lg text-left transition-all duration-200 ${
+                      selectedPair === pair
+                        ? 'bg-emerald-600 text-white shadow-lg transform scale-105'
+                        : 'bg-gray-700 hover:bg-gray-600 text-gray-300 hover:shadow-md'
+                    }`}
+                  >
+                    <div className="font-medium text-sm">
+                      <span className="text-white">{base}</span>
+                      <span className="text-gray-400 text-xs">/{quote}</span>
+                    </div>
+                  </button>
+                );
+              })}
             </div>
 
             {filteredPairs.length === 0 && pairs.length > 0 && (
               <div className="text-center py-12 text-gray-400">
                 <div className="text-4xl mb-4">🔍</div>
-                <p>No trading pairs found</p>
-                <p className="text-sm text-gray-500 mt-2">Try adjusting your search terms</p>
+                <p className="text-lg font-medium">No trading pairs found</p>
+                <p className="text-sm text-gray-500 mt-2">
+                  Try adjusting your search terms or browse all {pairs.length.toLocaleString()} available pairs
+                </p>
+                <button
+                  onClick={() => setSearchQuery('')}
+                  className="mt-4 px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg transition-colors text-sm"
+                >
+                  Clear Search
+                </button>
               </div>
             )}
           </div>
         )}
 
-        {/* Pagination */}
+        {/* Enhanced Pagination */}
         {!loading && !error && totalPages > 1 && (
-          <div className="p-6 border-t border-gray-700">
-            <div className="flex items-center justify-between">
+          <div className="p-6 border-t border-gray-700 bg-gray-800/50">
+            <div className="flex flex-col sm:flex-row items-center justify-between space-y-4 sm:space-y-0">
               <div className="text-sm text-gray-400">
-                Page {currentPage} of {totalPages} • {filteredPairs.length} pairs
+                <div className="flex items-center space-x-2">
+                  <span>Page {currentPage} of {totalPages.toLocaleString()}</span>
+                  <span>•</span>
+                  <span>{filteredPairs.length.toLocaleString()} pairs total</span>
+                  <span>•</span>
+                  <span>Showing {Math.min(ITEMS_PER_PAGE, filteredPairs.length - (currentPage - 1) * ITEMS_PER_PAGE)} pairs</span>
+                </div>
               </div>
               
               <div className="flex items-center space-x-2">
+                {/* First Page */}
+                <button
+                  onClick={() => setCurrentPage(1)}
+                  disabled={currentPage === 1}
+                  className={`px-3 py-2 rounded-lg transition-colors text-sm ${
+                    currentPage === 1
+                      ? 'bg-gray-700 text-gray-500 cursor-not-allowed'
+                      : 'bg-gray-700 hover:bg-gray-600 text-gray-300'
+                  }`}
+                >
+                  ⏮️ First
+                </button>
+
+                {/* Previous Page */}
                 <button
                   onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
                   disabled={currentPage === 1}
@@ -192,7 +241,39 @@ const CryptoPairSearch: React.FC<CryptoPairSearchProps> = ({
                   <span>←</span>
                   <span>Previous</span>
                 </button>
-                
+
+                {/* Page Numbers */}
+                <div className="hidden sm:flex items-center space-x-1">
+                  {(() => {
+                    const pages = [];
+                    const showPages = 5;
+                    let startPage = Math.max(1, currentPage - Math.floor(showPages / 2));
+                    let endPage = Math.min(totalPages, startPage + showPages - 1);
+                    
+                    if (endPage - startPage < showPages - 1) {
+                      startPage = Math.max(1, endPage - showPages + 1);
+                    }
+
+                    for (let i = startPage; i <= endPage; i++) {
+                      pages.push(
+                        <button
+                          key={i}
+                          onClick={() => setCurrentPage(i)}
+                          className={`px-3 py-2 rounded-lg transition-colors text-sm ${
+                            currentPage === i
+                              ? 'bg-emerald-600 text-white'
+                              : 'bg-gray-700 hover:bg-gray-600 text-gray-300'
+                          }`}
+                        >
+                          {i}
+                        </button>
+                      );
+                    }
+                    return pages;
+                  })()}
+                </div>
+
+                {/* Next Page */}
                 <button
                   onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
                   disabled={currentPage === totalPages}
@@ -205,7 +286,39 @@ const CryptoPairSearch: React.FC<CryptoPairSearchProps> = ({
                   <span>Next</span>
                   <span>→</span>
                 </button>
+
+                {/* Last Page */}
+                <button
+                  onClick={() => setCurrentPage(totalPages)}
+                  disabled={currentPage === totalPages}
+                  className={`px-3 py-2 rounded-lg transition-colors text-sm ${
+                    currentPage === totalPages
+                      ? 'bg-gray-700 text-gray-500 cursor-not-allowed'
+                      : 'bg-gray-700 hover:bg-gray-600 text-gray-300'
+                  }`}
+                >
+                  Last ⏭️
+                </button>
               </div>
+            </div>
+
+            {/* Quick Jump */}
+            <div className="mt-4 flex items-center justify-center space-x-2 text-sm">
+              <span className="text-gray-400">Jump to page:</span>
+              <input
+                type="number"
+                min="1"
+                max={totalPages}
+                value={currentPage}
+                onChange={(e) => {
+                  const page = parseInt(e.target.value);
+                  if (page >= 1 && page <= totalPages) {
+                    setCurrentPage(page);
+                  }
+                }}
+                className="w-20 px-2 py-1 bg-gray-700 border border-gray-600 rounded text-white text-center"
+              />
+              <span className="text-gray-400">of {totalPages.toLocaleString()}</span>
             </div>
           </div>
         )}
