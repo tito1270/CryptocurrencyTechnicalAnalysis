@@ -21,6 +21,7 @@ interface TradingControlsProps {
   onIndicatorToggle: (indicatorId: string) => void;
   onStrategyToggle: (strategyId: string) => void;
   onAnalyze: () => void;
+  isAnalyzing?: boolean;
 }
 
 const timeframes = ['1m', '5m', '15m', '30m', '1h', '4h', '1d', '1w'];
@@ -38,7 +39,8 @@ const TradingControls: React.FC<TradingControlsProps> = ({
   onTradeTypeChange,
   onIndicatorToggle,
   onStrategyToggle,
-  onAnalyze
+  onAnalyze,
+  isAnalyzing = false
 }) => {
   const currentBroker = brokers.find(b => b.id === selectedBroker);
   const [showAdvancedPairSearch, setShowAdvancedPairSearch] = useState(false);
@@ -359,14 +361,46 @@ const TradingControls: React.FC<TradingControlsProps> = ({
         </div>
       </div>
       
-      {/* Analyze Button */}
+      {/* Enhanced Analyze Button */}
       <button
         onClick={onAnalyze}
-        className="w-full bg-gradient-to-r from-emerald-600 to-blue-600 hover:from-emerald-700 hover:to-blue-700 text-white font-semibold py-3 px-6 rounded-lg transition-all duration-200 transform hover:scale-105 shadow-lg focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:ring-offset-2 focus:ring-offset-gray-800 animate-pulse hover:animate-none"
+        disabled={isAnalyzing || !selectedPair || selectedIndicators.length === 0}
+        className={`w-full font-semibold py-4 px-6 rounded-lg transition-all duration-200 shadow-lg focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:ring-offset-2 focus:ring-offset-gray-800 ${
+          isAnalyzing
+            ? 'bg-gradient-to-r from-yellow-600 to-orange-600 cursor-not-allowed'
+            : !selectedPair || selectedIndicators.length === 0
+            ? 'bg-gray-600 cursor-not-allowed text-gray-400'
+            : 'bg-gradient-to-r from-emerald-600 to-blue-600 hover:from-emerald-700 hover:to-blue-700 text-white transform hover:scale-105 animate-pulse hover:animate-none'
+        }`}
         aria-label={`Analyze ${selectedPair} market data and get trading recommendations using ${selectedTimeframe} timeframe`}
       >
-        🚀 Analyze Market & Get Recommendation ({selectedTimeframe} Chart)
+        <div className="flex items-center justify-center space-x-2">
+          {isAnalyzing ? (
+            <>
+              <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white"></div>
+              <span>🔍 Analyzing {selectedPair}...</span>
+            </>
+          ) : (
+            <>
+              <span>🚀 Analyze Market & Get Recommendation</span>
+              <span className="text-sm opacity-75">({selectedTimeframe} Chart)</span>
+            </>
+          )}
+        </div>
       </button>
+      
+      {/* Analysis Status */}
+      {selectedIndicators.length === 0 && (
+        <div className="text-center text-sm text-red-400 bg-red-900/20 border border-red-700 rounded-lg p-2">
+          ⚠️ Please select at least one technical indicator to perform analysis
+        </div>
+      )}
+      
+      {!selectedPair && (
+        <div className="text-center text-sm text-yellow-400 bg-yellow-900/20 border border-yellow-700 rounded-lg p-2">
+          ⚠️ Please select a trading pair to analyze
+        </div>
+      )}
       
       <div className="text-xs text-gray-400 text-center mt-2">
         Analysis includes technical indicators, trading strategies, news sentiment, and personalized buy/sell/hold recommendations with entry/exit points. Results will be displayed in the section to the right.
